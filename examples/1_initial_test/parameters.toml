@@ -1,0 +1,13 @@
+[geometry]
+dim = 2
+
+[mechanical]
+2D_assumption = "plane_strain"
+E = 230.77e9
+nu = 0.43
+
+[critical_energy_release_rate]
+Gc_min = 2_700
+Gc_max = 27_000
+theta0 = "pi/6"
+Gc = "Gc_min + (Gc_max-Gc_min) * sqrt(1/2 * (1 - cos(2*gamma-theta0)))"
