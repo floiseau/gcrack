@@ -3,6 +3,7 @@ import sympy as sp
 from dolfinx import fem
 import ufl
 
+
 class ElasticModel:
     """
     Class for defining an elastic material models.
