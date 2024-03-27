@@ -1,6 +1,7 @@
-import tomllib
 from pathlib import Path
 from datetime import datetime
+
+from abc import ABC, abstractmethod
 
 import gmsh
 import numpy as np
@@ -8,7 +9,6 @@ import numpy as np
 import ufl
 from dolfinx import fem
 
-from utils.expression_parsers import get_gc_function
 from domain import Domain
 from models import ElasticModel
 from solvers import solve_elastic_problem
@@ -18,14 +18,42 @@ from postprocess import compute_reaction_forces
 from exporters import export_function, export_dict_to_csv
 
 
-def gcrack(generate_mesh, define_dirichlet_bcs, R_int, xc, da):
-    # Read the parameters
-    with open("parameters.toml", "rb") as f:
-        pars = tomllib.load(f)
+class SimulationBase(ABC):
+    def __init__(
+        self,
+        E: float,
+        nu: float,
+        dim: int,  # TODO Remove dim (already known with the mesh)
+        R_int: float,
+        da: float,
+        xc0: np.array,
+        assumption_2D: str = "",
+        pars: dict = {},
+    ):
+        self.E = E
+        self.nu = nu
+        self.dim = dim
+        self.assumption_2D = assumption_2D
+        self.R_int = R_int
+        self.xc0 = xc0
+        self.da = da
+        # Add other parameters that can be used in the functions
+        self.pars = pars
 
-    ### Parse the critical energy release rate function
-    gc_func = get_gc_function(pars["critical_energy_release_rate"])
+    @abstractmethod
+    def generate_mesh(self, crack_points) -> gmsh.model:
+        pass
 
+    @abstractmethod
+    def define_dirichlet_bcs(self, crack_points):
+        pass
+
+    @abstractmethod
+    def Gc(self, gamma: float | np.ndarray) -> float | np.ndarray:
+        pass
+
+
+def gcrack(gcrack_data: SimulationBase):
     # Initialize GMSH
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
@@ -36,7 +64,7 @@ def gcrack(generate_mesh, define_dirichlet_bcs, R_int, xc, da):
     dir_name.mkdir(parents=True, exist_ok=True)
 
     # Initialize the crack points
-    crack_points = [xc]
+    crack_points = [gcrack_data.xc0]
     # Store the results
     res = {
         "gamma": [0],
@@ -54,32 +82,37 @@ def gcrack(generate_mesh, define_dirichlet_bcs, R_int, xc, da):
         # Get current crack tip
         xc = crack_points[-1]
         # Generate the mesh
-        gmsh_model = generate_mesh(crack_points)
+        gmsh_model = gcrack_data.generate_mesh(crack_points)
         # Define the domain
         domain = Domain(gmsh_model)
         # Define an elastic model
-        model = ElasticModel(pars, domain)
+        ela_pars = {
+            "E": gcrack_data.E,
+            "nu": gcrack_data.nu,
+            "2D_assumption": gcrack_data.assumption_2D,
+        }
+        model = ElasticModel(ela_pars, domain)
         # Define the displacement function space
         element_u = ufl.VectorElement("Lagrange", domain.mesh.ufl_cell(), 1)
         V_u = fem.FunctionSpace(domain.mesh, element_u)
         # Define the boundary conditions
-        dirichlet_bcs = define_dirichlet_bcs(V_u)
+        dirichlet_bcs = gcrack_data.define_dirichlet_bcs(V_u)
         # Solve the elastic problem
         u = solve_elastic_problem(domain, model, V_u, dirichlet_bcs)
         export_function(u, t, dir_name)
 
         # Compute the energy release rate vector
-        g_vec = G(domain, u, xc, model, R_int)
+        g_vec = G(domain, u, xc, model, gcrack_data.R_int)
 
         # Compute the load factor and crack angle.
         gamma0 = res["gamma"][-1]
-        opti_res = compute_load_factor(gamma0, g_vec, gc_func)
+        opti_res = compute_load_factor(gamma0, g_vec, gcrack_data.Gc)
 
         # Get the results
         gamma_ = opti_res.x[0]
         lambda_ = opti_res.fun
         # Add a new crack point
-        da_vec = da * np.array([np.cos(gamma_), np.sin(gamma_), 0])
+        da_vec = gcrack_data.da * np.array([np.cos(gamma_), np.sin(gamma_), 0])
         xc_new = xc + da_vec
         crack_points.append(xc_new)
 

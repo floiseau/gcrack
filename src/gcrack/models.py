@@ -3,7 +3,6 @@ import sympy as sp
 from dolfinx import fem
 import ufl
 
-
 class ElasticModel:
     """
     Class for defining an elastic material models.
@@ -33,14 +32,14 @@ class ElasticModel:
             Domain object used to initialize heterogeneous properties.
         """
         # Get elastic parameters
-        self.E = self.parse_parameter(pars["mechanical"]["E"], domain)
-        self.nu = self.parse_parameter(pars["mechanical"]["nu"], domain)
+        self.E = self.parse_parameter(pars["E"], domain)
+        self.nu = self.parse_parameter(pars["nu"], domain)
         # Compute Lame coefficient
         self.la = self.E * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))
         self.mu = self.E / (2 * (1 + self.nu))
         # Check the 2D assumption
         if domain.dim == 2:
-            self.assumption = pars["mechanical"]["2D_assumption"]
+            self.assumption = pars["2D_assumption"]
             match self.assumption:
                 case "plane_stress":
                     self.la = 2 * self.mu * self.la / (self.la + 2 * self.mu)
