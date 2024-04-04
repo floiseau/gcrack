@@ -22,9 +22,10 @@ def plot_polar_function():
         # Get the text from the entire entry widget
         func_text = entry.get()
         # Convert it into an expression
-        gamma_expr = sp.sympify(
-            func_text, locals={"gamma": gamma}
-        )  # Convert text to SymPy expression
+        with sp.evaluate(False):
+            gamma_expr = sp.sympify(
+                func_text, locals={"gamma": gamma}
+            )  # Convert text to SymPy expression
         # Generate a Python function for the expression
         gamma_f = sp.lambdify([gamma], gamma_expr)
         # Apply the function
@@ -112,6 +113,12 @@ export_button = tk.Button(
     pady=5,
 )
 export_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+def on_closing():
+    if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
+        root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
 
 # Run the Tkinter event loop
 root.mainloop()

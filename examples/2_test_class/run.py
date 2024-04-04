@@ -2,20 +2,18 @@ import sys
 
 sys.path.append("/home/flavien.loiseau/ownCloud/codes/gcrack/src/gcrack")
 
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 
 import gmsh
 from dolfinx import fem
 
-from gcrack import SimulationBase, gcrack
+from gcrack import GCrackBaseData, gcrack
 
 
-class GCrackData(SimulationBase):
-    def generate_mesh(
-        self, crack_points: List[Tuple[float, float, float]]
-    ) -> gmsh.model:
+class GCrackData(GCrackBaseData):
+    def generate_mesh(self, crack_points: List[np.ndarray]) -> gmsh.model:
         # Clear existing model
         gmsh.clear()
         # Parameters
@@ -146,8 +144,9 @@ class GCrackData(SimulationBase):
         Gc_max = self.pars["Gc_max"]
         theta0 = self.pars["theta0"]
         return Gc_min + (Gc_max - Gc_min) * np.sqrt(
-            1 / 2 * (1 - np.cos(2 * gamma - theta0))
+            1 / 2 * (1 - np.cos(2 * (gamma - theta0)))
         )
+        # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (gamma - pi/6))))
 
 
 if __name__ == "__main__":
@@ -155,14 +154,13 @@ if __name__ == "__main__":
     pars = {
         "L": 1e-3,
         "Gc_min": 2_700,
-        "Gc_max": 27_000,
+        "Gc_max": 3_500,# 27_000,
         "theta0": np.pi / 6,
     }
 
     gcrack_data = GCrackData(
         E=230.77e9,
         nu=0.43,
-        dim=2,
         R_int=pars["L"] / 64,
         da=1e-5,
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],

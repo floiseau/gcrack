@@ -18,12 +18,11 @@ from postprocess import compute_reaction_forces
 from exporters import export_function, export_dict_to_csv
 
 
-class SimulationBase(ABC):
+class GCrackBaseData(ABC):
     def __init__(
         self,
         E: float,
         nu: float,
-        dim: int,  # TODO Remove dim (already known with the mesh)
         R_int: float,
         da: float,
         xc0: np.array,
@@ -32,7 +31,6 @@ class SimulationBase(ABC):
     ):
         self.E = E
         self.nu = nu
-        self.dim = dim
         self.assumption_2D = assumption_2D
         self.R_int = R_int
         self.xc0 = xc0
@@ -53,7 +51,7 @@ class SimulationBase(ABC):
         pass
 
 
-def gcrack(gcrack_data: SimulationBase):
+def gcrack(gcrack_data: GCrackBaseData):
     # Initialize GMSH
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
