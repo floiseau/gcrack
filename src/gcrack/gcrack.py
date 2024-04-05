@@ -12,7 +12,7 @@ from dolfinx import fem
 from domain import Domain
 from models import ElasticModel
 from solvers import solve_elastic_problem
-from gtheta import G
+from sif import compute_SIFs
 from optimization_solvers import compute_load_factor
 from postprocess import compute_reaction_forces
 from exporters import export_function, export_dict_to_csv
@@ -47,7 +47,7 @@ class GCrackBaseData(ABC):
         pass
 
     @abstractmethod
-    def Gc(self, gamma: float | np.ndarray) -> float | np.ndarray:
+    def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
         pass
 
 
@@ -65,7 +65,7 @@ def gcrack(gcrack_data: GCrackBaseData):
     crack_points = [gcrack_data.xc0]
     # Store the results
     res = {
-        "gamma": [0],
+        "phi": [0],
         "lambda": [0],
         "xc_1": [crack_points[0][0]],
         "xc_2": [crack_points[0][1]],
@@ -77,8 +77,9 @@ def gcrack(gcrack_data: GCrackBaseData):
     }
 
     for t in range(40):
-        # Get current crack tip
+        # Get current crack properties
         xc = crack_points[-1]
+        phi0 = res["phi"][-1]
         # Generate the mesh
         gmsh_model = gcrack_data.generate_mesh(crack_points)
         # Define the domain
@@ -100,17 +101,29 @@ def gcrack(gcrack_data: GCrackBaseData):
         export_function(u, t, dir_name)
 
         # Compute the energy release rate vector
-        g_vec = G(domain, u, xc, model, gcrack_data.R_int)
+        K = compute_SIFs(domain, model, u, xc, phi0, gcrack_data.R_int)
+
+        from optimization_solvers import F_AL92
+        import matplotlib.pyplot as plt
+
+        phis = np.linspace(-np.pi * 2 / 3, np.pi * 2 / 3, 128)
+        K_star = [np.dot(F_AL92(phi_ - phi0), K) for phi_ in phis]
+        gs = np.array([1 / model.Ep * (np.dot(K, K)) for K in K_star])
+
+        plt.figure()
+        plt.plot(phis, gs)
+        # plt.plot(phis, np.sqrt(1/gs))
+        plt.show()
+        plt.close()
 
         # Compute the load factor and crack angle.
-        gamma0 = res["gamma"][-1]
-        opti_res = compute_load_factor(gamma0, g_vec, gcrack_data.Gc)
+        opti_res = compute_load_factor(phi0, model, K, gcrack_data.Gc)
 
         # Get the results
-        gamma_ = opti_res.x[0]
+        phi_ = opti_res.x[0]
         lambda_ = opti_res.fun
         # Add a new crack point
-        da_vec = gcrack_data.da * np.array([np.cos(gamma_), np.sin(gamma_), 0])
+        da_vec = gcrack_data.da * np.array([np.cos(phi_), np.sin(phi_), 0])
         xc_new = xc + da_vec
         crack_points.append(xc_new)
 
@@ -119,10 +132,11 @@ def gcrack(gcrack_data: GCrackBaseData):
 
         print(f"==== Time step {t}")
         print(f"crack_tip={xc_new}")
-        print(f"gamma={gamma_}")
+        print(f"SIF={K}")
+        print(f"phi={phi_}")
         print(f"lambda={lambda_}")
         # Store the results
-        res["gamma"].append(gamma_)
+        res["phi"].append(phi_)
         res["lambda"].append(lambda_)
         res["xc_1"].append(xc_new[0])
         res["xc_2"].append(xc_new[1])

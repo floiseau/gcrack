@@ -10,6 +10,6 @@ def get_gc_function(gc_pars):
             continue
         gc_str = gc_str.replace(symb, str(val))
     # Convert it into an expression
-    gamma_symb = sp.symbols("gamma")
-    gc_expr = sp.sympify(gc_str, locals={"gamma": gamma_symb})
-    return sp.lambdify([gamma_symb], gc_expr)
+    phi_symb = sp.symbols("phi")
+    gc_expr = sp.sympify(gc_str, locals={"phi": phi_symb})
+    return sp.lambdify([phi_symb], gc_expr)

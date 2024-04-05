@@ -19,7 +19,7 @@ class GCrackData(GCrackBaseData):
         # Parameters
         L = self.pars["L"]
         h = L / 64
-        h_min = self.R_int / 32
+        h_min = self.R_int / 16
         # Points
         # Bot
         p1: int = gmsh.model.geo.addPoint(0, 0, 0, h)
@@ -94,8 +94,8 @@ class GCrackData(GCrackBaseData):
         gmsh.model.mesh.field.setNumber(field1, "Sampling", 100)
         field2: int = gmsh.model.mesh.field.add("Threshold")
         gmsh.model.mesh.field.setNumber(field2, "InField", field1)
-        gmsh.model.mesh.field.setNumber(field2, "DistMin", 2 * self.R_int)
-        gmsh.model.mesh.field.setNumber(field2, "DistMax", 4 * self.R_int)
+        gmsh.model.mesh.field.setNumber(field2, "DistMin", 3 * self.R_int)
+        gmsh.model.mesh.field.setNumber(field2, "DistMax", 6 * self.R_int)
         gmsh.model.mesh.field.setNumber(field2, "SizeMin", h_min)
         gmsh.model.mesh.field.setNumber(field2, "SizeMax", h)
         gmsh.model.geo.synchronize()
@@ -139,14 +139,16 @@ class GCrackData(GCrackBaseData):
 
         return [bot_bc, locked_bc, uimp_bc]
 
-    def Gc(self, gamma):
+    def Gc(self, phi):
         Gc_min = self.pars["Gc_min"]
-        Gc_max = self.pars["Gc_max"]
-        theta0 = self.pars["theta0"]
-        return Gc_min + (Gc_max - Gc_min) * np.sqrt(
-            1 / 2 * (1 - np.cos(2 * (gamma - theta0)))
-        )
-        # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (gamma - pi/6))))
+        return Gc_min
+        # Gc_min = self.pars["Gc_min"]
+        # Gc_max = self.pars["Gc_max"]
+        # theta0 = self.pars["theta0"]
+        # return Gc_min + (Gc_max - Gc_min) * np.sqrt(
+        #     1 / 2 * (1 - np.cos(2 * (phi - theta0)))
+        # )
+        # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
 
 
 if __name__ == "__main__":
@@ -154,17 +156,17 @@ if __name__ == "__main__":
     pars = {
         "L": 1e-3,
         "Gc_min": 2_700,
-        "Gc_max": 3_500,# 27_000,
+        "Gc_max": 3_500,  # 27_000,
         "theta0": np.pi / 6,
     }
 
     gcrack_data = GCrackData(
         E=230.77e9,
         nu=0.43,
-        R_int=pars["L"] / 64,
-        da=1e-5,
+        R_int=pars["L"] / 128,
+        da=pars["L"] / 128,
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
-        assumption_2D="plane_strain",
+        assumption_2D="plane_stress",
         pars=pars,
     )
     gcrack(gcrack_data)

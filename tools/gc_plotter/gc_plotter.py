@@ -114,9 +114,11 @@ export_button = tk.Button(
 )
 export_button.pack(side=tk.LEFT, padx=5, pady=5)
 
+
 def on_closing():
     if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
         root.destroy()
+
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 

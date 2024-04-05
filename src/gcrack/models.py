@@ -44,8 +44,9 @@ class ElasticModel:
             match self.assumption:
                 case "plane_stress":
                     self.la = 2 * self.mu * self.la / (self.la + 2 * self.mu)
+                    self.Ep = self.E
                 case "plane_strain":
-                    ...
+                    self.Ep = self.E / (1 - self.nu**2)
                 case _:
                     raise ValueError(
                         f'The 2D assumption "{self.assumption}" in unknown'
