@@ -7,16 +7,13 @@ from domain import Domain
 from models import ElasticModel
 
 
-def compute_theta_field(domain, crack_tip, R_int):
-    # Set the parameters
-    R_ext = 2 * R_int
-
+def compute_theta_field(domain, crack_tip, R_int, R_ext):
     # Define the distance to the crack tip
     def distance_to_crack_tip(x):
         return np.sqrt((x[0] - crack_tip[0]) ** 2 + (x[1] - crack_tip[1]) ** 2)
 
     # Define the variational problem to define theta
-    V_theta = fem.FunctionSpace(domain.mesh, ("Lagrange", 1))
+    V_theta = fem.functionspace(domain.mesh, ("Lagrange", 1))
     theta, theta_ = ufl.TrialFunction(V_theta), ufl.TestFunction(V_theta)
     a = ufl.dot(ufl.grad(theta), ufl.grad(theta_)) * ufl.dx
     L = (
@@ -48,12 +45,17 @@ def compute_auxiliary_displacement_field(
     K_I_aux: float,
     K_II_aux: float,
 ):
-    # Get the polar coordinates
+    # Get the cartesian coordinates
     x = ufl.SpatialCoordinate(domain.mesh)
     x_tip = ufl.as_vector(xc[:2])
-    r_vec = x - x_tip
+    # Translate the domain to set the crack tip as origin
+    r_vec_init = x - x_tip
+    # Rotate the spatial coordinates to match the crack direction
+    R = ufl.as_tensor([[ufl.cos(phi0), -ufl.sin(phi0)], [ufl.sin(phi0), ufl.cos(phi0)]])
+    r_vec = ufl.transpose(R) * r_vec_init
+    # Get the polar coordinates
     r = ufl.sqrt(ufl.dot(r_vec, r_vec))
-    theta = ufl.atan2(r_vec[1], r_vec[0]) - phi0
+    theta = ufl.atan2(r_vec[1], r_vec[0])
     # Get the elastic parameters
     mu = model.mu
     # Get kappa
@@ -63,18 +65,25 @@ def compute_auxiliary_displacement_field(
             ka = (3 - nu) / (1 + nu)
         case "plane_strain":
             ka = 3 - 4 * nu
-    # Compute the function f
+    # Compute the functions f
     f_I, f_II = [0, 0], [0, 0]
-    f_I[0] = (ka - ufl.cos(theta)) / (2 * mu) * ufl.cos(theta / 2)
-    f_I[1] = (ka - ufl.cos(theta)) / (2 * mu) * ufl.sin(theta / 2)
-    f_II[0] = (2 + ka + ufl.cos(theta)) / (2 * mu) * ufl.sin(theta / 2)
-    f_II[1] = (2 - ka - ufl.cos(theta)) / (2 * mu) * ufl.cos(theta / 2)
+    f_I[0] = (ka - 1 + 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
+    f_I[1] = (ka + 1 - 2 * ufl.cos(theta / 2) ** 2) * ufl.sin(theta / 2)
+    f_II[0] = (ka + 1 + 2 * ufl.cos(theta / 2) ** 2) * ufl.sin(theta / 2)
+    f_II[1] = -(ka - 1 - 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
     # Compute the displacement field
-    ui = [
-        ufl.sqrt(r / (2 * np.pi)) * (K_I_aux * f_I[i] + K_II_aux * f_II[i])
-        for i in range(2)
-    ]
-    return ufl.as_vector(ui)
+    ui = (
+        ufl.sqrt(r / (2 * np.pi))
+        / (2 * mu)
+        * ufl.as_vector(
+            [
+                K_I_aux * f_I[0] + K_II_aux * f_II[0],
+                K_I_aux * f_I[1] + K_II_aux * f_II[1],
+            ]
+        )
+    )
+    # Rotate the displacement vectors
+    return R * ui
 
 
 def compute_I_integral(
@@ -114,9 +123,10 @@ def compute_SIFs(
     xc: np.ndarray,
     phi0: float,
     R_int: float,
+    R_ext: float,
 ):
     # Get the theta field
-    theta_field = compute_theta_field(domain, xc, R_int)
+    theta_field = compute_theta_field(domain, xc, R_int, R_ext)
     theta = ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)]) * theta_field
     # DEBUG
     # new_file = io.VTKFile(theta_field.function_space.mesh.comm, "theta.pvd", "w")

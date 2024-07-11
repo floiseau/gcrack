@@ -1,12 +1,10 @@
 from pathlib import Path
 from datetime import datetime
-
 from abc import ABC, abstractmethod
 
 import gmsh
 import numpy as np
 
-import ufl
 from dolfinx import fem
 
 from domain import Domain
@@ -24,6 +22,7 @@ class GCrackBaseData(ABC):
         E: float,
         nu: float,
         R_int: float,
+        R_ext: float,
         da: float,
         xc0: np.array,
         assumption_2D: str = "",
@@ -33,6 +32,7 @@ class GCrackBaseData(ABC):
         self.nu = nu
         self.assumption_2D = assumption_2D
         self.R_int = R_int
+        self.R_ext = R_ext
         self.xc0 = xc0
         self.da = da
         # Add other parameters that can be used in the functions
@@ -55,7 +55,8 @@ def gcrack(gcrack_data: GCrackBaseData):
     # Initialize GMSH
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
-    gmsh.option.setNumber("Mesh.Algorithm", 8)  # Use Delaunay algorithm
+    gmsh.option.setNumber("Mesh.Algorithm", 5)  # Use meshadapt algorithm
+
     # Initialize export directory
     now = datetime.now()
     dir_name = Path("results_" + now.strftime("%Y-%m-%d_%H-%M-%S"))
@@ -63,7 +64,7 @@ def gcrack(gcrack_data: GCrackBaseData):
 
     # Initialize the crack points
     crack_points = [gcrack_data.xc0]
-    # Store the results
+    # Store the results (TODO: Change the initialization to be more generic)
     res = {
         "phi": [0],
         "lambda": [0],
@@ -76,7 +77,8 @@ def gcrack(gcrack_data: GCrackBaseData):
         "fimp_2": [0.0],
     }
 
-    for t in range(40):
+    for t in range(50):
+        print(f"\n==== Time step {t}")
         # Get current crack properties
         xc = crack_points[-1]
         phi0 = res["phi"][-1]
@@ -92,8 +94,8 @@ def gcrack(gcrack_data: GCrackBaseData):
         }
         model = ElasticModel(ela_pars, domain)
         # Define the displacement function space
-        element_u = ufl.VectorElement("Lagrange", domain.mesh.ufl_cell(), 1)
-        V_u = fem.FunctionSpace(domain.mesh, element_u)
+        shape_u = (domain.mesh.geometry.dim,)
+        V_u = fem.functionspace(domain.mesh, ("Lagrange", 1, shape_u))
         # Define the boundary conditions
         dirichlet_bcs = gcrack_data.define_dirichlet_bcs(V_u)
         # Solve the elastic problem
@@ -101,27 +103,19 @@ def gcrack(gcrack_data: GCrackBaseData):
         export_function(u, t, dir_name)
 
         # Compute the energy release rate vector
-        K = compute_SIFs(domain, model, u, xc, phi0, gcrack_data.R_int)
-
-        from optimization_solvers import F_AL92
-        import matplotlib.pyplot as plt
-
-        phis = np.linspace(-np.pi * 2 / 3, np.pi * 2 / 3, 128)
-        K_star = [np.dot(F_AL92(phi_ - phi0), K) for phi_ in phis]
-        gs = np.array([1 / model.Ep * (np.dot(K, K)) for K in K_star])
-
-        plt.figure()
-        plt.plot(phis, gs)
-        # plt.plot(phis, np.sqrt(1/gs))
-        plt.show()
-        plt.close()
+        print("== Calculation of the SIFs")
+        K = compute_SIFs(
+            domain, model, u, xc, phi0, gcrack_data.R_int, gcrack_data.R_ext
+        )
+        print(f"K_I  : {K[0]:.3f}")
+        print(f"K_II : {K[1]:.3f}")
 
         # Compute the load factor and crack angle.
         opti_res = compute_load_factor(phi0, model, K, gcrack_data.Gc)
 
         # Get the results
-        phi_ = opti_res.x[0]
-        lambda_ = opti_res.fun
+        phi_ = opti_res[0]
+        lambda_ = opti_res[1]
         # Add a new crack point
         da_vec = gcrack_data.da * np.array([np.cos(phi_), np.sin(phi_), 0])
         xc_new = xc + da_vec
@@ -130,11 +124,10 @@ def gcrack(gcrack_data: GCrackBaseData):
         # Postprocess
         fimp = compute_reaction_forces(domain, model, u)
 
-        print(f"==== Time step {t}")
-        print(f"crack_tip={xc_new}")
-        print(f"SIF={K}")
-        print(f"phi={phi_}")
-        print(f"lambda={lambda_}")
+        print("== Results of the step")
+        print(f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°")
+        print(f"Load factor             : {lambda_:.3g}")
+        print(f"New crack tip position  : {xc_new}")
         # Store the results
         res["phi"].append(phi_)
         res["lambda"].append(lambda_)

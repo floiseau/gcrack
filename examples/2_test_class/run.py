@@ -1,10 +1,11 @@
 import sys
 
-sys.path.append("/home/flavien.loiseau/ownCloud/codes/gcrack/src/gcrack")
+sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 
 from typing import List
 
 import numpy as np
+import sympy as sp
 
 import gmsh
 from dolfinx import fem
@@ -13,13 +14,14 @@ from gcrack import GCrackBaseData, gcrack
 
 
 class GCrackData(GCrackBaseData):
+
     def generate_mesh(self, crack_points: List[np.ndarray]) -> gmsh.model:
         # Clear existing model
         gmsh.clear()
         # Parameters
         L = self.pars["L"]
         h = L / 64
-        h_min = self.R_int / 16
+        h_min = self.R_int / 8
         # Points
         # Bot
         p1: int = gmsh.model.geo.addPoint(0, 0, 0, h)
@@ -94,8 +96,8 @@ class GCrackData(GCrackBaseData):
         gmsh.model.mesh.field.setNumber(field1, "Sampling", 100)
         field2: int = gmsh.model.mesh.field.add("Threshold")
         gmsh.model.mesh.field.setNumber(field2, "InField", field1)
-        gmsh.model.mesh.field.setNumber(field2, "DistMin", 3 * self.R_int)
-        gmsh.model.mesh.field.setNumber(field2, "DistMax", 6 * self.R_int)
+        gmsh.model.mesh.field.setNumber(field2, "DistMin", self.R_ext)
+        gmsh.model.mesh.field.setNumber(field2, "DistMax", 2 * self.R_ext)
         gmsh.model.mesh.field.setNumber(field2, "SizeMin", h_min)
         gmsh.model.mesh.field.setNumber(field2, "SizeMax", h)
         gmsh.model.geo.synchronize()
@@ -140,30 +142,35 @@ class GCrackData(GCrackBaseData):
         return [bot_bc, locked_bc, uimp_bc]
 
     def Gc(self, phi):
+        # Get the parameters
         Gc_min = self.pars["Gc_min"]
-        return Gc_min
-        # Gc_min = self.pars["Gc_min"]
-        # Gc_max = self.pars["Gc_max"]
-        # theta0 = self.pars["theta0"]
-        # return Gc_min + (Gc_max - Gc_min) * np.sqrt(
-        #     1 / 2 * (1 - np.cos(2 * (phi - theta0)))
-        # )
+        Gc_max = self.pars["Gc_max"]
+        theta0 = self.pars["theta0"]
+        # Compute associated parameters
+        Gc = sp.sqrt(1/2 * (Gc_min**2 + Gc_max**2))
+        ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
+        # Define expression of the energy release rate
+        Gc_expression = Gc * sp.sqrt(
+            1 + ag * (sp.sin(phi - theta0)**2 - sp.cos(phi - theta0)**2)
+        )
+        return Gc_expression
         # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
 
 
 if __name__ == "__main__":
     # Define user parameters
     pars = {
-        "L": 1e-3,
-        "Gc_min": 2_700,
-        "Gc_max": 3_500,  # 27_000,
-        "theta0": np.pi / 6,
+        "L": 1.0,
+        "Gc_min": 10_000,
+        "Gc_max": 20_000,
+        "theta0": 25 * np.pi / 180,
     }
 
     gcrack_data = GCrackData(
-        E=230.77e9,
-        nu=0.43,
+        E=1e9,
+        nu=0.3,
         R_int=pars["L"] / 128,
+        R_ext=pars["L"] / 64,
         da=pars["L"] / 128,
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",

@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("/home/flavien.loiseau/ownCloud/codes/gcrack/src/gcrack")
+sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 
 from typing import List, Tuple
 

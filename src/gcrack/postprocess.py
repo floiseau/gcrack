@@ -15,10 +15,10 @@ def compute_reaction_forces(
     n: ufl.FacetNormal = ufl.FacetNormal(domain.mesh)
 
     def on_top_boundary(x):
-        return np.isclose(x[1], 1e-3)
+        return np.isclose(x[1], 1)
 
     top_facets = mesh.locate_entities(domain.mesh, dim - 1, on_top_boundary)
-    markers = (np.full_like(top_facets, 1, dtype=np.int32),)
+    markers = np.full_like(top_facets, 1, dtype=np.int32)
     facet_tags = mesh.meshtags(domain.mesh, dim - 1, top_facets, markers)
     ds = ufl.Measure(
         "ds",
