@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import sympy as sp
 
@@ -81,7 +83,7 @@ def residual(x, model, K, gc_expr, phi0):
 
 
 def compute_load_factor(phi0: float, model, K, gc_expr):
-    print("== Determination of propagation angle and load factor")
+    logging.info("-- Determination of propagation angle and load factor")
     # Define phi as a SymPy symbol
     phi = sp.Symbol("phi")
     # Get the SIFs (star)
@@ -118,7 +120,7 @@ def compute_load_factor(phi0: float, model, K, gc_expr):
         # Compute the error
         err = error(phi_val)
         # Display some informations
-        print(f"  It: {i:02d} | Err: {err:.2g}")
+        logging.info(f"It: {i:02d} | Err: {err:.2g}")
     # Compute the load factor
     load_factor = np.sqrt(obj_func(phi_val))
     return phi_val, load_factor

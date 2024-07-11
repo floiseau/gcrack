@@ -172,6 +172,7 @@ if __name__ == "__main__":
         R_int=pars["L"] / 128,
         R_ext=pars["L"] / 64,
         da=pars["L"] / 128,
+        Nt=20,
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",
         pars=pars,

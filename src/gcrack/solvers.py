@@ -1,4 +1,4 @@
-from typing import List
+import logging
 
 from domain import Domain
 from models import ElasticModel
@@ -11,9 +11,17 @@ from dolfinx.fem.petsc import LinearProblem
 def solve_elastic_problem(
     domain: Domain,
     model: ElasticModel,
-    V_u: fem.FunctionSpace,
-    bcs: List[fem.DirichletBC],
+    gcrack_data,
 ) -> fem.Function:
+    logging.info("-- Find the elastic solution with FEM")
+
+    # Define the displacement function space
+    shape_u = (domain.mesh.geometry.dim,)
+    V_u = fem.functionspace(domain.mesh, ("Lagrange", 1, shape_u))
+
+    # Define the boundary conditions
+    bcs = gcrack_data.define_dirichlet_bcs(V_u)
+
     # Define the variational formulation
     ds = ufl.Measure("ds", domain=domain.mesh)
     T = fem.Constant(domain.mesh, default_scalar_type((0, 0)))

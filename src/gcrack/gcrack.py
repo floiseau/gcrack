@@ -1,42 +1,43 @@
 from pathlib import Path
+import logging
 from datetime import datetime
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 import gmsh
 import numpy as np
 
-from dolfinx import fem
-
 from domain import Domain
 from models import ElasticModel
+
 from solvers import solve_elastic_problem
 from sif import compute_SIFs
 from optimization_solvers import compute_load_factor
 from postprocess import compute_reaction_forces
-from exporters import export_function, export_dict_to_csv
+from exporters import export_function, export_dict_to_csv, clean_vtk_files
+
+# Configure the logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+)
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(message)s",
+)
 
 
+@dataclass
 class GCrackBaseData(ABC):
-    def __init__(
-        self,
-        E: float,
-        nu: float,
-        R_int: float,
-        R_ext: float,
-        da: float,
-        xc0: np.array,
-        assumption_2D: str = "",
-        pars: dict = {},
-    ):
-        self.E = E
-        self.nu = nu
-        self.assumption_2D = assumption_2D
-        self.R_int = R_int
-        self.R_ext = R_ext
-        self.xc0 = xc0
-        self.da = da
-        # Add other parameters that can be used in the functions
-        self.pars = pars
+    E: float
+    nu: float
+    R_int: float
+    R_ext: float
+    da: float
+    Nt: int
+    xc0: np.array
+    assumption_2D: str
+    pars: dict
 
     @abstractmethod
     def generate_mesh(self, crack_points) -> gmsh.model:
@@ -77,15 +78,18 @@ def gcrack(gcrack_data: GCrackBaseData):
         "fimp_2": [0.0],
     }
 
-    for t in range(50):
-        print(f"\n==== Time step {t}")
+    for t in range(gcrack_data.Nt):
+        logging.info(f"\n==== Time step {t}")
         # Get current crack properties
         xc = crack_points[-1]
         phi0 = res["phi"][-1]
-        # Generate the mesh
+
+        logging.info("-- Meshing the cracked domain")
         gmsh_model = gcrack_data.generate_mesh(crack_points)
+
         # Define the domain
         domain = Domain(gmsh_model)
+
         # Define an elastic model
         ela_pars = {
             "E": gcrack_data.E,
@@ -93,22 +97,16 @@ def gcrack(gcrack_data: GCrackBaseData):
             "2D_assumption": gcrack_data.assumption_2D,
         }
         model = ElasticModel(ela_pars, domain)
-        # Define the displacement function space
-        shape_u = (domain.mesh.geometry.dim,)
-        V_u = fem.functionspace(domain.mesh, ("Lagrange", 1, shape_u))
-        # Define the boundary conditions
-        dirichlet_bcs = gcrack_data.define_dirichlet_bcs(V_u)
+
         # Solve the elastic problem
-        u = solve_elastic_problem(domain, model, V_u, dirichlet_bcs)
+        u = solve_elastic_problem(domain, model, gcrack_data)
+        # Export the elastic solution
         export_function(u, t, dir_name)
 
         # Compute the energy release rate vector
-        print("== Calculation of the SIFs")
         K = compute_SIFs(
             domain, model, u, xc, phi0, gcrack_data.R_int, gcrack_data.R_ext
         )
-        print(f"K_I  : {K[0]:.3f}")
-        print(f"K_II : {K[1]:.3f}")
 
         # Compute the load factor and crack angle.
         opti_res = compute_load_factor(phi0, model, K, gcrack_data.Gc)
@@ -124,10 +122,12 @@ def gcrack(gcrack_data: GCrackBaseData):
         # Postprocess
         fimp = compute_reaction_forces(domain, model, u)
 
-        print("== Results of the step")
-        print(f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°")
-        print(f"Load factor             : {lambda_:.3g}")
-        print(f"New crack tip position  : {xc_new}")
+        logging.info("-- Results of the step")
+        logging.info(
+            f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°"
+        )
+        logging.info(f"Load factor             : {lambda_:.3g}")
+        logging.info(f"New crack tip position  : {xc_new}")
         # Store the results
         res["phi"].append(phi_)
         res["lambda"].append(lambda_)
@@ -138,7 +138,10 @@ def gcrack(gcrack_data: GCrackBaseData):
         res["uimp_2"].append(1.0)
         res["fimp_1"].append(fimp[0])
         res["fimp_2"].append(fimp[1])
+    logging.info("-- Finalize the exports")
     # Export the dictionary to a CSV file
     export_dict_to_csv(res, dir_name / "results.csv")
+    # Group clean the results directory
+    clean_vtk_files(dir_name)
     # Clean up
     gmsh.finalize()
