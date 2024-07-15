@@ -1,5 +1,6 @@
 from pathlib import Path
 import logging
+from typing import List
 from datetime import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -45,7 +46,17 @@ class GCrackBaseData(ABC):
         pass
 
     @abstractmethod
-    def define_dirichlet_bcs(self, crack_points):
+    def define_imposed_displacements(
+        self, V_u: fem.FunctionSpace
+    ) -> List[fem.DirichletBC]:
+        """Define the imposed displacement boundary conditions.
+
+        Args:
+            V_u (fem.FunctionSpace): The function space for the displacement field.
+
+        Returns:
+            List[fem.DirichletBC]: A list of Dirichlet boundary conditions.
+        """
         pass
 
     @abstractmethod

@@ -20,7 +20,7 @@ def solve_elastic_problem(
     V_u = fem.functionspace(domain.mesh, ("Lagrange", 1, shape_u))
 
     # Define the boundary conditions
-    bcs = gcrack_data.define_dirichlet_bcs(V_u)
+    bcs = gcrack_data.define_imposed_displacements(V_u)
 
     # Define the variational formulation
     ds = ufl.Measure("ds", domain=domain.mesh)

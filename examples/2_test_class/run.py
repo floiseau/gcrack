@@ -107,10 +107,14 @@ class GCrackData(GCrackBaseData):
         # Return the model
         return gmsh.model()
 
-    def define_dirichlet_bcs(self, V_u: fem.FunctionSpace) -> List[fem.DirichletBC]:
+    def define_imposed_displacements(
+        self, V_u: fem.FunctionSpace
+    ) -> List[fem.DirichletBC]:
+        # Define function to locate the bottom boundary (y = 0)
         def on_bot_boundary(x):
             return np.isclose(x[1], 0)
 
+        # Define bottom boundary condition for the y-component
         comp = 1
         bot_dofs = fem.locate_dofs_geometrical(
             (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_bot_boundary
@@ -120,16 +124,20 @@ class GCrackData(GCrackBaseData):
             bc_local.set(0.0)
         bot_bc = fem.dirichletbc(u0_func, bot_dofs, V_u)
 
+        # Define function to locate the locked point (x = 0, y = 0)
         def on_locked_point(x):
             return np.logical_and(np.isclose(x[0], 0), np.isclose(x[1], 0))
 
+        # Define locked point boundary condition for the x and y components
         comp = 0
         locked_dofs = fem.locate_dofs_geometrical(V_u, on_locked_point)
         locked_bc = fem.dirichletbc(np.array([0.0, 0.0]), locked_dofs, V_u)
 
+        # Define function to locate the imposed displacement boundary (y = L)
         def on_uimp_boundary(x):
             return np.isclose(x[1], self.pars["L"])
 
+        # Define imposed displacement boundary condition for the y-component
         comp = 1
         uimp_dofs = fem.locate_dofs_geometrical(
             (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_uimp_boundary
@@ -139,6 +147,7 @@ class GCrackData(GCrackBaseData):
             bc_local.set(1.0)
         uimp_bc = fem.dirichletbc(uimp_func, uimp_dofs, V_u)
 
+        # Return the list of Dirichlet boundary conditions
         return [bot_bc, locked_bc, uimp_bc]
 
     def compute_reaction_forces(self, domain, model, uh) -> np.array:
