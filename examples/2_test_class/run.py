@@ -8,13 +8,13 @@ import numpy as np
 import sympy as sp
 
 import gmsh
-from dolfinx import fem
+from dolfinx import fem, mesh
+import ufl
 
 from gcrack import GCrackBaseData, gcrack
 
 
 class GCrackData(GCrackBaseData):
-
     def generate_mesh(self, crack_points: List[np.ndarray]) -> gmsh.model:
         # Clear existing model
         gmsh.clear()
@@ -141,17 +141,54 @@ class GCrackData(GCrackBaseData):
 
         return [bot_bc, locked_bc, uimp_bc]
 
+    def compute_reaction_forces(self, domain, model, uh) -> np.array:
+        # Get he
+        dim: int = domain.dim
+        n: ufl.FacetNormal = ufl.FacetNormal(domain.mesh)
+
+        # Define a function to locate the top boundary
+        def on_top_boundary(x):
+            return np.isclose(x[1], self.pars["L"])
+
+        # Locate the entities on the top boundary
+        top_facets = mesh.locate_entities(domain.mesh, dim - 1, on_top_boundary)
+        markers = np.full_like(top_facets, 1, dtype=np.int32)
+        facet_tags = mesh.meshtags(domain.mesh, dim - 1, top_facets, markers)
+
+        # Get the integrand over the boundary
+        ds = ufl.Measure(
+            "ds",
+            domain=domain.mesh,
+            subdomain_data=facet_tags,
+            subdomain_id=1,
+        )
+        # Initialize the force array
+        f = np.empty((2,))
+        for comp in range(dim):
+            # Elementary vector for the current component
+            elem_vec_np = np.zeros((dim,))
+            elem_vec_np[comp] = 1
+            elem_vec = fem.Constant(domain.mesh, elem_vec_np)
+            # Expression for the reaction force for the current component
+            expr = ufl.dot(ufl.dot(model.sig(uh), n), elem_vec) * ds
+            # Form for the reaction force expression
+            form = fem.form(expr)
+            # Assemble the form to get the reaction force component
+            f[comp] = fem.assemble_scalar(form)
+
+        return f
+
     def Gc(self, phi):
         # Get the parameters
         Gc_min = self.pars["Gc_min"]
         Gc_max = self.pars["Gc_max"]
         theta0 = self.pars["theta0"]
         # Compute associated parameters
-        Gc = sp.sqrt(1/2 * (Gc_min**2 + Gc_max**2))
+        Gc = sp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
         ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
         # Define expression of the energy release rate
         Gc_expression = Gc * sp.sqrt(
-            1 + ag * (sp.sin(phi - theta0)**2 - sp.cos(phi - theta0)**2)
+            1 + ag * (sp.sin(phi - theta0) ** 2 - sp.cos(phi - theta0) ** 2)
         )
         return Gc_expression
         # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
@@ -172,7 +209,7 @@ if __name__ == "__main__":
         R_int=pars["L"] / 128,
         R_ext=pars["L"] / 64,
         da=pars["L"] / 128,
-        Nt=20,
+        Nt=60,
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",
         pars=pars,

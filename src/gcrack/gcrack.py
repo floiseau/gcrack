@@ -7,13 +7,14 @@ from dataclasses import dataclass
 import gmsh
 import numpy as np
 
+from dolfinx import fem
+
 from domain import Domain
 from models import ElasticModel
 
 from solvers import solve_elastic_problem
 from sif import compute_SIFs
 from optimization_solvers import compute_load_factor
-from postprocess import compute_reaction_forces
 from exporters import export_function, export_dict_to_csv, clean_vtk_files
 
 # Configure the logger
@@ -45,6 +46,22 @@ class GCrackBaseData(ABC):
 
     @abstractmethod
     def define_dirichlet_bcs(self, crack_points):
+        pass
+
+    @abstractmethod
+    def compute_reaction_forces(
+        domain: Domain, model: ElasticModel, uh: fem.Function
+    ) -> np.array:
+        """Compute the reaction forces of the domain.
+
+        Args:
+            domain (Domain): The domain of the problem.
+            model (ElasticModel): The elastic model being used.
+            uh (Function): The displacement solution of the elastic problem.
+
+        Returns:
+            np.array: The computed reaction forces as a numpy array.
+        """
         pass
 
     @abstractmethod
@@ -120,7 +137,7 @@ def gcrack(gcrack_data: GCrackBaseData):
         crack_points.append(xc_new)
 
         # Postprocess
-        fimp = compute_reaction_forces(domain, model, u)
+        fimp = gcrack_data.compute_reaction_forces(domain, model, u)
 
         logging.info("-- Results of the step")
         logging.info(
