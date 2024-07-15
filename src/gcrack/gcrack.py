@@ -16,6 +16,7 @@ from models import ElasticModel
 from solvers import solve_elastic_problem
 from sif import compute_SIFs
 from optimization_solvers import compute_load_factor
+from postprocess import compute_reaction_forces
 from exporters import export_function, export_dict_to_csv, clean_vtk_files
 
 # Configure the logger
@@ -60,18 +61,14 @@ class GCrackBaseData(ABC):
         pass
 
     @abstractmethod
-    def compute_reaction_forces(
-        domain: Domain, model: ElasticModel, uh: fem.Function
-    ) -> np.array:
-        """Compute the reaction forces of the domain.
+    def locate_reaction_forces(self, x) -> bool:
+        """Determine if a point is on the reaction boundary (i.e., where the reaction forces are measured).
 
         Args:
-            domain (Domain): The domain of the problem.
-            model (ElasticModel): The elastic model being used.
-            uh (Function): The displacement solution of the elastic problem.
+            x (array-like): Coordinates of the point.
 
         Returns:
-            np.array: The computed reaction forces as a numpy array.
+            bool: True if the point is on the reaction boundary, False otherwise.
         """
         pass
 
@@ -128,8 +125,6 @@ def gcrack(gcrack_data: GCrackBaseData):
 
         # Solve the elastic problem
         u = solve_elastic_problem(domain, model, gcrack_data)
-        # Export the elastic solution
-        export_function(u, t, dir_name)
 
         # Compute the energy release rate vector
         K = compute_SIFs(
@@ -147,15 +142,24 @@ def gcrack(gcrack_data: GCrackBaseData):
         xc_new = xc + da_vec
         crack_points.append(xc_new)
 
-        # Postprocess
-        fimp = gcrack_data.compute_reaction_forces(domain, model, u)
-
         logging.info("-- Results of the step")
         logging.info(
             f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°"
         )
         logging.info(f"Load factor             : {lambda_:.3g}")
         logging.info(f"New crack tip position  : {xc_new}")
+
+        logging.info("-- Postprocess")
+        # Compute the reaction force
+        fimp = compute_reaction_forces(domain, model, u, gcrack_data)
+        # Scale the displacement field
+        u_scaled = u.copy()
+        u_scaled.x.array[:] = lambda_ * u_scaled.x.array
+        u.scaled = "Displacement"
+
+        logging.info("-- Export the results")
+        # Export the elastic solution
+        export_function(u_scaled, t, dir_name)
         # Store the results
         res["phi"].append(phi_)
         res["lambda"].append(lambda_)

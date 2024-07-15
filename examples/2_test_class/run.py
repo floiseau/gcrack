@@ -8,8 +8,7 @@ import numpy as np
 import sympy as sp
 
 import gmsh
-from dolfinx import fem, mesh
-import ufl
+from dolfinx import fem
 
 from gcrack import GCrackBaseData, gcrack
 
@@ -150,42 +149,16 @@ class GCrackData(GCrackBaseData):
         # Return the list of Dirichlet boundary conditions
         return [bot_bc, locked_bc, uimp_bc]
 
-    def compute_reaction_forces(self, domain, model, uh) -> np.array:
-        # Get he
-        dim: int = domain.dim
-        n: ufl.FacetNormal = ufl.FacetNormal(domain.mesh)
+    def locate_reaction_forces(self, x):
+        """Determine if a point is on the reaction boundary (i.e., where the reaction forces are measured).
 
-        # Define a function to locate the top boundary
-        def on_top_boundary(x):
-            return np.isclose(x[1], self.pars["L"])
+        Args:
+            x (array-like): Coordinates of the point.
 
-        # Locate the entities on the top boundary
-        top_facets = mesh.locate_entities(domain.mesh, dim - 1, on_top_boundary)
-        markers = np.full_like(top_facets, 1, dtype=np.int32)
-        facet_tags = mesh.meshtags(domain.mesh, dim - 1, top_facets, markers)
-
-        # Get the integrand over the boundary
-        ds = ufl.Measure(
-            "ds",
-            domain=domain.mesh,
-            subdomain_data=facet_tags,
-            subdomain_id=1,
-        )
-        # Initialize the force array
-        f = np.empty((2,))
-        for comp in range(dim):
-            # Elementary vector for the current component
-            elem_vec_np = np.zeros((dim,))
-            elem_vec_np[comp] = 1
-            elem_vec = fem.Constant(domain.mesh, elem_vec_np)
-            # Expression for the reaction force for the current component
-            expr = ufl.dot(ufl.dot(model.sig(uh), n), elem_vec) * ds
-            # Form for the reaction force expression
-            form = fem.form(expr)
-            # Assemble the form to get the reaction force component
-            f[comp] = fem.assemble_scalar(form)
-
-        return f
+        Returns:
+            bool: True if the point is on the reaction boundary, False otherwise.
+        """
+        return np.isclose(x[1], self.pars["L"])
 
     def Gc(self, phi):
         # Get the parameters
