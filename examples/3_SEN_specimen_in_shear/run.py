@@ -5,7 +5,6 @@ sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 from typing import List
 
 import numpy as np
-import sympy as sp
 
 import gmsh
 from dolfinx import fem
@@ -20,7 +19,7 @@ class GCrackData(GCrackBaseData):
         # Parameters
         L = self.pars["L"]
         h = L / 64
-        h_min = self.R_int / 8
+        h_min = self.R_int / 16
         # Points
         # Bot
         p1: int = gmsh.model.geo.addPoint(0, 0, 0, h)
@@ -113,41 +112,34 @@ class GCrackData(GCrackBaseData):
         def on_bot_boundary(x):
             return np.isclose(x[1], 0)
 
-        # Define bottom boundary condition for the y-component
+        # Define locked point boundary condition for the x and y components
+        bot_dofs = fem.locate_dofs_geometrical(V_u, on_bot_boundary)
+        bot_bc = fem.dirichletbc(np.array([0.0, 0.0]), bot_dofs, V_u)
+
+        # Define function to locate the top boundary (y = L)
+        def on_top_boundary(x):
+            return np.isclose(x[1], self.pars["L"])
+
+        # Define imposed displacement boundary condition
+        top_dofs = fem.locate_dofs_geometrical(V_u, on_top_boundary)
+        top_bc = fem.dirichletbc(np.array([1.0, 0.0]), top_dofs, V_u)
+
+        # Define function to locate the left and right boundaries (x = 0 and x=L)
+        def on_side_boundary(x):
+            return np.logical_or(np.isclose(x[0], 0), np.isclose(x[0], self.pars["L"]))
+
+        # Define the left and right boundary condition (no vertical displacement)
         comp = 1
-        bot_dofs = fem.locate_dofs_geometrical(
-            (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_bot_boundary
+        side_dofs = fem.locate_dofs_geometrical(
+            (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_side_boundary
         )
         u0_func = fem.Function(V_u.sub(comp).collapse()[0])
         with u0_func.vector.localForm() as bc_local:
             bc_local.set(0.0)
-        bot_bc = fem.dirichletbc(u0_func, bot_dofs, V_u)
-
-        # Define function to locate the locked point (x = 0, y = 0)
-        def on_locked_point(x):
-            return np.logical_and(np.isclose(x[0], 0), np.isclose(x[1], 0))
-
-        # Define locked point boundary condition for the x and y components
-        comp = 0
-        locked_dofs = fem.locate_dofs_geometrical(V_u, on_locked_point)
-        locked_bc = fem.dirichletbc(np.array([0.0, 0.0]), locked_dofs, V_u)
-
-        # Define function to locate the imposed displacement boundary (y = L)
-        def on_uimp_boundary(x):
-            return np.isclose(x[1], self.pars["L"])
-
-        # Define imposed displacement boundary condition for the y-component
-        comp = 1
-        uimp_dofs = fem.locate_dofs_geometrical(
-            (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_uimp_boundary
-        )
-        uimp_func = fem.Function(V_u.sub(comp).collapse()[0])
-        with uimp_func.vector.localForm() as bc_local:
-            bc_local.set(1.0)
-        uimp_bc = fem.dirichletbc(uimp_func, uimp_dofs, V_u)
+        side_bc = fem.dirichletbc(u0_func, side_dofs, V_u)
 
         # Return the list of Dirichlet boundary conditions
-        return [bot_bc, locked_bc, uimp_bc]
+        return [bot_bc, side_bc, top_bc]
 
     def locate_reaction_forces(self, x):
         """Determine if a point is on the reaction boundary (i.e., where the reaction forces are measured).
@@ -161,35 +153,21 @@ class GCrackData(GCrackBaseData):
         return np.isclose(x[1], self.pars["L"])
 
     def Gc(self, phi):
-        # Get the parameters
-        Gc_min = self.pars["Gc_min"]
-        Gc_max = self.pars["Gc_max"]
-        theta0 = self.pars["theta0"]
-        # Compute associated parameters
-        Gc = sp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
-        ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
-        # Define expression of the energy release rate
-        Gc_expression = Gc * sp.sqrt(
-            1 + ag * (sp.sin(phi - theta0) ** 2 - sp.cos(phi - theta0) ** 2)
-        )
-        return Gc_expression
-        # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
+        return self.pars["Gc"]
 
 
 if __name__ == "__main__":
     # Define user parameters
     pars = {
-        "L": 1.0,
-        "Gc_min": 10_000,
-        "Gc_max": 20_000,
-        "theta0": 25 * np.pi / 180,
+        "L": 1e-3,
+        "Gc": 2_700,
     }
 
     gcrack_data = GCrackData(
-        E=1e9,
-        nu=0.3,
-        da=pars["L"] / 128,
-        Nt=60,
+        E = 230.77e9,
+        nu = 0.43,
+        da=pars["L"] / 64,
+        Nt=35,
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",
         pars=pars,

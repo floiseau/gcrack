@@ -34,13 +34,16 @@ logging.basicConfig(
 class GCrackBaseData(ABC):
     E: float
     nu: float
-    R_int: float
-    R_ext: float
     da: float
     Nt: int
     xc0: np.array
     assumption_2D: str
     pars: dict
+
+    def __post_init__(self):
+        # Compute the radii for the SIF evaluation
+        self.R_int = self.da
+        self.R_ext = 2 * self.da
 
     @abstractmethod
     def generate_mesh(self, crack_points) -> gmsh.model:
