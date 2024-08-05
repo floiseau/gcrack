@@ -1,5 +1,4 @@
 from pathlib import Path
-import logging
 from typing import List
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -18,16 +17,6 @@ from sif import compute_SIFs
 from optimization_solvers import compute_load_factor
 from postprocess import compute_reaction_forces
 from exporters import export_function, export_dict_to_csv, clean_vtk_files
-
-# Configure the logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-)
-logging.basicConfig(
-    level=logging.WARNING,
-    format="%(message)s",
-)
 
 
 @dataclass
@@ -117,12 +106,12 @@ def gcrack(gcrack_data: GCrackBaseData):
     }
 
     for t in range(gcrack_data.Nt):
-        logging.info(f"\n==== Time step {t}")
+        print(f"\n==== Time step {t}")
         # Get current crack properties
         xc = crack_points[-1]
         phi0 = res["phi"][-1]
 
-        logging.info("-- Meshing the cracked domain")
+        print("-- Meshing the cracked domain")
         gmsh_model = gcrack_data.generate_mesh(crack_points)
 
         # Define the domain
@@ -155,14 +144,14 @@ def gcrack(gcrack_data: GCrackBaseData):
         xc_new = xc + da_vec
         crack_points.append(xc_new)
 
-        logging.info("-- Results of the step")
-        logging.info(
+        print("-- Results of the step")
+        print(
             f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°"
         )
-        logging.info(f"Load factor             : {lambda_:.3g}")
-        logging.info(f"New crack tip position  : {xc_new}")
+        print(f"Load factor             : {lambda_:.3g}")
+        print(f"New crack tip position  : {xc_new}")
 
-        logging.info("-- Postprocess")
+        print("-- Postprocess")
         # Compute the reaction force
         fimp = compute_reaction_forces(domain, model, u, gcrack_data)
         # Scale the displacement field
@@ -170,7 +159,7 @@ def gcrack(gcrack_data: GCrackBaseData):
         u_scaled.x.array[:] = lambda_ * u_scaled.x.array
         u.scaled = "Displacement"
 
-        logging.info("-- Export the results")
+        print("-- Export the results")
         # Export the elastic solution
         export_function(u_scaled, t, dir_name)
         # Store the results
@@ -184,7 +173,7 @@ def gcrack(gcrack_data: GCrackBaseData):
         res["uimp_2"].append(1.0)
         res["fimp_1"].append(fimp[0])
         res["fimp_2"].append(fimp[1])
-    logging.info("-- Finalize the exports")
+    print("-- Finalize the exports")
     # Export the dictionary to a CSV file
     export_dict_to_csv(res, dir_name / "results.csv")
     # Group clean the results directory

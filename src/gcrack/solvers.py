@@ -1,5 +1,3 @@
-import logging
-
 from domain import Domain
 from models import ElasticModel
 
@@ -14,7 +12,7 @@ def solve_elastic_problem(
     model: ElasticModel,
     gcrack_data,
 ) -> fem.Function:
-    logging.info("-- Find the elastic solution with FEM")
+    print("-- Find the elastic solution with FEM")
 
     # Define the displacement function space
     shape_u = (domain.mesh.geometry.dim,)

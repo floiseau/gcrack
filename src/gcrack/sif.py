@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 
 import ufl
@@ -127,7 +125,7 @@ def compute_SIFs(
     R_int: float,
     R_ext: float,
 ):
-    logging.info("-- Calculation of the SIFs")
+    print("-- Calculation of the SIFs")
     # Get the theta field
     theta_field = compute_theta_field(domain, xc, R_int, R_ext)
     theta = ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)]) * theta_field
@@ -150,7 +148,7 @@ def compute_SIFs(
     K_I = model.Ep / 2 * I_I
     K_II = model.Ep / 2 * I_II
     # Display informations
-    logging.info(f"K_I  : {K_I:.3g}")
-    logging.info(f"K_II : {K_II:.3g}")
+    print(f"K_I  : {K_I:.3g}")
+    print(f"K_II : {K_II:.3g}")
     # Return SIF array
     return np.array([K_I, K_II])

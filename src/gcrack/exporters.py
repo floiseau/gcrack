@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 import csv
 
@@ -31,7 +30,7 @@ def export_dict_to_csv(data, filename):
         for i in range(max_length):
             row = [data[key][i] if i < len(data[key]) else None for key in data.keys()]
             writer.writerow(row)
-    logging.info("Created results.csv.")
+    print("Created results.csv.")
 
 
 def export_function(u: fem.Function, t: int, dir_path: Path):
@@ -94,4 +93,4 @@ def clean_vtk_files(res_dir: Path):
     with combined_pvd_path.open("w") as file:
         file.write(pvd_content)
 
-    logging.info(f"Created displacement.pvd with {len(pvtu_files)} timesteps.")
+    print(f"Created displacement.pvd with {len(pvtu_files)} timesteps.")

@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import sympy as sp
 from scipy.optimize import differential_evolution
@@ -84,7 +82,7 @@ def residual(x, model, K, gc_expr, phi0):
 
 
 def compute_load_factor(phi0: float, model, K, gc_expr):
-    logging.info("-- Determination of propagation angle and load factor")
+    print("-- Determination of propagation angle and load factor")
     # Define phi as a SymPy symbol
     phi = sp.Symbol("phi")
     # Get the SIFs (star)
