@@ -95,6 +95,7 @@ def gcrack(gcrack_data: GCrackBaseData):
     crack_points = [gcrack_data.xc0]
     # Store the results (TODO: Change the initialization to be more generic)
     res = {
+        "a": [0],
         "phi": [0],
         "lambda": [0],
         "xc_1": [crack_points[0][0]],
@@ -164,6 +165,7 @@ def gcrack(gcrack_data: GCrackBaseData):
         # Export the elastic solution
         export_function(u_scaled, t, dir_name)
         # Store the results
+        res["a"].append(res["a"][-1] + gcrack_data.da)
         res["phi"].append(phi_)
         res["lambda"].append(lambda_)
         res["xc_1"].append(xc_new[0])
