@@ -61,7 +61,18 @@ class GCrackBaseData(ABC):
         Returns:
             List[fem.DirichletBC]: A list of Dirichlet boundary conditions.
         """
-        pass
+        return []
+
+    @abstractmethod
+    def define_imposed_forces(self):
+        """
+        Define the list of imposed forces.
+        Each element of the list is a tuple.
+
+        Returns:
+            tuple:  with (id, value) where id is the boundary condition id (number) in GMSH, and value if the force vector.
+        """
+        return []
 
     @abstractmethod
     def locate_reaction_forces(self, x) -> bool:

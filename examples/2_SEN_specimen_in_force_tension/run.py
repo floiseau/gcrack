@@ -2,13 +2,14 @@ import sys
 
 sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import sympy as sp
 
 import gmsh
 from dolfinx import fem
+import ufl
 
 from gcrack import GCrackBaseData, gcrack
 
@@ -132,22 +133,20 @@ class GCrackData(GCrackBaseData):
         locked_dofs = fem.locate_dofs_geometrical(V_u, on_locked_point)
         locked_bc = fem.dirichletbc(np.array([0.0, 0.0]), locked_dofs, V_u)
 
-        # Define function to locate the imposed displacement boundary (y = L)
-        def on_uimp_boundary(x):
-            return np.isclose(x[1], self.pars["L"])
-
-        # Define imposed displacement boundary condition for the y-component
-        comp = 1
-        uimp_dofs = fem.locate_dofs_geometrical(
-            (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_uimp_boundary
-        )
-        uimp_func = fem.Function(V_u.sub(comp).collapse()[0])
-        with uimp_func.vector.localForm() as bc_local:
-            bc_local.set(1.0)
-        uimp_bc = fem.dirichletbc(uimp_func, uimp_dofs, V_u)
-
         # Return the list of Dirichlet boundary conditions
-        return [bot_bc, locked_bc, uimp_bc]
+        return [bot_bc, locked_bc]
+
+    def define_imposed_forces(
+        self,
+    ) -> List[Tuple[int, ufl.tensors.ComponentTensor]]:
+        """
+        Define the list of imposed forces.
+        Each element of the list is a tuple.
+
+        Returns:
+            tuple:  with (id, value) where id is the boundary condition id (number) in GMSH, and value if the force vector.
+        """
+        return [(12, ufl.as_vector([1.0, 0.0]))]
 
     def locate_reaction_forces(self, x):
         """Determine if a point is on the reaction boundary (i.e., where the reaction forces are measured).
