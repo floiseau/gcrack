@@ -5,7 +5,7 @@ from models import ElasticModel
 
 import ufl
 import dolfinx
-from dolfinx import fem, default_scalar_type
+from dolfinx import fem
 from dolfinx.fem.petsc import LinearProblem
 
 
@@ -71,7 +71,8 @@ def compute_external_work(
     # Get imposed forces
     imposed_forces = gcrack_data.define_imposed_forces()
     # Initialize the external work
-    external_work = 0.0
+    f = fem.Constant(domain.mesh, [0.0, 0.0])
+    external_work = ufl.dot(f, v) * ufl.dx
     # Iterate through the forces
     for id, T_imp in imposed_forces:
         # Define the integrand

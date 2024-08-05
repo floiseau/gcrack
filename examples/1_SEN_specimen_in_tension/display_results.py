@@ -43,8 +43,8 @@ plt.plot(
     data["lambda"] * data["fimp_2"] * B,
     marker="x",
 )
-plt.xlabel("Load step")
-plt.ylabel("Load factor")
+plt.xlabel("Displacement [m]")
+plt.ylabel("Force [N]")
 plt.grid()
 
 # Show the figures
