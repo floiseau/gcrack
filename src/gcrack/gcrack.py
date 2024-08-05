@@ -50,31 +50,6 @@ class GCrackBaseData(ABC):
         pass
 
     @abstractmethod
-    def define_imposed_displacements(
-        self, V_u: fem.FunctionSpace
-    ) -> List[fem.DirichletBC]:
-        """Define the imposed displacement boundary conditions.
-
-        Args:
-            V_u (fem.FunctionSpace): The function space for the displacement field.
-
-        Returns:
-            List[fem.DirichletBC]: A list of Dirichlet boundary conditions.
-        """
-        return []
-
-    @abstractmethod
-    def define_imposed_forces(self):
-        """
-        Define the list of imposed forces.
-        Each element of the list is a tuple.
-
-        Returns:
-            tuple:  with (id, value) where id is the boundary condition id (number) in GMSH, and value if the force vector.
-        """
-        return []
-
-    @abstractmethod
     def locate_reaction_forces(self, x) -> bool:
         """Determine if a point is on the reaction boundary (i.e., where the reaction forces are measured).
 
@@ -89,6 +64,29 @@ class GCrackBaseData(ABC):
     @abstractmethod
     def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
         pass
+
+    def define_imposed_displacements(
+        self, V_u: fem.FunctionSpace
+    ) -> List[fem.DirichletBC]:
+        """Define the imposed displacement boundary conditions.
+
+        Args:
+            V_u (fem.FunctionSpace): The function space for the displacement field.
+
+        Returns:
+            List[fem.DirichletBC]: A list of Dirichlet boundary conditions.
+        """
+        return []
+
+    def define_imposed_forces(self):
+        """
+        Define the list of imposed forces.
+        Each element of the list is a tuple.
+
+        Returns:
+            tuple:  with (id, value) where id is the boundary condition id (number) in GMSH, and value if the force vector.
+        """
+        return []
 
 
 def gcrack(gcrack_data: GCrackBaseData):
