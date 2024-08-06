@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import sympy as sp
@@ -78,14 +78,19 @@ class GCrackData(GCrackBaseData):
         cl2: int = gmsh.model.geo.addCurveLoop([l6, l7, l3] + crack_lines_top + [l9])
         s2: int = gmsh.model.geo.addPlaneSurface([cl2])
 
+        # Boundaries
+        self.boundaries = {
+            "bot": 11,
+            "top": 12,
+        }
         # Physical groups
         # Domain
         domain: int = gmsh.model.addPhysicalGroup(2, [s1, s2], tag=21)
         gmsh.model.setPhysicalName(2, domain, "domain")
         # Boundaries
-        bot: int = gmsh.model.addPhysicalGroup(1, [l1], tag=11)
+        bot: int = gmsh.model.addPhysicalGroup(1, [l1], tag=self.boundaries["bot"])
         gmsh.model.setPhysicalName(1, bot, "bot")
-        top: int = gmsh.model.addPhysicalGroup(1, [l6], tag=12)
+        top: int = gmsh.model.addPhysicalGroup(1, [l6], tag=self.boundaries["top"])
         gmsh.model.setPhysicalName(1, top, "top")
 
         # Element size
@@ -106,59 +111,42 @@ class GCrackData(GCrackBaseData):
         # Return the model
         return gmsh.model()
 
-    def define_imposed_displacements(
-        self, V_u: fem.FunctionSpace
-    ) -> List[fem.DirichletBC]:
-        # Define function to locate the bottom boundary (y = 0)
-        def on_bot_boundary(x):
-            return np.isclose(x[1], 0)
-
-        # Define bottom boundary condition for the y-component
-        comp = 1
-        bot_dofs = fem.locate_dofs_geometrical(
-            (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_bot_boundary
-        )
-        u0_func = fem.Function(V_u.sub(comp).collapse()[0])
-        with u0_func.vector.localForm() as bc_local:
-            bc_local.set(0.0)
-        bot_bc = fem.dirichletbc(u0_func, bot_dofs, V_u)
-
-        # Define function to locate the locked point (x = 0, y = 0)
-        def on_locked_point(x):
-            return np.logical_and(np.isclose(x[0], 0), np.isclose(x[1], 0))
-
-        # Define locked point boundary condition for the x and y components
-        comp = 0
-        locked_dofs = fem.locate_dofs_geometrical(V_u, on_locked_point)
-        locked_bc = fem.dirichletbc(np.array([0.0, 0.0]), locked_dofs, V_u)
-
-        # Define function to locate the imposed displacement boundary (y = L)
-        def on_uimp_boundary(x):
-            return np.isclose(x[1], self.pars["L"])
-
-        # Define imposed displacement boundary condition for the y-component
-        comp = 1
-        uimp_dofs = fem.locate_dofs_geometrical(
-            (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_uimp_boundary
-        )
-        uimp_func = fem.Function(V_u.sub(comp).collapse()[0])
-        with uimp_func.vector.localForm() as bc_local:
-            bc_local.set(1.0)
-        uimp_bc = fem.dirichletbc(uimp_func, uimp_dofs, V_u)
-
-        # Return the list of Dirichlet boundary conditions
-        return [bot_bc, locked_bc, uimp_bc]
-
-    def locate_reaction_forces(self, x):
-        """Determine if a point is on the reaction boundary (i.e., where the reaction forces are measured).
-
-        Args:
-            x (array-like): Coordinates of the point.
+    def locate_measured_displacement(self) -> List[float]:
+        """Define the point where the displacement is measured.
 
         Returns:
-            bool: True if the point is on the reaction boundary, False otherwise.
+            List: Coordinate of the point where the displacement is measured
         """
-        return np.isclose(x[1], self.pars["L"])
+        return [self.pars["L"], 0]
+
+    def locate_measured_forces(self) -> int:
+        """Define the boundary where the reaction force are measured.
+
+        Returns:
+            int: Identifier (id) of the boundary in GMSH.
+        """
+        return self.boundaries["top"]
+
+    def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
+        """Define the imposed displacement boundary conditions.
+
+        Returns:
+            Tuple: with (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
+        """
+        return [
+            (self.boundaries["bot"], [float("nan"), 0]),
+            (self.boundaries["top"], [float("nan"), 1]),
+        ]
+
+    def define_locked_points(self) -> List[List[float]]:
+        """Define the list of locked points.
+
+        Returns:
+            List[List[float]]: A list of points (list) coordinates.
+        """
+        return [
+            [0, 0, 0],
+        ]
 
     def Gc(self, phi):
         # Get the parameters

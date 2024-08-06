@@ -59,11 +59,16 @@ class GCrackBaseData(ABC):
     def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
         pass
 
+    def define_locked_points(self) -> List[List[float]]:
+        """Define the list of locked points.
+
+        Returns:
+            List[List[float]]: A list of points (list) coordinates.
+        """
+        return []
+
     def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
         """Define the imposed displacement boundary conditions.
-
-        Args:
-            V_u (fem.FunctionSpace): The function space for the displacement field.
 
         Returns:
             Tuple: with (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).

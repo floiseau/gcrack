@@ -3,6 +3,8 @@ from math import isnan
 from domain import Domain
 from models import ElasticModel
 
+import numpy as np
+
 import ufl
 import dolfinx
 from dolfinx import fem
@@ -92,6 +94,19 @@ def get_dirichlet_boundary_conditions(
             bc = fem.dirichletbc(bc_func, boundary_dof, V_u)
             # Add the boundary conditions to the list
             bcs.append(bc)
+
+    # Add the locked points
+    locked_points = gcrack_data.define_locked_points()
+    for p in locked_points:
+        # Define the location function
+        def on_locked_point(x):
+            return np.logical_and(np.isclose(x[0], p[0]), np.isclose(x[1], p[1]))
+
+        # Define locked point boundary condition for the x and y components
+        locked_dofs = fem.locate_dofs_geometrical(V_u, on_locked_point)
+        locked_bc = fem.dirichletbc(np.array([0.0, 0.0]), locked_dofs, V_u)
+        # Append the boundary condition to the list of boundary condition
+        bcs.append(locked_bc)
     return bcs
 
 
