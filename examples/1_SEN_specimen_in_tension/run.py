@@ -8,7 +8,6 @@ import numpy as np
 import sympy as sp
 
 import gmsh
-from dolfinx import fem
 
 from gcrack import GCrackBaseData, gcrack
 
@@ -131,7 +130,7 @@ class GCrackData(GCrackBaseData):
         """Define the imposed displacement boundary conditions.
 
         Returns:
-            Tuple: with (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
+            List: with (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
         """
         return [
             (self.boundaries["bot"], [float("nan"), 0]),

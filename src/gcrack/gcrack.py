@@ -71,7 +71,7 @@ class GCrackBaseData(ABC):
         """Define the imposed displacement boundary conditions.
 
         Returns:
-            Tuple: with (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
+            List[Tuple[int, List[float]]]: List of tuple (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
         """
         return []
 
