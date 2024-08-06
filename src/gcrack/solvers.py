@@ -1,3 +1,5 @@
+from math import isnan
+
 from domain import Domain
 from models import ElasticModel
 
@@ -19,7 +21,7 @@ def solve_elastic_problem(
     V_u = fem.functionspace(domain.mesh, ("Lagrange", 1, shape_u))
 
     # Define the boundary conditions
-    bcs = gcrack_data.define_imposed_displacements(V_u)
+    bcs = get_dirichlet_boundary_conditions(domain, V_u, gcrack_data)
 
     # Define the variational formulation
     u = ufl.TrialFunction(V_u)
@@ -43,6 +45,54 @@ def solve_elastic_problem(
         },
     )
     return problem.solve()
+
+
+def get_dirichlet_boundary_conditions(
+    domain: Domain, V_u: dolfinx.fem.FunctionSpace, gcrack_data
+):
+    # Get the dimensions
+    dim = domain.mesh.geometry.dim
+    fdim = dim - 1
+    # Get the boundary condition definitions
+    bc_defs = gcrack_data.define_imposed_displacements()
+    # Get the facets markers
+    facet_markers = domain.facet_markers
+    # Get the facets indices
+    boundary_facets = {
+        facet_value: facet_markers.indices[facet_markers.values == facet_value]
+        for facet_name, facet_value in gcrack_data.boundaries.items()
+    }
+    # Get boundary dofs (per comp)
+    boundary_dofs = {
+        f"{facet_id}_{comp}": fem.locate_dofs_topological(
+            (V_u.sub(comp), V_u.sub(comp).collapse()[0]),
+            fdim,
+            boundary_facet,
+        )
+        for comp in range(dim)
+        for facet_id, boundary_facet in boundary_facets.items()
+    }
+    # Create variables to store bcs and loading functions
+    bcs = []
+    # Iterage through the displacement loadings
+    for facet_id, u_imp in bc_defs:
+        # Iterate through the axis
+        for comp in range(dim):
+            # Check if the DOF is imposed
+            if isnan(u_imp[comp]):
+                continue
+            # Define an FEM function (to control the BC)
+            bc_func = fem.Function(V_u.sub(comp).collapse()[0])
+            # Update the load
+            with bc_func.vector.localForm() as bc_local:
+                bc_local.set(u_imp[comp])
+            # Get the DOFs
+            boundary_dof = boundary_dofs[f"{facet_id}_{comp}"]
+            # Create the Dirichlet boundary condition
+            bc = fem.dirichletbc(bc_func, boundary_dof, V_u)
+            # Add the boundary conditions to the list
+            bcs.append(bc)
+    return bcs
 
 
 def compute_external_work(
@@ -80,8 +130,9 @@ def compute_external_work(
             subdomain_data=domain.facet_markers,
             subdomain_id=id,
         )
+        T = ufl.as_vector(T_imp)
         # Add the contribution to the external work
-        external_work += ufl.dot(T_imp, v) * ds
+        external_work += ufl.dot(T, v) * ds
     return external_work
 
     #

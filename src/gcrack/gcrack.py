@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Tuple, Optional
 from datetime import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -7,15 +7,13 @@ from dataclasses import dataclass
 import gmsh
 import numpy as np
 
-from dolfinx import fem
-
 from domain import Domain
 from models import ElasticModel
 
 from solvers import solve_elastic_problem
 from sif import compute_SIFs
 from optimization_solvers import compute_load_factor
-from postprocess import compute_reaction_forces
+from postprocess import compute_measured_forces, compute_measured_displacement
 from exporters import export_function, export_dict_to_csv, clean_vtk_files
 
 
@@ -27,7 +25,8 @@ class GCrackBaseData(ABC):
     Nt: int
     xc0: np.array
     assumption_2D: str
-    pars: dict
+    pars: dict  # User defined parameters (passed to user-defined functions)
+    phi0: Optional[float] = 0
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -39,14 +38,20 @@ class GCrackBaseData(ABC):
         pass
 
     @abstractmethod
-    def locate_reaction_forces(self, x) -> bool:
-        """Determine if a point is on the reaction boundary (i.e., where the reaction forces are measured).
-
-        Args:
-            x (array-like): Coordinates of the point.
+    def locate_measured_displacement(self) -> List[float]:
+        """Define the point where the displacement is measured.
 
         Returns:
-            bool: True if the point is on the reaction boundary, False otherwise.
+            List: Coordinate of the point where the displacement is measured
+        """
+        pass
+
+    @abstractmethod
+    def locate_measured_forces(self) -> int:
+        """Define the boundary where the reaction force are measured.
+
+        Returns:
+            int: Identifier (id) of the boundary in GMSH.
         """
         pass
 
@@ -54,26 +59,24 @@ class GCrackBaseData(ABC):
     def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
         pass
 
-    def define_imposed_displacements(
-        self, V_u: fem.FunctionSpace
-    ) -> List[fem.DirichletBC]:
+    def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
         """Define the imposed displacement boundary conditions.
 
         Args:
             V_u (fem.FunctionSpace): The function space for the displacement field.
 
         Returns:
-            List[fem.DirichletBC]: A list of Dirichlet boundary conditions.
+            Tuple: with (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
         """
         return []
 
-    def define_imposed_forces(self):
+    def define_imposed_forces(self) -> List[Tuple[int, List[float]]]:
         """
         Define the list of imposed forces.
         Each element of the list is a tuple.
 
         Returns:
-            tuple:  with (id, value) where id is the boundary condition id (number) in GMSH, and value if the force vector.
+            Tuple:  with (id, value) where id is the boundary id (int number) in GMSH, and value is the force vector.
         """
         return []
 
@@ -94,7 +97,7 @@ def gcrack(gcrack_data: GCrackBaseData):
     # Store the results (TODO: Change the initialization to be more generic)
     res = {
         "a": [0],
-        "phi": [0],
+        "phi": [gcrack_data.phi0],
         "lambda": [0],
         "xc_1": [crack_points[0][0]],
         "xc_2": [crack_points[0][1]],
@@ -145,15 +148,14 @@ def gcrack(gcrack_data: GCrackBaseData):
         crack_points.append(xc_new)
 
         print("-- Results of the step")
-        print(
-            f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°"
-        )
+        print(f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°")
         print(f"Load factor             : {lambda_:.3g}")
         print(f"New crack tip position  : {xc_new}")
 
         print("-- Postprocess")
         # Compute the reaction force
-        fimp = compute_reaction_forces(domain, model, u, gcrack_data)
+        fimp = compute_measured_forces(domain, model, u, gcrack_data)
+        uimp = compute_measured_displacement(domain, u, gcrack_data)
         # Scale the displacement field
         u_scaled = u.copy()
         u_scaled.x.array[:] = lambda_ * u_scaled.x.array
@@ -169,8 +171,8 @@ def gcrack(gcrack_data: GCrackBaseData):
         res["xc_1"].append(xc_new[0])
         res["xc_2"].append(xc_new[1])
         res["xc_3"].append(xc_new[2])
-        res["uimp_1"].append(0.0)
-        res["uimp_2"].append(1.0)
+        res["uimp_1"].append(uimp[0])
+        res["uimp_2"].append(uimp[1])
         res["fimp_1"].append(fimp[0])
         res["fimp_2"].append(fimp[1])
     print("-- Finalize the exports")

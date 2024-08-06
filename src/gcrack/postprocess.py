@@ -1,16 +1,16 @@
 import numpy as np
 
 import ufl
-from dolfinx import mesh, fem
+from dolfinx import geometry, fem
 
 from domain import Domain
 from models import ElasticModel
 
 
-def compute_reaction_forces(
+def compute_measured_forces(
     domain: Domain, model: ElasticModel, uh: fem.Function, gcrack_data
 ) -> np.array:
-    """Compute the reaction forces of the domain.
+    """Compute the measured forces.
 
     Args:
         domain (Domain): The domain of the problem.
@@ -24,20 +24,14 @@ def compute_reaction_forces(
     dim: int = domain.dim
     # Get the normal to the boundary
     n: ufl.FacetNormal = ufl.FacetNormal(domain.mesh)
-
-    # Locate the entities on the top boundary
-    top_facets = mesh.locate_entities(
-        domain.mesh, dim - 1, gcrack_data.locate_reaction_forces
-    )
-    markers = np.full_like(top_facets, 1, dtype=np.int32)
-    facet_tags = mesh.meshtags(domain.mesh, dim - 1, top_facets, markers)
-
+    # Get the boundary id
+    boundary_id = gcrack_data.locate_measured_forces()
     # Get the integrand over the boundary
     ds = ufl.Measure(
         "ds",
         domain=domain.mesh,
-        subdomain_data=facet_tags,
-        subdomain_id=1,
+        subdomain_data=domain.facet_markers,
+        subdomain_id=boundary_id,
     )
     # Initialize the force array
     f = np.empty((2,))
@@ -54,3 +48,34 @@ def compute_reaction_forces(
         f[comp] = fem.assemble_scalar(form)
 
     return f
+
+
+def compute_measured_displacement(
+    domain: Domain, uh: fem.Function, gcrack_data
+) -> np.array:
+    """Compute the displacement at the specified point.
+
+    Args:
+        domain (Domain): The domain of the problem.
+        uh (Function): The displacement solution of the elastic problem.
+
+    Returns:
+        np.array: The computed displacement as a numpy array.
+    """
+    # Get the mesh
+    mesh = domain.mesh
+    # Get the position of the measurement
+    x = gcrack_data.locate_measured_displacement()
+    if len(x) == 2:
+        x.append(0)
+    # Generate the bounding box tree
+    tree = geometry.bb_tree(mesh, mesh.topology.dim)
+    # Find cells whose bounding-box collide with the points
+    cell_candidates = geometry.compute_collisions_points(tree, x)
+    # For each points, choose one of the cells that contains the point
+    colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, x)
+    cell = colliding_cells[0]
+    # Compute the measured displacement
+    u_meas = uh.eval([x], cell)
+    # Initialize the probes values
+    return u_meas
