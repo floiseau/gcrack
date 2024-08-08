@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 B = 5e-3
 
 # Directories to read
-set_ids = [i + 1 for i in range(2)]
+set_ids = [i + 1 for i in range(5)]
 set_dirs = [Path(f"set_{i}") for i in set_ids]
 
 # Read the CSV files

@@ -227,6 +227,6 @@ if __name__ == "__main__":
         xc0=xc0,
         assumption_2D="plane_stress",
         pars=pars,
-        phi0=np.deg2rad(pars["beta"]),
+        phi0=angle_rad,
     )
     gcrack(gcrack_data)

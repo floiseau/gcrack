@@ -50,7 +50,8 @@ The force-displacement curve is also plotted.
 Yet it is complicated to analyze.
 The main comparison point is the crack path, which is the 3rd displayed figure.
 It can be observed that the set of boundary conditions 3, 4, and 5 lead to incorrect crack path.
-The sets 1 and 2 leads to more reasonable results that compares well with numerical results of Ayatollahi et al. (2006).
+The set 2, while giving more reseonable results, is still far from the experimental results.
+The set 1 leads to more accurate results that compares well with numerical results of Ayatollahi et al. (2006).
 However, a small discrepancy with the experimental results is observed.
 
 Those results seems to be sufficient to partially validate this code.
