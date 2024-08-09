@@ -98,7 +98,7 @@ def compute_load_factor(phi0: float, model, K, gc_expr):
     obj_symb = obj_symb.subs({"phi0": phi0})
     obj_func = sp.lambdify(phi, obj_symb, "numpy")
     # Perform the minimization
-    optimization_type = "global" # "global" or "local"
+    optimization_type = "global"  # "global" or "local"
     match optimization_type:
         case "local":
             res = minimize(obj_func, x0=[phi0])
