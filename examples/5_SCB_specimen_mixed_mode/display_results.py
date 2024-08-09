@@ -69,6 +69,7 @@ for id, df in zip(set_ids, set_dfs):
     plt.plot(df["xc_1"], df["xc_2"], marker=".", label=f"Set {id}")
 plt.xlabel("$x$-coordinate (m)")
 plt.ylabel("$y$-coordinate (m)")
+plt.axis('equal')
 plt.legend()
 plt.grid()
 
