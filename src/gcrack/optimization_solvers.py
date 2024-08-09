@@ -1,6 +1,6 @@
 import numpy as np
 import sympy as sp
-from scipy.optimize import differential_evolution
+from scipy.optimize import differential_evolution, minimize
 
 # NOTE https://www.google.com/search?q=polynomial+fractional+optimization&sca_esv=eec4b8c5dff95975&sca_upv=1&hl=en&ei=9PcPZuWeG7SNkdUPp4arkAE&ved=0ahUKEwjl6PbJkquFAxW0RqQEHSfDChIQ4dUDCBA&uact=5&oq=polynomial+fractional+optimization&gs_lp=Egxnd3Mtd2l6LXNlcnAiInBvbHlub21pYWwgZnJhY3Rpb25hbCBvcHRpbWl6YXRpb24yCBAAGIAEGKIEMggQABiABBiiBDIIEAAYgAQYogRIxAhQmARYjQVwAXgAkAEAmAFfoAHUAaoBATO4AQPIAQD4AQGYAgOgAqcBwgIOEAAYgAQYigUYhgMYsAPCAgsQABiABBiiBBiwA5gDAIgGAZAGBpIHATOgB-UJ&sclient=gws-wiz-serp
 
@@ -98,8 +98,13 @@ def compute_load_factor(phi0: float, model, K, gc_expr):
     obj_symb = obj_symb.subs({"phi0": phi0})
     obj_func = sp.lambdify(phi, obj_symb, "numpy")
     # Perform the minimization
-    bounds = (phi0 - np.pi / 2, phi0 + np.pi / 2)
-    res = differential_evolution(obj_func, [bounds])
+    optimization_type = "global" # "global" or "local"
+    match optimization_type:
+        case "local":
+            res = minimize(obj_func, x0=[phi0])
+        case "global":
+            bounds = (phi0 - np.pi / 2, phi0 + np.pi / 2)
+            res = differential_evolution(obj_func, [bounds])
     phi_val = res.x[0]
     # Compute the load factor
     load_factor = np.sqrt(obj_func(phi_val))
