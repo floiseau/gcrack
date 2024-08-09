@@ -129,11 +129,13 @@ def compute_SIFs(
     # Get the theta field
     theta_field = compute_theta_field(domain, xc, R_int, R_ext)
     theta = ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)]) * theta_field
-    # DEBUG
+    # # DEBUG
+    # from dolfinx import io
     # new_file = io.VTKFile(theta_field.function_space.mesh.comm, "theta.pvd", "w")
     # new_file.write_function(theta_field, 0)
     # new_file.close()
-    # END DEBUG
+    # input("Press enter to continue.")
+    # # END DEBUG
     # Compute auxialiary displacement fields
     u_I_aux = compute_auxiliary_displacement_field(
         domain, model, xc, phi0, K_I_aux=1, K_II_aux=0
@@ -141,6 +143,18 @@ def compute_SIFs(
     u_II_aux = compute_auxiliary_displacement_field(
         domain, model, xc, phi0, K_I_aux=0, K_II_aux=1
     )
+
+    # # DEBUG
+    # from dolfinx import io
+    # V = u.function_space
+    # uIaux = fem.Function(V, dtype=default_scalar_type)
+    # uIaux.interpolate(fem.Expression(u_I_aux,V.element.interpolation_points()))
+    # vtkfile = io.VTKFile(V.mesh.comm, "u_I_aux.pvd", "w")
+    # vtkfile.write_function(uIaux, 0)
+    # vtkfile.close()
+    # input("Press enter to continue.")
+    # # END DEBUG
+
     # Compute the I-integrals
     I_I = compute_I_integral(domain, model, u, u_I_aux, theta)
     I_II = compute_I_integral(domain, model, u, u_II_aux, theta)
