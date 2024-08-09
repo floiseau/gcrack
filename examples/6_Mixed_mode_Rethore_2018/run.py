@@ -149,6 +149,21 @@ class GCrackData(GCrackBaseData):
 
     def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
         return [(self.boundaries["left"], [0, 0]), (self.boundaries["right"], [-1, 0])]
+        # return [
+        #     (self.boundaries["left"], [0, 0]),
+        #     (self.boundaries["right"], [-1, -0.1]),
+        # ]
+        # return [(self.boundaries["left"], [0, 0]), (self.boundaries["right"], [-1, float("nan")])]
+        # return [(self.boundaries["left"], [0, float("nan")]), (self.boundaries["right"], [-1, float("nan")])]
+        # return [(self.boundaries["left"], [0, 0])]
+
+    # def define_imposed_forces(self) -> List[Tuple[int, List[float]]]:
+    #     return [(self.boundaries["right"], [-1, 0])]
+
+    # def define_locked_points(self) -> List[List[float]]:
+    #     return [
+    #         [0, self.pars["H"]/2],
+    #     ]
 
     def locate_measured_forces(self) -> int:
         """Define the boundary where the reaction force are measured.
@@ -192,13 +207,13 @@ if __name__ == "__main__":
     )
 
     gcrack_data = GCrackData(
-        E=3.2e9,
-        nu=0.38,
-        da=pars["W"] / 256,
-        Nt=100,
+        E=5e9,
+        nu=0.32,
+        da=pars["W"] / 512,
+        Nt=20,
         xc0=xc0,
-        assumption_2D="plane_stress",
+        assumption_2D="plane_strain",
         pars=pars,
-        phi0=np.deg2rad(pars["beta"]),
+        phi0=angle,
     )
     gcrack(gcrack_data)

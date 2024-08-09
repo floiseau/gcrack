@@ -26,13 +26,8 @@ Once the simulation is run, the results can be shown using the command `make dis
 
 ## Observations
 
-We observe that the simulated crack is similar to the experimental one.
-However, a kind of offset is observed.
-Different causes are possible:
-
-- The numerical boundary conditions does not match the experimental ones (contact) .
-- The crack increment $\Delta a$ (`da` in the code) is to large.
-- Another criterion should be used.
+We observe that the simulated crack is completely false.
+The cause is most likely that the contact between the pre-crack lips is not accounted for.
 
 ## References
 
