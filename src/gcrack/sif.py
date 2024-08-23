@@ -1,10 +1,13 @@
 import numpy as np
 
 import ufl
+import dolfinx
 from dolfinx import fem, default_scalar_type
 
 from domain import Domain
 from models import ElasticModel
+from utils.geometry import distance_point_to_segment
+from utils.williams_series import Gamma_I, Gamma_II
 
 
 def compute_theta_field(domain, crack_tip, R_int, R_ext):
@@ -59,12 +62,7 @@ def compute_auxiliary_displacement_field(
     # Get the elastic parameters
     mu = model.mu
     # Get kappa
-    nu = model.nu
-    match model.assumption:
-        case "plane_stress":
-            ka = (3 - nu) / (1 + nu)
-        case "plane_strain":
-            ka = 3 - 4 * nu
+    ka = model.ka
     # Compute the functions f
     f_I, f_II = [0, 0], [0, 0]
     f_I[0] = (ka - 1 + 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
@@ -116,7 +114,7 @@ def compute_I_integral(
     return fem.assemble_scalar(fem.form(I_expr))
 
 
-def compute_SIFs(
+def compute_SIFs_with_I_integral(
     domain: Domain,
     model: ElasticModel,
     u: fem.Function,
@@ -125,7 +123,6 @@ def compute_SIFs(
     R_int: float,
     R_ext: float,
 ):
-    print("-- Calculation of the SIFs")
     # Get the theta field
     theta_field = compute_theta_field(domain, xc, R_int, R_ext)
     theta = ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)]) * theta_field
@@ -161,8 +158,166 @@ def compute_SIFs(
     # Compute the SIF vector
     K_I = model.Ep / 2 * I_I
     K_II = model.Ep / 2 * I_II
-    # Display informations
-    print(f"K_I  : {K_I:.3g}")
-    print(f"K_II : {K_II:.3g}")
     # Return SIF array
     return np.array([K_I, K_II])
+
+
+def compute_SIFs_from_William_series_interpolation(
+    domain: Domain,
+    model: ElasticModel,
+    u: fem.Function,
+    xc: np.ndarray,
+    phi0: float,
+    R_int: float,
+    R_ext: float,
+):
+    ### Extract x and u in the pacman from the FEM results
+    def in_pacman(x):
+        xc1 = np.array(xc)
+        # Center coordinate on crack tip
+        dx = x - xc1[:, np.newaxis]
+        # Compute the distance to crack tip
+        r = np.linalg.norm(dx, axis=0)
+        # Keep the elements in the external radius
+        in_pacman = r < R_ext
+        # Remove the nodes that are too close to crack line
+        xc2 = xc1 + R_ext * np.array([np.cos(np.pi + phi0), np.sin(np.pi + phi0), 0])
+        far_from_crack = distance_point_to_segment(x, xc1, xc2) > R_int
+        return np.logical_and(in_pacman, far_from_crack)
+
+    # Get the entity ids
+    entities_ids = dolfinx.mesh.locate_entities(domain.mesh, 2, in_pacman)
+    # Get the dof of each element
+    dof_ids = dolfinx.mesh.entities_to_geometry(domain.mesh, 2, entities_ids)
+    # Generate the list of nodes (without any duplicated nodes)
+    dof_unique_ids = np.unique(dof_ids.flatten())
+    # Get the node coordinates (and set the crack tip as the origin)
+    xs = domain.mesh.geometry.x[dof_unique_ids] - np.array(xc)[np.newaxis, :]
+
+    # Get the displacement values
+    us = np.empty((xs.shape[0], 2))
+    us[:, 0] = u.x.array[2 * dof_unique_ids]
+    us[:, 1] = u.x.array[2 * dof_unique_ids + 1]
+    # Find crack tip element
+    xs_all = domain.mesh.geometry.x - xc
+    crack_tip_id = np.argmin(np.linalg.norm(xs_all, axis=1))
+    # Remove crack tip motion
+    us[:, 0] -= u.x.array[2 * crack_tip_id]
+    us[:, 1] -= u.x.array[2 * crack_tip_id + 1]
+
+    # # DEBUG Check the Williams series displacement fields
+    # # Compute the theoretical displacement fields
+    # K_I = 4e11 # 1e9
+    # K_II = 0
+    # zs = (xs[:, 0] + 1j * xs[:, 1]) * np.exp(-1j*phi0)
+    # us_comp = K_I * Gamma_I(1, zs, model.mu, model.ka) + K_II * Gamma_II(
+    #     1, zs, model.mu, model.ka
+    # )
+    # us_comp *= np.exp(1j*phi0)
+    # us_williams = np.empty(us.shape)
+    # us_williams[:, 0] = np.real(us_comp)
+    # us_williams[:, 1] = np.imag(us_comp)
+
+    # s = 0.01  # scale factor
+    # plt.figure()
+    # plt.scatter(xs[:, 0], xs[:, 1], marker=".", label="Initial pos")
+    # plt.scatter(xs[:, 0] + s * us_williams[:, 0], xs[:, 1] + s * us_williams[:, 1], marker="s", label="Williams")
+    # plt.scatter(xs[:, 0] + s * us[:, 0], xs[:, 1] + s * us[:, 1], marker="s", label="FEM")
+    # plt.grid()
+    # plt.legend()
+    # plt.show()
+
+    # Define the Williams series field
+    N_min = -3
+    N_max = 9
+
+    # Get the complex coordinates around crack tip
+    zs = xs[:, 0] + 1j * xs[:, 1]
+    zs *= np.exp(-1j * phi0)
+    # Compute the sizes
+    Nn = us.shape[0]  # Number of nodes
+    Ndof = us.shape[0] * us.shape[1]  # Number of dof
+    xaxis = np.array([2 * n for n in range(Nn)])  # Mask to isolate x axis
+    yaxis = np.array([2 * n + 1 for n in range(Nn)])  # Mask to isolate y axis
+    # Get the displacement vector (from FEM)
+    UF = us.flatten()
+    # Get the Gamma matrix
+    Gamma = np.empty((Ndof, 2 * (N_max - N_min + 1)))
+    for i, n in enumerate(range(N_min, N_max + 1)):
+        GI = Gamma_I(n, zs, model.mu, model.ka)
+        GII = Gamma_II(n, zs, model.mu, model.ka)
+        Gamma[xaxis, 2 * i] = np.real(GI)
+        Gamma[yaxis, 2 * i] = np.imag(GI)
+        Gamma[xaxis, 2 * i + 1] = np.real(GII)
+        Gamma[yaxis, 2 * i + 1] = np.imag(GII)
+    # Define the linear system
+    GT_G = np.matmul(Gamma.T, Gamma)
+    GT_UF = np.matmul(Gamma.T, UF)
+    # Solve the linear system
+    sol = np.linalg.solve(GT_G, GT_UF)
+    # Extract KI and KII
+    KI = sol[2 * (1 - N_min)]
+    KII = sol[2 * (1 - N_min) + 1]
+    # Extract KI and KII
+    return np.array([KI, KII])
+
+
+def compute_SIFs(
+    domain: Domain,
+    model: ElasticModel,
+    u: fem.Function,
+    xc: np.ndarray,
+    phi0: float,
+    R_int: float,
+    R_ext: float,
+    method: str,
+):
+    """
+    Computes the Stress Intensity Factors (SIFs) for a given elastic model and
+    displacement field using the specified method.
+
+    Args:
+        domain (Domain): The domain object representing the physical space in
+            which the problem is defined.
+        model (ElasticModel): The elastic model defining the material properties
+            and behavior.
+        u (fem.Function): The displacement field function obtained from the
+            finite element method (FEM) analysis.
+        xc (np.ndarray): A 1D array representing the coordinates of the crack tip.
+        phi0 (float): The angle defining the crack orientation.
+        R_int (float): The internal radius for the contour or region of interest.
+        R_ext (float): The external radius for the contour or region of interest.
+        method (str): The method used for calculating the SIFs. Can be either
+            "i-integral" or "williams".
+
+    Returns:
+        tuple: A tuple containing the calculated Mode I and Mode II Stress
+            Intensity Factors (K_I, K_II).
+    """
+    print(f"-- Calculation of the SIFs ({method})")
+    match method.lower():
+        case "i-integral":
+            res = compute_SIFs_with_I_integral(
+                domain,
+                model,
+                u,
+                xc,
+                phi0,
+                R_int,
+                R_ext,
+            )
+        case "williams":
+            res = compute_SIFs_from_William_series_interpolation(
+                domain,
+                model,
+                u,
+                xc,
+                phi0,
+                R_int,
+                R_ext,
+            )
+
+    # Display informations
+    print(f"K_I  : {res[0]:.3g}")
+    print(f"K_II : {res[1]:.3g}")
+    return res

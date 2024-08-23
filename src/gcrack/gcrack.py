@@ -138,7 +138,7 @@ def gcrack(gcrack_data: GCrackBaseData):
 
         # Compute the energy release rate vector
         K = compute_SIFs(
-            domain, model, u, xc, phi0, gcrack_data.R_int, gcrack_data.R_ext
+            domain, model, u, xc, phi0, gcrack_data.R_int, gcrack_data.R_ext, gcrack_data.sif_method
         )
 
         # Compute the load factor and crack angle.
