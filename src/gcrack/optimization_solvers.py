@@ -1,6 +1,6 @@
 import numpy as np
 import sympy as sp
-from scipy.optimize import differential_evolution, minimize
+from scipy.optimize import minimize
 
 # NOTE https://www.google.com/search?q=polynomial+fractional+optimization&sca_esv=eec4b8c5dff95975&sca_upv=1&hl=en&ei=9PcPZuWeG7SNkdUPp4arkAE&ved=0ahUKEwjl6PbJkquFAxW0RqQEHSfDChIQ4dUDCBA&uact=5&oq=polynomial+fractional+optimization&gs_lp=Egxnd3Mtd2l6LXNlcnAiInBvbHlub21pYWwgZnJhY3Rpb25hbCBvcHRpbWl6YXRpb24yCBAAGIAEGKIEMggQABiABBiiBDIIEAAYgAQYogRIxAhQmARYjQVwAXgAkAEAmAFfoAHUAaoBATO4AQPIAQD4AQGYAgOgAqcBwgIOEAAYgAQYigUYhgMYsAPCAgsQABiABBiiBBiwA5gDAIgGAZAGBpIHATOgB-UJ&sclient=gws-wiz-serp
 
