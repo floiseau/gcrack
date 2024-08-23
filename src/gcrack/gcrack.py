@@ -27,10 +27,11 @@ class GCrackBaseData(ABC):
     assumption_2D: str
     pars: dict  # User defined parameters (passed to user-defined functions)
     phi0: Optional[float] = 0
+    sif_method: Optional[str] = "Williams"
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
-        self.R_int = self.da
+        self.R_int = 1 * self.da
         self.R_ext = 2 * self.da
 
     @abstractmethod
@@ -90,7 +91,9 @@ def gcrack(gcrack_data: GCrackBaseData):
     # Initialize GMSH
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
-    gmsh.option.setNumber("Mesh.Algorithm", 5)  # Use meshadapt algorithm
+    gmsh.option.setNumber(
+        "Mesh.Algorithm", 1
+    )  # 1: meshadapt; 5: delaunay, 6: frontal-delaunay
 
     # Initialize export directory
     now = datetime.now()
@@ -158,13 +161,13 @@ def gcrack(gcrack_data: GCrackBaseData):
         print(f"New crack tip position  : {xc_new}")
 
         print("-- Postprocess")
-        # Compute the reaction force
-        fimp = compute_measured_forces(domain, model, u, gcrack_data)
-        uimp = compute_measured_displacement(domain, u, gcrack_data)
         # Scale the displacement field
         u_scaled = u.copy()
         u_scaled.x.array[:] = lambda_ * u_scaled.x.array
         u.scaled = "Displacement"
+        # Compute the reaction force
+        fimp = compute_measured_forces(domain, model, u_scaled, gcrack_data)
+        uimp = compute_measured_displacement(domain, u_scaled, gcrack_data)
 
         print("-- Export the results")
         # Export the elastic solution

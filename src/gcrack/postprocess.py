@@ -68,14 +68,16 @@ def compute_measured_displacement(
     x = gcrack_data.locate_measured_displacement()
     if len(x) == 2:
         x.append(0)
+    # Store x in an array
+    xs = np.array([x])
     # Generate the bounding box tree
     tree = geometry.bb_tree(mesh, mesh.topology.dim)
     # Find cells whose bounding-box collide with the points
-    cell_candidates = geometry.compute_collisions_points(tree, x)
+    cell_candidates = geometry.compute_collisions_points(tree, xs)
     # For each points, choose one of the cells that contains the point
-    colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, x)
-    cell = colliding_cells[0]
+    colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, xs)
+    cell = colliding_cells.array[0]
     # Compute the measured displacement
-    u_meas = uh.eval([x], cell)
+    u_meas = uh.eval(xs, cell)
     # Initialize the probes values
     return u_meas
