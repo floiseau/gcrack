@@ -63,24 +63,6 @@ F22 = (
 )
 
 
-def residual(x, model, K, gc_expr, phi0):
-    # Get the test direction
-    phi_val = x[0]
-    # Compute the change of direction
-    dphi_val = phi_val - phi0
-    # Get the SIFs (star)
-    KI, KII = K
-    KI_star = F11 * KI + F12 * KII
-    KII_star = F21 * KI + F22 * KII
-    # Compute the G*
-    gs = 1 / model.Ep * (KI_star**2 + KII_star**2)
-    # Get the Gc
-    gc = gc_expr
-    # Get the expression
-    res_symb = sp.sqrt(gc / gs)
-    return float(res_symb.subs({"phi": phi_val, "dphi": dphi_val}))
-
-
 def compute_load_factor(phi0: float, model, K, gc_expr):
     print("-- Determination of propagation angle and load factor")
     # Define phi as a SymPy symbol
@@ -94,18 +76,27 @@ def compute_load_factor(phi0: float, model, K, gc_expr):
     # Get the Gc
     gc = gc_expr(phi)
     # Get the expression
-    obj_symb = gc / gs
+    obj_symb = gc / gs  # sp.sqrt(gc/gs)
+    # obj_symb = gc / gs  # sp.sqrt(gc/gs)
+    # obj_symb = -(gs - gc)
     obj_symb = obj_symb.subs({"phi0": phi0})
     obj_func = sp.lambdify(phi, obj_symb, "numpy")
-    # Perform the minimization
-    optimization_type = "global"  # "global" or "local"
-    match optimization_type:
-        case "local":
-            res = minimize(obj_func, x0=[phi0])
-        case "global":
-            bounds = (phi0 - np.pi / 2, phi0 + np.pi / 2)
-            res = differential_evolution(obj_func, [bounds])
+    # Perform the (local) minimization
+    res = minimize(
+        obj_func,
+        x0=[phi0],
+        tol=1e-12,
+        bounds=[
+            (
+                phi0 - np.pi / 2,
+                phi0 + np.pi / 2,
+            )
+        ],
+    )
     phi_val = res.x[0]
     # Compute the load factor
-    load_factor = np.sqrt(obj_func(phi_val))
+    gs_func = sp.lambdify(phi, gs.subs({"phi0": phi0}), "numpy")
+    gc_func = sp.lambdify(phi, gc.subs({"phi0": phi0}), "numpy")
+    load_factor = np.sqrt(gc_func(phi_val) / gs_func(phi_val))
+    # load_factor = np.sqrt(obj_func(phi_val))
     return phi_val, load_factor
