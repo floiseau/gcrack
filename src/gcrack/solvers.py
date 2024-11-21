@@ -36,14 +36,19 @@ def solve_elastic_problem(
         a,
         L,
         bcs=bcs,
+        # petsc_options={
+        #     "ksp_type": "cg",
+        #     "ksp_rtol": 1e-12,
+        #     "ksp_atol": 1e-12,
+        #     "ksp_max_it": 1000,
+        #     "pc_type": "gamg",
+        #     "pc_gamg_agg_nsmooths": 1,
+        #     "pc_gamg_esteig_ksp_type": "cg",
+        # },
         petsc_options={
-            "ksp_type": "cg",
-            "ksp_rtol": 1e-12,
-            "ksp_atol": 1e-12,
-            "ksp_max_it": 1000,
-            "pc_type": "gamg",
-            "pc_gamg_agg_nsmooths": 1,
-            "pc_gamg_esteig_ksp_type": "cg",
+            "ksp_type": "preonly",
+            "pc_type": "cholesky",
+            "pc_factor_mat_solver_type": "cholmod",
         },
     )
     return problem.solve()

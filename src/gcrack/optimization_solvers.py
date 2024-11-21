@@ -1,6 +1,7 @@
 import numpy as np
 import sympy as sp
 from scipy.optimize import minimize
+import matplotlib.pyplot as plt
 
 # NOTE https://www.google.com/search?q=polynomial+fractional+optimization&sca_esv=eec4b8c5dff95975&sca_upv=1&hl=en&ei=9PcPZuWeG7SNkdUPp4arkAE&ved=0ahUKEwjl6PbJkquFAxW0RqQEHSfDChIQ4dUDCBA&uact=5&oq=polynomial+fractional+optimization&gs_lp=Egxnd3Mtd2l6LXNlcnAiInBvbHlub21pYWwgZnJhY3Rpb25hbCBvcHRpbWl6YXRpb24yCBAAGIAEGKIEMggQABiABBiiBDIIEAAYgAQYogRIxAhQmARYjQVwAXgAkAEAmAFfoAHUAaoBATO4AQPIAQD4AQGYAgOgAqcBwgIOEAAYgAQYigUYhgMYsAPCAgsQABiABBiiBBiwA5gDAIgGAZAGBpIHATOgB-UJ&sclient=gws-wiz-serp
 
@@ -62,38 +63,89 @@ F22 = (
     + 12.5 * m**20
 )
 
+G1 = (
+    (2 * np.pi) ** (3 / 2) * m**2
+    - 47.933390 * m**4
+    + 63.665987 * m**6
+    - 50.70880 * m**8
+    + 26.66807 * m**10
+    - 6.0205 * m**12
+    - 7.314 * m**14
+    + 10.947 * m**16
+    - 2.85 * m**18
+    - 13.7 * m**20
+)
+G2 = (
+    -2 * np.sqrt(2 * np.pi) * m
+    + 12 * np.sqrt(2 * np.pi) * m**3
+    - 59.565733 * m**5
+    + 61.174444 * m**7
+    - 39.90249 * m**9
+    + 15.6222 * m**11
+    + 3.0343 * m**13
+    - 12.781 * m**15
+    + 9.69 * m**17
+    + 6.62 * m**19
+)
 
-def compute_load_factor(phi0: float, model, K, gc_expr):
+
+def compute_load_factor(phi0: float, model, SIFs, gc_expr, s):
     print("-- Determination of propagation angle and load factor")
     # Define phi as a SymPy symbol
     phi = sp.Symbol("phi")
     # Get the SIFs (star)
-    KI, KII = K
-    KI_star = F11 * KI + F12 * KII
-    KII_star = F21 * KI + F22 * KII
+    KI, KII, T = SIFs["KI"], SIFs["KII"], SIFs["T"]
+    KI_star = F11 * KI + F12 * KII + T * np.sqrt(s) * G1
+    KII_star = F21 * KI + F22 * KII + T * np.sqrt(s) * G2
     # Compute the G*
     gs = 1 / model.Ep * (KI_star**2 + KII_star**2)
     # Get the Gc
     gc = gc_expr(phi)
-    # Get the expression
-    obj_symb = gc / gs  # sp.sqrt(gc/gs)
-    # obj_symb = gc / gs  # sp.sqrt(gc/gs)
-    # obj_symb = -(gs - gc)
+    # Get the symbolic expressions
+    obj_symb = sp.sqrt(gc / gs)
+    jac_symb = sp.diff(obj_symb, phi)
+    hes_symb = sp.diff(jac_symb, phi)
+    # Compute the python functions
     obj_symb = obj_symb.subs({"phi0": phi0})
+    jac_symb = jac_symb.subs({"phi0": phi0})
+    hes_symb = hes_symb.subs({"phi0": phi0})
     obj_func = sp.lambdify(phi, obj_symb, "numpy")
-    # Perform the (local) minimization
+    jac_func = sp.lambdify(phi, jac_symb, "numpy")
+    hes_func = sp.lambdify(phi, hes_symb, "numpy")
+    print("Replace numpy as scipy with JAX !!!!")
+    # Perform the minimization
     res = minimize(
         obj_func,
-        x0=[phi0],
-        tol=1e-12,
+        x0=phi0,  # + np.pi / 90 * np.random.uniform(-1, 1),
+        jac=jac_func,
+        hess=hes_func,
         bounds=[
             (
                 phi0 - np.pi / 2,
                 phi0 + np.pi / 2,
             )
         ],
+        method="Newton-CG",  # "Nelder-Mead",  # "Newton-CG",
     )
     phi_val = res.x[0]
+    print(res)
+
+    hes_sol = hes_func(phi_val)
+    print(f"Hessian of solution: {hes_sol}")
+    if hes_sol < 0:
+        print("WARNING : The hessian of the solution is local maximum")
+
+    # plt.figure()
+    # plt.xlabel(r"Bifurcation angle $\varphi$ (rad)")
+    # plt.ylabel(r"Load factor $\sqrt{\frac{G_c(\varphi)}{G^*(\varphi)}}$")
+    # phis = np.linspace(-np.pi / 2, np.pi / 2, num=180)
+    # plt.plot(phis, obj_func(phis))
+    # plt.scatter([phi_val], [obj_func(phi_val)], c="r")
+    # plt.grid()
+    # plt.tight_layout()
+    # plt.savefig("test.pdf")
+    # plt.close()
+
     # Compute the load factor
     gs_func = sp.lambdify(phi, gs.subs({"phi0": phi0}), "numpy")
     gc_func = sp.lambdify(phi, gc.subs({"phi0": phi0}), "numpy")

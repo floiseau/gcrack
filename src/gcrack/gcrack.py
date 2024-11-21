@@ -14,7 +14,7 @@ from solvers import solve_elastic_problem
 from sif import compute_SIFs
 from optimization_solvers import compute_load_factor
 from postprocess import compute_measured_forces, compute_measured_displacement
-from exporters import export_function, export_dict_to_csv, clean_vtk_files
+from exporters import export_function, export_res_to_csv, clean_vtk_files
 
 
 @dataclass
@@ -27,12 +27,13 @@ class GCrackBaseData(ABC):
     assumption_2D: str
     pars: dict  # User defined parameters (passed to user-defined functions)
     phi0: Optional[float] = 0
+    s: Optional[float] = 0  # Internal length associated with T-stress
     sif_method: Optional[str] = "Williams"
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
-        self.R_int = 1 * self.da
-        self.R_ext = 2 * self.da
+        self.R_int = 2 * self.da
+        self.R_ext = 4 * self.da
 
     @abstractmethod
     def generate_mesh(self, crack_points) -> gmsh.model:
@@ -91,9 +92,8 @@ def gcrack(gcrack_data: GCrackBaseData):
     # Initialize GMSH
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
-    gmsh.option.setNumber(
-        "Mesh.Algorithm", 1
-    )  # 1: meshadapt; 5: delaunay, 6: frontal-delaunay
+    gmsh.option.setNumber("Mesh.Algorithm", 1)
+    # 1: meshadapt; 5: delaunay, 6: frontal-delaunay
 
     # Initialize export directory
     now = datetime.now()
@@ -102,25 +102,27 @@ def gcrack(gcrack_data: GCrackBaseData):
 
     # Initialize the crack points
     crack_points = [gcrack_data.xc0]
-    # Store the results (TODO: Change the initialization to be more generic)
+    # Initialize results storage
     res = {
-        "a": [0],
-        "phi": [gcrack_data.phi0],
-        "lambda": [0],
-        "xc_1": [crack_points[0][0]],
-        "xc_2": [crack_points[0][1]],
-        "xc_3": [crack_points[0][2]],
-        "uimp_1": [0.0],
-        "uimp_2": [0.0],
-        "fimp_1": [0.0],
-        "fimp_2": [0.0],
+        "t": 0,
+        "a": 0,
+        "phi": gcrack_data.phi0,
+        "lambda": 0,
+        "xc_1": crack_points[0][0],
+        "xc_2": crack_points[0][1],
+        "xc_3": crack_points[0][2],
+        "uimp_1": 0.0,
+        "uimp_2": 0.0,
+        "fimp_1": 0.0,
+        "fimp_2": 0.0,
     }
+    export_res_to_csv(res, dir_name / "results.csv")
 
-    for t in range(gcrack_data.Nt):
+    for t in range(1, gcrack_data.Nt + 1):
         print(f"\n==== Time step {t}")
         # Get current crack properties
         xc = crack_points[-1]
-        phi0 = res["phi"][-1]
+        phi0 = res["phi"]
 
         print("-- Meshing the cracked domain")
         gmsh_model = gcrack_data.generate_mesh(crack_points)
@@ -140,25 +142,31 @@ def gcrack(gcrack_data: GCrackBaseData):
         u = solve_elastic_problem(domain, model, gcrack_data)
 
         # Compute the energy release rate vector
-        K = compute_SIFs(
-            domain, model, u, xc, phi0, gcrack_data.R_int, gcrack_data.R_ext, gcrack_data.sif_method
+        SIFs = compute_SIFs(
+            domain,
+            model,
+            u,
+            crack_points[-1],
+            phi0,
+            gcrack_data.R_int,
+            gcrack_data.R_ext,
+            gcrack_data.sif_method,
         )
 
         # Compute the load factor and crack angle.
-        opti_res = compute_load_factor(phi0, model, K, gcrack_data.Gc)
+        opti_res = compute_load_factor(phi0, model, SIFs, gcrack_data.Gc, gcrack_data.s)
 
         # Get the results
         phi_ = opti_res[0]
         lambda_ = opti_res[1]
         # Add a new crack point
         da_vec = gcrack_data.da * np.array([np.cos(phi_), np.sin(phi_), 0])
-        xc_new = xc + da_vec
-        crack_points.append(xc_new)
+        crack_points.append(crack_points[-1] + da_vec)
 
         print("-- Results of the step")
         print(f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°")
         print(f"Load factor             : {lambda_:.3g}")
-        print(f"New crack tip position  : {xc_new}")
+        print(f"New crack tip position  : {crack_points[-1]}")
 
         print("-- Postprocess")
         # Scale the displacement field
@@ -172,20 +180,20 @@ def gcrack(gcrack_data: GCrackBaseData):
         print("-- Export the results")
         # Export the elastic solution
         export_function(u_scaled, t, dir_name)
-        # Store the results
-        res["a"].append(res["a"][-1] + gcrack_data.da)
-        res["phi"].append(phi_)
-        res["lambda"].append(lambda_)
-        res["xc_1"].append(xc_new[0])
-        res["xc_2"].append(xc_new[1])
-        res["xc_3"].append(xc_new[2])
-        res["uimp_1"].append(uimp[0])
-        res["uimp_2"].append(uimp[1])
-        res["fimp_1"].append(fimp[0])
-        res["fimp_2"].append(fimp[1])
+        # Store and export the results
+        res["t"] = t + 1
+        res["a"] += gcrack_data.da
+        res["phi"] = phi_
+        res["lambda"] = lambda_
+        res["xc_1"] = crack_points[-1][0]
+        res["xc_2"] = crack_points[-1][1]
+        res["xc_3"] = crack_points[-1][2]
+        res["uimp_1"] = uimp[0]
+        res["uimp_2"] = uimp[1]
+        res["fimp_1"] = fimp[0]
+        res["fimp_2"] = fimp[1]
+        export_res_to_csv(res, dir_name / "results.csv")
     print("-- Finalize the exports")
-    # Export the dictionary to a CSV file
-    export_dict_to_csv(res, dir_name / "results.csv")
     # Group clean the results directory
     clean_vtk_files(dir_name)
     # Clean up

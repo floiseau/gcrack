@@ -4,33 +4,26 @@ import csv
 from dolfinx import io, fem
 
 
-def export_dict_to_csv(data, filename):
+def export_res_to_csv(res, filename):
     """
-    Export a dictionary to a CSV file.
+    Append the res dictionary to a CSV file.
 
-    This function writes the contents of a dictionary to a CSV file. The keys of the dictionary
-    become the column headers in the CSV file, and the values, which are expected to be lists,
-    become the rows. The function handles lists of different lengths by filling missing values with None.
+    This function appends the contents of a dictionary to a CSV file. The keys of the dictionary
+    become the column headers in the CSV file, and the values are appended to the associated column.
 
     Args:
-        data (dict): The dictionary containing data to be exported. The keys are column headers,
-                     and the values are lists representing the rows.
+        res (dict): The dictionary containing row data to be appended.
+                     The keys are column headers and the values are the row values.
         filename (str): The name of the CSV file to be created.
 
     Returns:
         None
     """
-    with open(filename, "w", newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        # Write header containing keys of the dictionary
-        writer.writerow(data.keys())
-        # Determine the length of the longest list in the dictionary
-        max_length = max(len(lst) for lst in data.values())
-        # Iterate through the lists and write rows to the CSV file
-        for i in range(max_length):
-            row = [data[key][i] if i < len(data[key]) else None for key in data.keys()]
-            writer.writerow(row)
-    print("Created results.csv.")
+    with open(filename, mode="a", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=list(res.keys()))
+        if res["t"] == 0:
+            writer.writeheader()
+        writer.writerow(res)
 
 
 def export_function(u: fem.Function, t: int, dir_path: Path):
