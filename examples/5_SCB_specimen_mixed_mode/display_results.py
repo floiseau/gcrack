@@ -72,6 +72,7 @@ plt.ylabel("$y$-coordinate (m)")
 plt.axis('equal')
 plt.legend()
 plt.grid()
+plt.savefig("crack_path.svg")
 
 # Show the figures
 plt.show()

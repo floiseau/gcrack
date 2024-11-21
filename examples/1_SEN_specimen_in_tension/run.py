@@ -5,10 +5,9 @@ sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 from typing import List, Tuple
 
 import numpy as np
-import sympy as sp
+import jax.numpy as jnp
 
 import gmsh
-
 from gcrack import GCrackBaseData, gcrack
 
 
@@ -19,7 +18,7 @@ class GCrackData(GCrackBaseData):
         # Parameters
         L = self.pars["L"]
         h = L / 64
-        h_min = self.R_int / 8
+        h_min = self.R_int / 16
         # Points
         # Bot
         p1: int = gmsh.model.geo.addPoint(0, 0, 0, h)
@@ -99,8 +98,8 @@ class GCrackData(GCrackBaseData):
         gmsh.model.mesh.field.setNumber(field1, "Sampling", 100)
         field2: int = gmsh.model.mesh.field.add("Threshold")
         gmsh.model.mesh.field.setNumber(field2, "InField", field1)
-        gmsh.model.mesh.field.setNumber(field2, "DistMin", self.R_ext)
-        gmsh.model.mesh.field.setNumber(field2, "DistMax", 2 * self.R_ext)
+        gmsh.model.mesh.field.setNumber(field2, "DistMin", 2 * self.R_ext)
+        gmsh.model.mesh.field.setNumber(field2, "DistMax", 4 * self.R_ext)
         gmsh.model.mesh.field.setNumber(field2, "SizeMin", h_min)
         gmsh.model.mesh.field.setNumber(field2, "SizeMax", h)
         gmsh.model.geo.synchronize()
@@ -116,7 +115,7 @@ class GCrackData(GCrackBaseData):
         Returns:
             List: Coordinate of the point where the displacement is measured
         """
-        return [self.pars["L"], 0]
+        return [0, self.pars["L"]]
 
     def locate_measured_forces(self) -> int:
         """Define the boundary where the reaction force are measured.
@@ -153,11 +152,11 @@ class GCrackData(GCrackBaseData):
         Gc_max = self.pars["Gc_max"]
         theta0 = self.pars["theta0"]
         # Compute associated parameters
-        Gc = sp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
+        Gc = jnp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
         ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
         # Define expression of the energy release rate
-        Gc_expression = Gc * sp.sqrt(
-            1 + ag * (sp.sin(phi - theta0) ** 2 - sp.cos(phi - theta0) ** 2)
+        Gc_expression = Gc * jnp.sqrt(
+            1 + ag * (jnp.sin(phi - theta0) ** 2 - jnp.cos(phi - theta0) ** 2)
         )
         return Gc_expression
         # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
@@ -180,5 +179,7 @@ if __name__ == "__main__":
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",
         pars=pars,
+        sif_method="i-integral",  # "i-integral" "willliams"
+        s=pars["L"] / 256,
     )
     gcrack(gcrack_data)

@@ -39,8 +39,8 @@ plt.grid()
 # Force displacement curve
 plt.figure()
 plt.plot(
-    data["lambda"] * data["uimp_2"],
-    data["lambda"] * data["fimp_2"] * B,
+    data["uimp_2"],
+    data["fimp_2"] * B,
     marker="x",
 )
 plt.xlabel("Displacement [m]")

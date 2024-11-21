@@ -104,37 +104,41 @@ def G2(m):
     )
 
 
+def objective(x, Ep, s, KI, KII, T, phi0, gc_func):
+    phi = x[0]
+    m = (phi - phi0) / pi
+    KI_star = F11(m) * KI + F12(m) * KII + T * jnp.sqrt(s) * G1(m)
+    KII_star = F21(m) * KI + F22(m) * KII + T * jnp.sqrt(s) * G2(m)
+    gs = 1 / Ep * (KI_star**2 + KII_star**2)
+    gc = gc_func(phi)
+    return jnp.sqrt(gc / gs)
+
+
+hess = hessian(objective)
+
+
 def compute_load_factor(phi0: float, model, SIFs, gc_func, s):
     print("-- Determination of propagation angle and load factor")
     KI, KII, T = SIFs["KI"], SIFs["KII"], SIFs["T"]
 
-    # Define
-    def objective(x):
-        phi = x[0]
-        m = (phi - phi0) / pi
-        KI_star = F11(m) * KI + F12(m) * KII + T * jnp.sqrt(s) * G1(m)
-        KII_star = F21(m) * KI + F22(m) * KII + T * jnp.sqrt(s) * G2(m)
-        gs = 1 / model.Ep * (KI_star**2 + KII_star**2)
-        gc = gc_func(phi)
-        return jnp.sqrt(gc / gs)
-
     # Perform the minimization
+    args = (model.Ep, s, KI, KII, T, phi0, gc_func)
     res = minimize(
         objective,
         x0=jnp.array([float(phi0)]),  # + pi / 90 * np.random.uniform(-1, 1),
         method="BFGS",
+        args=args,
     )
     phi_val = res.x[0]
 
     # Check if the result is a local minimum
-    hess = hessian(objective)
-    hes_sol = hess(res.x)
+    hes_sol = hess(res.x, *args)
     print(f"Hessian of solution: {hes_sol}")
     if hes_sol < 0:
         print("WARNING : The hessian of the solution is local maximum")
 
     # Compute the load factor
-    load_factor = objective(res.x)
+    load_factor = objective(res.x, *args)
 
     # import matplotlib.pyplot as plt
     # plt.figure()

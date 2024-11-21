@@ -5,7 +5,7 @@ sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 from typing import List, Tuple
 
 import numpy as np
-import sympy as sp
+import jax.numpy as jnp
 
 import gmsh
 import ufl
@@ -165,11 +165,11 @@ class GCrackData(GCrackBaseData):
         Gc_max = self.pars["Gc_max"]
         theta0 = self.pars["theta0"]
         # Compute associated parameters
-        Gc = sp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
+        Gc = jnp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
         ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
         # Define expression of the energy release rate
-        Gc_expression = Gc * sp.sqrt(
-            1 + ag * (sp.sin(phi - theta0) ** 2 - sp.cos(phi - theta0) ** 2)
+        Gc_expression = Gc * jnp.sqrt(
+            1 + ag * (jnp.sin(phi - theta0) ** 2 - jnp.cos(phi - theta0) ** 2)
         )
         return Gc_expression
         # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
