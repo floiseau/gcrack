@@ -1,11 +1,12 @@
 from math import pi
 
 import jax.numpy as jnp
-from jax import hessian
+from jax import jit, hessian
 from jax.scipy.optimize import minimize
 
 
 # Define the Amestoy-Leblond F functions
+@jit
 def F11(m):
     return (
         1
@@ -22,6 +23,7 @@ def F11(m):
     )
 
 
+@jit
 def F12(m):
     return (
         -3 * pi / 2 * m
@@ -37,6 +39,7 @@ def F12(m):
     )
 
 
+@jit
 def F21(m):
     return (
         pi / 2 * m
@@ -52,6 +55,7 @@ def F21(m):
     )
 
 
+@jit
 def F22(m):
     return (
         1
@@ -68,6 +72,7 @@ def F22(m):
     )
 
 
+@jit
 def G1(m):
     return (
         (2 * pi) ** (3 / 2) * m**2
@@ -83,6 +88,7 @@ def G1(m):
     )
 
 
+@jit
 def G2(m):
     return (
         -2 * jnp.sqrt(2 * pi) * m
