@@ -116,6 +116,9 @@ def gcrack(gcrack_data: GCrackBaseData):
         "uimp_2": 0.0,
         "fimp_1": 0.0,
         "fimp_2": 0.0,
+        "KI": 0.0,
+        "KII": 0.0,
+        "T": 0.0,
     }
     export_res_to_csv(res, dir_name / "results.csv")
 
@@ -195,6 +198,9 @@ def gcrack(gcrack_data: GCrackBaseData):
         res["uimp_2"] = uimp[1]
         res["fimp_1"] = fimp[0]
         res["fimp_2"] = fimp[1]
+        res["KI"] = SIFs["KI"]
+        res["KII"] = SIFs["KII"]
+        res["T"] = SIFs["T"]
         export_res_to_csv(res, dir_name / "results.csv")
     print("-- Finalize the exports")
     # Group clean the results directory

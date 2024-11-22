@@ -36,7 +36,7 @@ gmerr_hess = hessian(gmerr_objective)
 
 
 def compute_load_factor_with_gmerr(phi0: float, model, SIFs, gc_func, s):
-    print("-- Determination of propagation angle and load factor")
+    print("-- Determination of propagation angle (GMERR) and load factor (GMERR)")
     KI, KII, T = SIFs["KI"], SIFs["KII"], SIFs["T"]
 
     # Perform the minimization
