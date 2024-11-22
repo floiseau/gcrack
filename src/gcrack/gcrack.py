@@ -29,6 +29,7 @@ class GCrackBaseData(ABC):
     phi0: Optional[float] = 0
     s: Optional[float] = 0  # Internal length associated with T-stress
     sif_method: Optional[str] = "Williams"
+    criterion: Optional[str] = "gmerr"
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -154,7 +155,9 @@ def gcrack(gcrack_data: GCrackBaseData):
         )
 
         # Compute the load factor and crack angle.
-        opti_res = compute_load_factor(phi0, model, SIFs, gcrack_data.Gc, gcrack_data.s)
+        opti_res = compute_load_factor(
+            phi0, model, SIFs, gcrack_data.Gc, gcrack_data.s, gcrack_data.criterion
+        )
 
         # Get the results
         phi_ = opti_res[0]
