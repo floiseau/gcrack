@@ -4,6 +4,7 @@ from domain import Domain
 from models import ElasticModel
 
 import numpy as np
+import sympy as sp
 
 import ufl
 import dolfinx
@@ -86,13 +87,22 @@ def get_dirichlet_boundary_conditions(
         # Iterate through the axis
         for comp in range(dim):
             # Check if the DOF is imposed
-            if isnan(u_imp[comp]):
+            if isinstance(u_imp[comp], str):
+                # Parse the function
+                x = sp.Symbol("x")
+                # Parse the expression using sympy
+                par_lambda = sp.utilities.lambdify(x, u_imp[comp], "numpy")
+                # Create and interpolate the fem function
+                bc_func = fem.Function(V_u.sub(comp).collapse()[0])
+                bc_func.interpolate(lambda xx: par_lambda(xx))
+            elif isnan(u_imp[comp]):
                 continue
-            # Define an FEM function (to control the BC)
-            bc_func = fem.Function(V_u.sub(comp).collapse()[0])
-            # Update the load
-            with bc_func.vector.localForm() as bc_local:
-                bc_local.set(u_imp[comp])
+            else:
+                # Define an FEM function (to control the BC)
+                bc_func = fem.Function(V_u.sub(comp).collapse()[0])
+                # Update the load
+                with bc_func.vector.localForm() as bc_local:
+                    bc_local.set(u_imp[comp])
             # Get the DOFs
             boundary_dof = boundary_dofs[f"{facet_id}_{comp}"]
             # Create the Dirichlet boundary condition
