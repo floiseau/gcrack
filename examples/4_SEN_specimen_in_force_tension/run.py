@@ -2,15 +2,15 @@ import sys
 
 sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import jax.numpy as jnp
 
 import gmsh
-import ufl
 
 from gcrack import GCrackBaseData, gcrack
+from boundary_conditions import DisplacementBC, ForceBC
 
 
 class GCrackData(GCrackBaseData):
@@ -127,14 +127,16 @@ class GCrackData(GCrackBaseData):
         """
         return self.boundaries["top"]
 
-    def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
+    def define_imposed_displacements(self) -> List[DisplacementBC]:
         """Define the imposed displacement boundary conditions.
 
         Returns:
-            List: with (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
+            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
         """
         return [
-            (self.boundaries["bot"], [float("nan"), 0]),
+            DisplacementBC(
+                boundary_id=self.boundaries["bot"], u_imp=[float("nan"), 0.0]
+            ),
         ]
 
     def define_locked_points(self) -> List[List[float]]:
@@ -144,20 +146,19 @@ class GCrackData(GCrackBaseData):
             List[List[float]]: A list of points (list) coordinates.
         """
         return [
-            [0, 0, 0],
+            [0.0, 0.0, 0.0],
         ]
 
-    def define_imposed_forces(
-        self,
-    ) -> List[Tuple[int, ufl.tensors.ComponentTensor]]:
-        """
-        Define the list of imposed forces.
+    def define_imposed_forces(self) -> List[ForceBC]:
+        """Define the list of imposed forces.
         Each element of the list is a tuple.
 
         Returns:
-            tuple:  with (id, value) where id is the boundary condition id (number) in GMSH, and value if the force vector.
+            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
         """
-        return [(self.boundaries["top"], [0.0, 1.0])]
+        return [
+            ForceBC(boundary_id=self.boundaries["top"], f_imp=[0.0, 1.0]),
+        ]
 
     def Gc(self, phi):
         # Get the parameters

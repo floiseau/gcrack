@@ -3,7 +3,6 @@ from math import pi
 
 import jax.numpy as jnp
 from jax import jit, jacobian, hessian
-from jax.scipy.optimize import minimize
 
 
 class Criterion(Enum):
@@ -22,16 +21,16 @@ def compute_load_factor(phi0: float, model, SIFs, gc_func, s, criterion: str):
 
 
 ### GMERR
-def gmerr_objective(x, Ep, s, KI, KII, T, phi0, gc_func):
+def gmerr_objective(x, Gc, Ep, s, KI, KII, T, phi0):
     phi = x[0]
     m = (phi - phi0) / pi
     KI_star = F11(m) * KI + F12(m) * KII + T * jnp.sqrt(s) * G1(m)
     KII_star = F21(m) * KI + F22(m) * KII + T * jnp.sqrt(s) * G2(m)
-    gs = 1 / Ep * (KI_star**2 + KII_star**2)
-    gc = gc_func(phi)
-    return jnp.sqrt(gc / gs)
+    Gs = 1 / Ep * (KI_star**2 + KII_star**2)
+    return jnp.sqrt(Gc / Gs)
 
 
+gmerr_residual = jit(jacobian(gmerr_objective))
 gmerr_hess = hessian(gmerr_objective)
 
 
@@ -40,23 +39,20 @@ def compute_load_factor_with_gmerr(phi0: float, model, SIFs, gc_func, s):
     KI, KII, T = SIFs["KI"], SIFs["KII"], SIFs["T"]
 
     # Perform the minimization
-    args = (model.Ep, s, KI, KII, T, phi0, gc_func)
-    res = minimize(
-        gmerr_objective,
-        x0=jnp.array([float(phi0)]),  # + pi / 90 * np.random.uniform(-1, 1),
-        method="BFGS",
-        args=args,
-    )
-    phi_val = res.x[0]
-
-    # Check if the result is a local minimum
-    hes_sol = gmerr_hess(res.x, *args)
-    print(f"gmerr_hessian of solution: {hes_sol}")
-    if hes_sol < 0:
-        print("WARNING : The gmerr_hessian of the solution is local maximum")
-
+    kwargs = {
+        "Gc": gc_func(0),
+        "Ep": model.Ep,
+        "s": s,
+        "KI": KI,
+        "KII": KII,
+        "T": T,
+        "phi0": phi0,
+    }
+    phi = newton(phi0, gmerr_residual, gmerr_hess, kwargs=kwargs, gc_func=gc_func)
+    phi %= 2 * pi
     # Compute the load factor
-    load_factor = gmerr_objective(res.x, *args)
+    kwargs["Gc"] = gc_func(phi)
+    load_factor = gmerr_objective([phi], **kwargs)
 
     # import matplotlib.pyplot as plt
     # plt.figure()
@@ -70,30 +66,33 @@ def compute_load_factor_with_gmerr(phi0: float, model, SIFs, gc_func, s):
     # plt.savefig("test.pdf")
     # plt.close()
 
-    return float(phi_val), float(load_factor)
+    return float(phi), float(load_factor)
 
 
 ### PLS
 @jit
-def pls_objective(x, Ep, s, KI, KII, T, phi0):
+def pls_residual(x, Ep, s, KI, KII, T, phi0):
     phi = x[0]
     m = (phi - phi0) / pi
     KII_star = F21(m) * KI + F22(m) * KII + T * jnp.sqrt(s) * G2(m)
-    return KII_star
+    return jnp.array([KII_star])
 
 
-pls_jac = jit(jacobian(pls_objective))
-pls_hess = jit(hessian(pls_objective))
+pls_jac = jit(jacobian(pls_residual))
+pls_hess = jit(hessian(pls_residual))
 
 
-def newton(phi0, f, df, tol: float = 1e-6, max_iter: int = 100, args=(None,)):
+def newton(
+    phi0, f, df, tol: float = 1e-6, max_iter: int = 100, kwargs={}, gc_func=None
+):
     # Initialization
     phi = float(phi0)
     converged = False
     for i in range(max_iter):
-        inc = -f([phi], *args) / df([phi], *args)[0]
+        if gc_func is not None:
+            kwargs["Gc"] = gc_func(phi)
+        inc = -f([phi], **kwargs)[0] / df([phi], **kwargs)[0][0]
         phi += inc
-        print(f"{inc=}")
         if abs(inc) < tol:
             print("Newton converged")
             converged = True
@@ -109,11 +108,11 @@ def compute_load_factor_with_pls(phi0, model, SIFs, gc_func, s):
     print("-- Determination of propagation angle (PLS) and load factor (GMERR)")
     KI, KII, T = SIFs["KI"], SIFs["KII"], SIFs["T"]
     # Find a root of KII
-    args = (model.Ep, s, KI, KII, T, phi0)
-    phi_val = newton(phi0, pls_objective, pls_jac, args=args)
+    kwargs = {"Ep": model.Ep, "s": s, "KI": KI, "KII": KII, "T": T, "phi0": phi0}
+    phi_val = newton(phi0, pls_residual, pls_jac, kwargs=kwargs) % (2 * pi)
 
     # Check if the result is a local minimum
-    hes_sol = pls_hess([phi_val], *args)
+    hes_sol = pls_hess([phi_val], **kwargs)
     print(f"hessian of solution: {hes_sol}")
     if hes_sol[0][0] < 0:
         print("WARNING : The gmerr_hessian of the solution is local maximum")

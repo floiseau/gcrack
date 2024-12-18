@@ -10,6 +10,11 @@ import numpy as np
 from domain import Domain
 from models import ElasticModel
 
+from boundary_conditions import (
+    DisplacementBC,
+    ForceBC,
+    BoundaryConditions,
+)
 from solvers import solve_elastic_problem
 from sif import compute_SIFs
 from optimization_solvers import compute_load_factor
@@ -28,7 +33,7 @@ class GCrackBaseData(ABC):
     pars: dict  # User defined parameters (passed to user-defined functions)
     phi0: Optional[float] = 0
     s: Optional[float] = 0  # Internal length associated with T-stress
-    sif_method: Optional[str] = "Williams"
+    sif_method: Optional[str] = "I-integral"
     criterion: Optional[str] = "gmerr"
 
     def __post_init__(self):
@@ -70,21 +75,19 @@ class GCrackBaseData(ABC):
         """
         return []
 
-    def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
+    def define_imposed_displacements(self) -> List[DisplacementBC]:
         """Define the imposed displacement boundary conditions.
 
         Returns:
-            List[Tuple[int, List[float]]]: List of tuple (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
+            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
         """
         return []
 
-    def define_imposed_forces(self) -> List[Tuple[int, List[float]]]:
-        """
-        Define the list of imposed forces.
-        Each element of the list is a tuple.
+    def define_imposed_forces(self) -> List[ForceBC]:
+        """Define the list of imposed forces.
 
         Returns:
-            Tuple:  with (id, value) where id is the boundary id (int number) in GMSH, and value is the force vector.
+            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
         """
         return []
 
@@ -131,6 +134,13 @@ def gcrack(gcrack_data: GCrackBaseData):
         print("-- Meshing the cracked domain")
         gmsh_model = gcrack_data.generate_mesh(crack_points)
 
+        # Get the boundary conditions
+        controlled_bcs = BoundaryConditions(
+            displacement_bcs=gcrack_data.define_imposed_displacements(),
+            force_bcs=gcrack_data.define_imposed_forces(),
+            locked_points=gcrack_data.define_locked_points(),
+        )
+
         # Define the domain
         domain = Domain(gmsh_model)
 
@@ -143,7 +153,7 @@ def gcrack(gcrack_data: GCrackBaseData):
         model = ElasticModel(ela_pars, domain)
 
         # Solve the elastic problem
-        u = solve_elastic_problem(domain, model, gcrack_data)
+        u = solve_elastic_problem(domain, model, controlled_bcs)
 
         # Compute the energy release rate vector
         SIFs = compute_SIFs(

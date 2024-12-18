@@ -2,13 +2,14 @@ import sys
 
 sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 
 import gmsh
 
 from gcrack import GCrackBaseData, gcrack
+from boundary_conditions import DisplacementBC, ForceBC
 
 ALPHA: int = int(sys.argv[1])
 
@@ -186,16 +187,18 @@ class GCrackData(GCrackBaseData):
         # Return the model
         return gmsh.model()
 
-    def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
+    def define_imposed_displacements(self) -> List[DisplacementBC]:
         return [
-            (self.boundaries["bot"], [0, 0]),
+            DisplacementBC(self.boundaries["bot"], [0, 0]),
         ]
 
-    def define_imposed_forces(self) -> List[Tuple[int, List[float]]]:
+    def define_imposed_forces(self) -> List[ForceBC]:
         alpha = self.pars["alpha"]
         angle = np.pi / 2 - alpha
         return [
-            (self.boundaries["top"], [np.cos(np.pi - angle), np.sin(np.pi - angle)])
+            ForceBC(
+                self.boundaries["top"], [np.cos(np.pi - angle), np.sin(np.pi - angle)]
+            )
         ]
 
     def locate_measured_forces(self) -> int:

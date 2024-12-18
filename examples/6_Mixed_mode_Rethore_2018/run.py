@@ -9,6 +9,7 @@ import numpy as np
 import gmsh
 
 from gcrack import GCrackBaseData, gcrack
+from boundary_conditions import DisplacementBC, ForceBC
 
 
 class GCrackData(GCrackBaseData):
@@ -147,8 +148,16 @@ class GCrackData(GCrackBaseData):
         # Return the model
         return gmsh.model()
 
-    def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
-        return [(self.boundaries["left"], [0, 0]), (self.boundaries["right"], [-1, 0])]
+    def define_imposed_displacements(self) -> List[DisplacementBC]:
+        """Define the imposed displacement boundary conditions.
+
+        Returns:
+            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
+        """
+        return [
+            DisplacementBC(self.boundaries["left"], [0, 0]),
+            DisplacementBC(self.boundaries["right"], [-1, 0]),
+        ]
         # return [
         #     (self.boundaries["left"], [0, 0]),
         #     (self.boundaries["right"], [-1, -0.1]),
@@ -157,7 +166,7 @@ class GCrackData(GCrackBaseData):
         # return [(self.boundaries["left"], [0, float("nan")]), (self.boundaries["right"], [-1, float("nan")])]
         # return [(self.boundaries["left"], [0, 0])]
 
-    # def define_imposed_forces(self) -> List[Tuple[int, List[float]]]:
+    # def define_imposed_forces(self) -> List[ForceBC]:
     #     return [(self.boundaries["right"], [-1, 0])]
 
     # def define_locked_points(self) -> List[List[float]]:

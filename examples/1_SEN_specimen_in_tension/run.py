@@ -9,6 +9,7 @@ import jax.numpy as jnp
 
 import gmsh
 from gcrack import GCrackBaseData, gcrack
+from boundary_conditions import DisplacementBC, ForceBC
 
 
 class GCrackData(GCrackBaseData):
@@ -125,15 +126,15 @@ class GCrackData(GCrackBaseData):
         """
         return self.boundaries["top"]
 
-    def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
+    def define_imposed_displacements(self) -> List[DisplacementBC]:
         """Define the imposed displacement boundary conditions.
 
         Returns:
-            List: with (id, value) where id is the boundary id (int number) in GMSH, and value is the displacement vector (componements can be nan to let it free).
+            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
         """
         return [
-            (self.boundaries["bot"], [float("nan"), 0]),
-            (self.boundaries["top"], [float("nan"), 1]),
+            DisplacementBC(boundary_id=self.boundaries["bot"], u_imp=[float("nan"), 0]),
+            DisplacementBC(boundary_id=self.boundaries["top"], u_imp=[float("nan"), 1]),
         ]
 
     def define_locked_points(self) -> List[List[float]]:

@@ -9,6 +9,7 @@ import numpy as np
 import gmsh
 
 from gcrack import GCrackBaseData, gcrack
+from boundary_conditions import DisplacementBC, ForceBC
 
 SET = int(sys.argv[1])
 print("\n========================")
@@ -150,43 +151,53 @@ class GCrackData(GCrackBaseData):
         # Return the model
         return gmsh.model()
 
-    def define_imposed_displacements(self) -> List[Tuple[int, List[float]]]:
+    def define_imposed_displacements(self) -> List[DisplacementBC]:
+        """Define the imposed displacement boundary conditions.
+
+        Returns:
+            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
+        """
         match SET:
             case 1:
                 return [
-                    (self.boundaries["bot_left"], [0, 0]),
-                    (self.boundaries["bot_right"], [float("nan"), 0]),
-                    (self.boundaries["top"], [float("nan"), -1.0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
+                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0]),
+                    DisplacementBC(self.boundaries["top"], [float("nan"), -1.0]),
                 ]
             case 2:
                 return [
-                    (self.boundaries["bot_left"], [0, 0]),
-                    (self.boundaries["bot_right"], [float("nan"), 0]),
-                    (self.boundaries["top"], [0, -1.0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
+                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0]),
+                    DisplacementBC(self.boundaries["top"], [0, -1.0]),
                 ]
             case 3:
                 return [
-                    (self.boundaries["bot_left"], [0, 0]),
-                    (self.boundaries["bot_right"], [0, 0]),
-                    (self.boundaries["top"], [float("nan"), -1.0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
+                    DisplacementBC(self.boundaries["bot_right"], [0, 0]),
+                    DisplacementBC(self.boundaries["top"], [float("nan"), -1.0]),
                 ]
             case 4:
                 return [
-                    (self.boundaries["bot_left"], [0, 0]),
-                    (self.boundaries["bot_right"], [float("nan"), 0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
+                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0]),
                 ]
             case 5:
                 return [
-                    (self.boundaries["bot_left"], [0, 0]),
-                    (self.boundaries["bot_right"], [0, 0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
+                    DisplacementBC(self.boundaries["bot_right"], [0, 0]),
                 ]
 
-    def define_imposed_forces(self) -> List[Tuple[int, List[float]]]:
+    def define_imposed_forces(self) -> List[ForceBC]:
+        """Define the list of imposed forces.
+
+        Returns:
+            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
+        """
         match SET:
             case 1 | 2 | 3:
                 return []
             case 4 | 5:
-                return [(self.boundaries["top"], [0, -1.0])]
+                return [ForceBC(self.boundaries["top"], [0.0, -1.0])]
 
     def locate_measured_forces(self) -> int:
         """Define the boundary where the reaction force are measured.
@@ -222,7 +233,7 @@ if __name__ == "__main__":
     gcrack_data = GCrackData(
         E=3e9,
         nu=0.4,
-        da=pars["R"] / 128,
+        da=pars["R"] / 256,
         Nt=90 if SET != 3 else 80,
         xc0=xc0,
         assumption_2D="plane_stress",
