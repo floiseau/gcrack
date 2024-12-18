@@ -29,6 +29,10 @@ class BoundaryConditions:
     force_bcs: List[ForceBC]
     locked_points: List[List[float]]
 
+    def is_empty(self) -> bool:
+        """Check if all boundary condition lists are empty."""
+        return not (self.displacement_bcs or self.force_bcs)
+
 
 def get_dirichlet_boundary_conditions(
     domain: Domain,

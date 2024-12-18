@@ -187,12 +187,12 @@ class GCrackData(GCrackBaseData):
         # Return the model
         return gmsh.model()
 
-    def define_imposed_displacements(self) -> List[DisplacementBC]:
+    def define_controlled_displacements(self) -> List[DisplacementBC]:
         return [
             DisplacementBC(self.boundaries["bot"], [0, 0]),
         ]
 
-    def define_imposed_forces(self) -> List[ForceBC]:
+    def define_controlled_forces(self) -> List[ForceBC]:
         alpha = self.pars["alpha"]
         angle = np.pi / 2 - alpha
         return [

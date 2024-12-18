@@ -75,16 +75,32 @@ class GCrackBaseData(ABC):
         """
         return []
 
-    def define_imposed_displacements(self) -> List[DisplacementBC]:
-        """Define the imposed displacement boundary conditions.
+    def define_controlled_displacements(self) -> List[DisplacementBC]:
+        """Define the displacement boundary conditions controlled by the load factor.
 
         Returns:
             List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
         """
         return []
 
-    def define_imposed_forces(self) -> List[ForceBC]:
-        """Define the list of imposed forces.
+    def define_controlled_forces(self) -> List[ForceBC]:
+        """Define the force boundary conditions controlled by the load factor.
+
+        Returns:
+            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
+        """
+        return []
+
+    def define_prescribed_displacements(self) -> List[DisplacementBC]:
+        """Define the prescribed displacement boundary conditions that are not affected by the load factor.
+
+        Returns:
+            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
+        """
+        return []
+
+    def define_prescribed_forces(self) -> List[ForceBC]:
+        """Define the prescribed force boundary conditions that are not affected by the load factor.
 
         Returns:
             List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
@@ -104,6 +120,12 @@ def gcrack(gcrack_data: GCrackBaseData):
     dir_name = Path("results_" + now.strftime("%Y-%m-%d_%H-%M-%S"))
     dir_name.mkdir(parents=True, exist_ok=True)
 
+    # Get the elastic parameters
+    ela_pars = {
+        "E": gcrack_data.E,
+        "nu": gcrack_data.nu,
+        "2D_assumption": gcrack_data.assumption_2D,
+    }
     # Initialize the crack points
     crack_points = [gcrack_data.xc0]
     # Initialize results storage
@@ -119,47 +141,50 @@ def gcrack(gcrack_data: GCrackBaseData):
         "uimp_2": 0.0,
         "fimp_1": 0.0,
         "fimp_2": 0.0,
-        "KI": 0.0,
-        "KII": 0.0,
-        "T": 0.0,
+        "KI_controlled": 0.0,
+        "KII_controlled": 0.0,
+        "T_controlled": 0.0,
     }
     export_res_to_csv(res, dir_name / "results.csv")
 
     for t in range(1, gcrack_data.Nt + 1):
         print(f"\n==== Time step {t}")
         # Get current crack properties
-        xc = crack_points[-1]
         phi0 = res["phi"]
 
         print("-- Meshing the cracked domain")
         gmsh_model = gcrack_data.generate_mesh(crack_points)
 
-        # Get the boundary conditions
+        # Get the controlled boundary conditions
         controlled_bcs = BoundaryConditions(
-            displacement_bcs=gcrack_data.define_imposed_displacements(),
-            force_bcs=gcrack_data.define_imposed_forces(),
+            displacement_bcs=gcrack_data.define_controlled_displacements(),
+            force_bcs=gcrack_data.define_controlled_forces(),
             locked_points=gcrack_data.define_locked_points(),
         )
+
+        # Get the controlled boundary conditions
+        prescribed_bcs = BoundaryConditions(
+            displacement_bcs=gcrack_data.define_prescribed_displacements(),
+            force_bcs=gcrack_data.define_prescribed_forces(),
+            locked_points=gcrack_data.define_locked_points(),
+        )
+
+        # TODO : Update the definition of lambda in the GMERR
+        # TODO : Update the PLS
 
         # Define the domain
         domain = Domain(gmsh_model)
 
         # Define an elastic model
-        ela_pars = {
-            "E": gcrack_data.E,
-            "nu": gcrack_data.nu,
-            "2D_assumption": gcrack_data.assumption_2D,
-        }
         model = ElasticModel(ela_pars, domain)
 
-        # Solve the elastic problem
-        u = solve_elastic_problem(domain, model, controlled_bcs)
-
-        # Compute the energy release rate vector
-        SIFs = compute_SIFs(
+        # Solve the controlled elastic problem
+        u_controlled = solve_elastic_problem(domain, model, controlled_bcs)
+        # Compute the SIFs for the controlled problem
+        SIFs_controlled = compute_SIFs(
             domain,
             model,
-            u,
+            u_controlled,
             crack_points[-1],
             phi0,
             gcrack_data.R_int,
@@ -167,9 +192,42 @@ def gcrack(gcrack_data: GCrackBaseData):
             gcrack_data.sif_method,
         )
 
+        # Tackle the prescribed problem
+        if not prescribed_bcs.is_empty():
+            # Solve the prescribed elastic problem
+            u_prescribed = solve_elastic_problem(domain, model, prescribed_bcs)
+            # Compute the SIFs for the prescribed problem
+            SIFs_prescribed = compute_SIFs(
+                domain,
+                model,
+                u_prescribed,
+                crack_points[-1],
+                phi0,
+                gcrack_data.R_int,
+                gcrack_data.R_ext,
+                gcrack_data.sif_method,
+            )
+        else:
+            # Set the prescribed displacement to 0
+            u_prescribed = u_controlled.copy()
+            u_prescribed.x.array[:] = 0.0
+            # Set the SIFs to 0
+            SIFs_prescribed = {
+                "KI": 0.0,
+                "KII": 0.0,
+                "T": 0.0,
+            }
+            print("No prescribed BCs")
+
         # Compute the load factor and crack angle.
         opti_res = compute_load_factor(
-            phi0, model, SIFs, gcrack_data.Gc, gcrack_data.s, gcrack_data.criterion
+            phi0,
+            model,
+            SIFs_controlled,
+            SIFs_prescribed,
+            gcrack_data.Gc,
+            gcrack_data.s,
+            gcrack_data.criterion,
         )
 
         # Get the results
@@ -186,9 +244,9 @@ def gcrack(gcrack_data: GCrackBaseData):
 
         print("-- Postprocess")
         # Scale the displacement field
-        u_scaled = u.copy()
-        u_scaled.x.array[:] = lambda_ * u_scaled.x.array
-        u.scaled = "Displacement"
+        u_scaled = u_controlled.copy()
+        u_scaled.x.array[:] = lambda_ * u_controlled.x.array + u_prescribed.x.array
+        u_scaled.name = "Displacement"
         # Compute the reaction force
         fimp = compute_measured_forces(domain, model, u_scaled, gcrack_data)
         uimp = compute_measured_displacement(domain, u_scaled, gcrack_data)
@@ -208,9 +266,9 @@ def gcrack(gcrack_data: GCrackBaseData):
         res["uimp_2"] = uimp[1]
         res["fimp_1"] = fimp[0]
         res["fimp_2"] = fimp[1]
-        res["KI"] = SIFs["KI"]
-        res["KII"] = SIFs["KII"]
-        res["T"] = SIFs["T"]
+        res["KI"] = lambda_ * SIFs_controlled["KI"] + SIFs_prescribed["KI"]
+        res["KII"] = lambda_ * SIFs_controlled["KII"] + SIFs_prescribed["KII"]
+        res["T"] = lambda_ * SIFs_controlled["T"] + SIFs_prescribed["T"]
         export_res_to_csv(res, dir_name / "results.csv")
     print("-- Finalize the exports")
     # Group clean the results directory

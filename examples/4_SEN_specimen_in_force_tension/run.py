@@ -127,7 +127,7 @@ class GCrackData(GCrackBaseData):
         """
         return self.boundaries["top"]
 
-    def define_imposed_displacements(self) -> List[DisplacementBC]:
+    def define_controlled_displacements(self) -> List[DisplacementBC]:
         """Define the imposed displacement boundary conditions.
 
         Returns:
@@ -149,9 +149,8 @@ class GCrackData(GCrackBaseData):
             [0.0, 0.0, 0.0],
         ]
 
-    def define_imposed_forces(self) -> List[ForceBC]:
+    def define_controlled_forces(self) -> List[ForceBC]:
         """Define the list of imposed forces.
-        Each element of the list is a tuple.
 
         Returns:
             List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.

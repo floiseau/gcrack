@@ -126,7 +126,7 @@ class GCrackData(GCrackBaseData):
         """
         return self.boundaries["top"]
 
-    def define_imposed_displacements(self) -> List[DisplacementBC]:
+    def define_controlled_displacements(self) -> List[DisplacementBC]:
         """Define the imposed displacement boundary conditions.
 
         Returns:

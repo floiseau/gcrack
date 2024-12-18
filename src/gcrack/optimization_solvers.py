@@ -10,46 +10,66 @@ class Criterion(Enum):
     PLS = 2
 
 
-def compute_load_factor(phi0: float, model, SIFs, gc_func, s, criterion: str):
+def compute_load_factor(
+    phi0: float, model, SIFs_controlled, SIFs_prescribed, gc_func, s, criterion: str
+):
     match Criterion[criterion.upper()]:
         case Criterion.GMERR:
-            return compute_load_factor_with_gmerr(phi0, model, SIFs, gc_func, s)
+            return compute_load_factor_with_gmerr(
+                phi0, model, SIFs_controlled, SIFs_prescribed, gc_func, s
+            )
         case Criterion.PLS:
-            return compute_load_factor_with_pls(phi0, model, SIFs, gc_func, s)
+            return compute_load_factor_with_pls(
+                phi0, model, SIFs_controlled, SIFs_prescribed, gc_func, s
+            )
         case _:
             raise NotImplementedError(f"The criterion {criterion} is not implemented")
 
 
 ### GMERR
-def gmerr_objective(x, Gc, Ep, s, KI, KII, T, phi0):
+def gmerr_objective(x, Gc, Ep, s, KIc, KIIc, Tc, KIp, KIIp, Tp, phi0):
+    # NOTE : The KIc (etc.) means controlled (not critical !)
     phi = x[0]
     m = (phi - phi0) / pi
-    KI_star = F11(m) * KI + F12(m) * KII + T * jnp.sqrt(s) * G1(m)
-    KII_star = F21(m) * KI + F22(m) * KII + T * jnp.sqrt(s) * G2(m)
-    Gs = 1 / Ep * (KI_star**2 + KII_star**2)
-    return jnp.sqrt(Gc / Gs)
+    # Compute the star SIFs
+    KIc_star = F11(m) * KIc + F12(m) * KIIc + Tc * jnp.sqrt(s) * G1(m)
+    KIIc_star = F21(m) * KIc + F22(m) * KIIc + Tc * jnp.sqrt(s) * G2(m)
+    KIp_star = F11(m) * KIp + F12(m) * KIIp + Tp * jnp.sqrt(s) * G1(m)
+    KIIp_star = F21(m) * KIp + F22(m) * KIIp + Tp * jnp.sqrt(s) * G2(m)
+    # Compute the G star
+    Gs_cc = 1 / Ep * (KIc_star**2 + KIIc_star**2)
+    Gs_cp = 2 / Ep * (KIc_star * KIp_star + KIIc_star * KIIp_star)
+    Gs_pp = 1 / Ep * (KIp_star**2 + KIIp_star**2)
+    # Compute and return the load factor
+    delta = Gs_cp**2 - 4 * Gs_cc * (Gs_pp - Gc)
+    return (-Gs_cp + jnp.sqrt(delta)) / (2 * Gs_cc)
 
 
 gmerr_residual = jit(jacobian(gmerr_objective))
 gmerr_hess = hessian(gmerr_objective)
 
 
-def compute_load_factor_with_gmerr(phi0: float, model, SIFs, gc_func, s):
+def compute_load_factor_with_gmerr(
+    phi0: float, model, SIFs_controlled, SIFs_prescribed, gc_func, s
+):
     print("-- Determination of propagation angle (GMERR) and load factor (GMERR)")
-    KI, KII, T = SIFs["KI"], SIFs["KII"], SIFs["T"]
+    KIc, KIIc, Tc = SIFs_controlled["KI"], SIFs_controlled["KII"], SIFs_controlled["T"]
+    KIp, KIIp, Tp = SIFs_prescribed["KI"], SIFs_prescribed["KII"], SIFs_prescribed["T"]
 
     # Perform the minimization
     kwargs = {
         "Gc": gc_func(0),
         "Ep": model.Ep,
         "s": s,
-        "KI": KI,
-        "KII": KII,
-        "T": T,
+        "KIc": KIc,
+        "KIIc": KIIc,
+        "Tc": Tc,
+        "KIp": KIp,
+        "KIIp": KIIp,
+        "Tp": Tp,
         "phi0": phi0,
     }
     phi = newton(phi0, gmerr_residual, gmerr_hess, kwargs=kwargs, gc_func=gc_func)
-    phi %= 2 * pi
     # Compute the load factor
     kwargs["Gc"] = gc_func(phi)
     load_factor = gmerr_objective([phi], **kwargs)
@@ -83,7 +103,7 @@ pls_hess = jit(hessian(pls_residual))
 
 
 def newton(
-    phi0, f, df, tol: float = 1e-6, max_iter: int = 100, kwargs={}, gc_func=None
+    phi0, f, df, tol: float = 1e-9, max_iter: int = 100, kwargs={}, gc_func=None
 ):
     # Initialization
     phi = float(phi0)
@@ -94,7 +114,6 @@ def newton(
         inc = -f([phi], **kwargs)[0] / df([phi], **kwargs)[0][0]
         phi += inc
         if abs(inc) < tol:
-            print("Newton converged")
             converged = True
             break
 
@@ -104,12 +123,14 @@ def newton(
     return phi
 
 
-def compute_load_factor_with_pls(phi0, model, SIFs, gc_func, s):
+def compute_load_factor_with_pls(
+    phi0: float, model, SIFs_controlled, SIFs_prescribed, gc_func, s
+):
     print("-- Determination of propagation angle (PLS) and load factor (GMERR)")
-    KI, KII, T = SIFs["KI"], SIFs["KII"], SIFs["T"]
+    KIc, KIIc, Tc = SIFs_controlled["KI"], SIFs_controlled["KII"], SIFs_controlled["T"]
     # Find a root of KII
-    kwargs = {"Ep": model.Ep, "s": s, "KI": KI, "KII": KII, "T": T, "phi0": phi0}
-    phi_val = newton(phi0, pls_residual, pls_jac, kwargs=kwargs) % (2 * pi)
+    kwargs = {"Ep": model.Ep, "s": s, "KI": KIc, "KII": KIIc, "T": Tc, "phi0": phi0}
+    phi_val = newton(phi0, pls_residual, pls_jac, kwargs=kwargs)
 
     # Check if the result is a local minimum
     hes_sol = pls_hess([phi_val], **kwargs)
@@ -118,8 +139,20 @@ def compute_load_factor_with_pls(phi0, model, SIFs, gc_func, s):
         print("WARNING : The gmerr_hessian of the solution is local maximum")
 
     # Compute the load factor
-    args_gmerr = (model.Ep, s, KI, KII, T, phi0, gc_func)
-    load_factor = gmerr_objective([phi_val], *args_gmerr)
+    KIp, KIIp, Tp = SIFs_prescribed["KI"], SIFs_prescribed["KII"], SIFs_prescribed["T"]
+    kwargs_gmerr = {
+        "Gc": gc_func(0),
+        "Ep": model.Ep,
+        "s": s,
+        "KIc": KIc,
+        "KIIc": KIIc,
+        "Tc": Tc,
+        "KIp": KIp,
+        "KIIp": KIIp,
+        "Tp": Tp,
+        "phi0": phi0,
+    }
+    load_factor = gmerr_objective([phi_val], **kwargs_gmerr)
 
     # import matplotlib.pyplot as plt
     # plt.figure()

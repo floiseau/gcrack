@@ -151,7 +151,7 @@ class GCrackData(GCrackBaseData):
         # Return the model
         return gmsh.model()
 
-    def define_imposed_displacements(self) -> List[DisplacementBC]:
+    def define_controlled_displacements(self) -> List[DisplacementBC]:
         """Define the imposed displacement boundary conditions.
 
         Returns:
@@ -160,34 +160,34 @@ class GCrackData(GCrackBaseData):
         match SET:
             case 1:
                 return [
-                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
-                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0.0, 0.0]),
+                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0.0]),
                     DisplacementBC(self.boundaries["top"], [float("nan"), -1.0]),
                 ]
             case 2:
                 return [
-                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
-                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0]),
-                    DisplacementBC(self.boundaries["top"], [0, -1.0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0.0, 0.0]),
+                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0.0]),
+                    DisplacementBC(self.boundaries["top"], [0.0, -1.0]),
                 ]
             case 3:
                 return [
-                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
-                    DisplacementBC(self.boundaries["bot_right"], [0, 0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0.0, 0.0]),
+                    DisplacementBC(self.boundaries["bot_right"], [0.0, 0.0]),
                     DisplacementBC(self.boundaries["top"], [float("nan"), -1.0]),
                 ]
             case 4:
                 return [
-                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
-                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0.0, 0.0]),
+                    DisplacementBC(self.boundaries["bot_right"], [float("nan"), 0.0]),
                 ]
             case 5:
                 return [
-                    DisplacementBC(self.boundaries["bot_left"], [0, 0]),
-                    DisplacementBC(self.boundaries["bot_right"], [0, 0]),
+                    DisplacementBC(self.boundaries["bot_left"], [0.0, 0.0]),
+                    DisplacementBC(self.boundaries["bot_right"], [0.0, 0.0]),
                 ]
 
-    def define_imposed_forces(self) -> List[ForceBC]:
+    def define_controlled_forces(self) -> List[ForceBC]:
         """Define the list of imposed forces.
 
         Returns:
