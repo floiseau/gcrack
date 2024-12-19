@@ -369,7 +369,6 @@ def compute_SIFs(
     Returns:
         dict: A dict containing the calculated Stress Intensity Factors.
     """
-    print(f"-- Calculation of the SIFs ({method})")
     match method.lower():
         case "i-integral":
             SIFs = compute_SIFs_with_I_integral(
@@ -398,7 +397,6 @@ def compute_SIFs(
 
     # Display informations
     for name, val in SIFs.items():
-        print(f" | {name: <3}: {val:.3g}")
-    # print(f"K_I  : {SIFs['KI']:.3g}")
-    # print(f"K_II : {SIFs['KII']:.3g}")
+        print(f"│  ├─ {name: <3}: {val:.3g}")
+    print("│  └─ End of SIF calculations")
     return SIFs

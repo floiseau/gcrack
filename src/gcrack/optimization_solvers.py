@@ -52,7 +52,7 @@ gmerr_hess = hessian(gmerr_objective)
 def compute_load_factor_with_gmerr(
     phi0: float, model, SIFs_controlled, SIFs_prescribed, gc_func, s
 ):
-    print("-- Determination of propagation angle (GMERR) and load factor (GMERR)")
+    print("├─ Determination of propagation angle (GMERR) and load factor (GMERR)")
     KIc, KIIc, Tc = SIFs_controlled["KI"], SIFs_controlled["KII"], SIFs_controlled["T"]
     KIp, KIIp, Tp = SIFs_prescribed["KI"], SIFs_prescribed["KII"], SIFs_prescribed["T"]
 
@@ -103,8 +103,9 @@ pls_hess = jit(hessian(pls_residual))
 
 
 def newton(
-    phi0, f, df, tol: float = 1e-9, max_iter: int = 100, kwargs={}, gc_func=None
+    phi0, f, df, tol: float = 1e-6, max_iter: int = 100, kwargs={}, gc_func=None
 ):
+    print("│  └─ Running the Newton method")
     # Initialization
     phi = float(phi0)
     converged = False
@@ -113,20 +114,22 @@ def newton(
             kwargs["Gc"] = gc_func(phi)
         inc = -f([phi], **kwargs)[0] / df([phi], **kwargs)[0][0]
         phi += inc
+        print(f"│     ├─ Step: {i+1} | Error: {abs(inc)}")
         if abs(inc) < tol:
             converged = True
+            print("│     └─ Converged")
             break
 
     # Check the convergence
     if not converged:
-        raise RuntimeError("Newton method failed to converge!")
+        raise RuntimeError(" └─ Newton method failed to converge!")
     return phi
 
 
 def compute_load_factor_with_pls(
     phi0: float, model, SIFs_controlled, SIFs_prescribed, gc_func, s
 ):
-    print("-- Determination of propagation angle (PLS) and load factor (GMERR)")
+    print("├─ Determination of propagation angle (PLS) and load factor (GMERR)")
     KIc, KIIc, Tc = SIFs_controlled["KI"], SIFs_controlled["KII"], SIFs_controlled["T"]
     # Find a root of KII
     kwargs = {"Ep": model.Ep, "s": s, "KI": KIc, "KII": KIIc, "T": Tc, "phi0": phi0}

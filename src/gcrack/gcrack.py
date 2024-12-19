@@ -148,11 +148,11 @@ def gcrack(gcrack_data: GCrackBaseData):
     export_res_to_csv(res, dir_name / "results.csv")
 
     for t in range(1, gcrack_data.Nt + 1):
-        print(f"\n==== Time step {t}")
+        print(f"\nLOAD STEP {t}")
         # Get current crack properties
         phi0 = res["phi"]
 
-        print("-- Meshing the cracked domain")
+        print("├─ Meshing the cracked domain")
         gmsh_model = gcrack_data.generate_mesh(crack_points)
 
         # Get the controlled boundary conditions
@@ -178,8 +178,13 @@ def gcrack(gcrack_data: GCrackBaseData):
         # Define an elastic model
         model = ElasticModel(ela_pars, domain)
 
+        print("├─ Solve the controlled elastic problem with FEM")
         # Solve the controlled elastic problem
         u_controlled = solve_elastic_problem(domain, model, controlled_bcs)
+
+        print(
+            f"├─ Compute the SIFs for the controlled problem ({gcrack_data.sif_method})"
+        )
         # Compute the SIFs for the controlled problem
         SIFs_controlled = compute_SIFs(
             domain,
@@ -194,6 +199,7 @@ def gcrack(gcrack_data: GCrackBaseData):
 
         # Tackle the prescribed problem
         if not prescribed_bcs.is_empty():
+            print("├─ Solve the prescribed elastic problem with FEM")
             # Solve the prescribed elastic problem
             u_prescribed = solve_elastic_problem(domain, model, prescribed_bcs)
             # Compute the SIFs for the prescribed problem
@@ -217,7 +223,7 @@ def gcrack(gcrack_data: GCrackBaseData):
                 "KII": 0.0,
                 "T": 0.0,
             }
-            print("No prescribed BCs")
+            print("├─ No prescribed BCs")
 
         # Compute the load factor and crack angle.
         opti_res = compute_load_factor(
@@ -237,12 +243,12 @@ def gcrack(gcrack_data: GCrackBaseData):
         da_vec = gcrack_data.da * np.array([np.cos(phi_), np.sin(phi_), 0])
         crack_points.append(crack_points[-1] + da_vec)
 
-        print("-- Results of the step")
-        print(f"Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°")
-        print(f"Load factor             : {lambda_:.3g}")
-        print(f"New crack tip position  : {crack_points[-1]}")
+        print("├─ Results of the step")
+        print(f"│  ├─ Crack propagation angle : {phi_:.3f} rad / {phi_*180/np.pi:.3f}°")
+        print(f"│  ├─ Load factor             : {lambda_:.3g}")
+        print(f"│  └─ New crack tip position  : {crack_points[-1]}")
 
-        print("-- Postprocess")
+        print("├─ Postprocess")
         # Scale the displacement field
         u_scaled = u_controlled.copy()
         u_scaled.x.array[:] = lambda_ * u_controlled.x.array + u_prescribed.x.array
@@ -251,7 +257,7 @@ def gcrack(gcrack_data: GCrackBaseData):
         fimp = compute_measured_forces(domain, model, u_scaled, gcrack_data)
         uimp = compute_measured_displacement(domain, u_scaled, gcrack_data)
 
-        print("-- Export the results")
+        print("└─ Export the results")
         # Export the elastic solution
         export_function(u_scaled, t, dir_name)
         # Store and export the results
@@ -270,7 +276,7 @@ def gcrack(gcrack_data: GCrackBaseData):
         res["KII"] = lambda_ * SIFs_controlled["KII"] + SIFs_prescribed["KII"]
         res["T"] = lambda_ * SIFs_controlled["T"] + SIFs_prescribed["T"]
         export_res_to_csv(res, dir_name / "results.csv")
-    print("-- Finalize the exports")
+    print("\nFinalize exports")
     # Group clean the results directory
     clean_vtk_files(dir_name)
     # Clean up

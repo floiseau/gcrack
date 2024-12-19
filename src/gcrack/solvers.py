@@ -11,8 +11,6 @@ from dolfinx.fem.petsc import LinearProblem
 def solve_elastic_problem(
     domain: Domain, model: ElasticModel, bcs: BoundaryConditions
 ) -> fem.Function:
-    print("-- Find the elastic solution with FEM")
-
     # Define the displacement function space
     shape_u = (domain.mesh.geometry.dim,)
     V_u = fem.functionspace(domain.mesh, ("Lagrange", 1, shape_u))
