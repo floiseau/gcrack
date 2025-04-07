@@ -8,7 +8,7 @@ import numpy as np
 
 import gmsh
 
-from gcrack import GCrackBaseData, gcrack
+from gcrack import GCrackBaseData
 from boundary_conditions import DisplacementBC, ForceBC
 
 SET = int(sys.argv[1])
@@ -240,4 +240,4 @@ if __name__ == "__main__":
         pars=pars,
         phi0=angle_rad,
     )
-    gcrack(gcrack_data)
+    gcrack_data.gcrack()

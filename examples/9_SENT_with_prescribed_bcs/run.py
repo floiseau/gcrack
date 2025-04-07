@@ -7,7 +7,7 @@ from typing import List
 import numpy as np
 
 import gmsh
-from gcrack import GCrackBaseData, gcrack
+from gcrack import GCrackBaseData
 from boundary_conditions import DisplacementBC, ForceBC
 
 
@@ -180,4 +180,4 @@ if __name__ == "__main__":
         sif_method="i-integral",  # "i-integral" "willliams"
         s=pars["L"] / 256,
     )
-    gcrack(gcrack_data)
+    gcrack_data.gcrack()
