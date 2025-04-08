@@ -183,4 +183,4 @@ if __name__ == "__main__":
         sif_method="i-integral",  # "i-integral" "willliams"
         s=pars["L"] / 256,
     )
-    gcrack_data.gcrack()
+    gcrack_data.run()

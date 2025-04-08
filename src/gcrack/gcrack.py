@@ -107,7 +107,7 @@ class GCrackBaseData(ABC):
         """
         return []
 
-    def gcrack(self):
+    def run(self):
         # Initialize GMSH
         gmsh.initialize()
         gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
@@ -151,7 +151,7 @@ class GCrackBaseData(ABC):
             # Get current crack properties
             phi0 = res["phi"]
 
-            print("├─ Meshing the cracked domain")
+            print("│  Meshing the cracked domain")
             gmsh_model = self.generate_mesh(crack_points)
 
             # Get the controlled boundary conditions
@@ -174,11 +174,11 @@ class GCrackBaseData(ABC):
             # Define an elastic model
             model = ElasticModel(ela_pars, domain)
 
-            print("├─ Solve the controlled elastic problem with FEM")
+            print("│  Solve the controlled elastic problem with FEM")
             # Solve the controlled elastic problem
             u_controlled = solve_elastic_problem(domain, model, controlled_bcs)
 
-            print(f"├─ Compute the SIFs for the controlled problem ({self.sif_method})")
+            print(f"│  Compute the SIFs for the controlled problem ({self.sif_method})")
             # Compute the SIFs for the controlled problem
             SIFs_controlled = compute_SIFs(
                 domain,
@@ -193,7 +193,7 @@ class GCrackBaseData(ABC):
 
             # Tackle the prescribed problem
             if not prescribed_bcs.is_empty():
-                print("├─ Solve the prescribed elastic problem with FEM")
+                print("│  Solve the prescribed elastic problem with FEM")
                 # Solve the prescribed elastic problem
                 u_prescribed = solve_elastic_problem(domain, model, prescribed_bcs)
                 # Compute the SIFs for the prescribed problem
@@ -217,9 +217,11 @@ class GCrackBaseData(ABC):
                     "KII": 0.0,
                     "T": 0.0,
                 }
-                print("├─ No prescribed BCs")
+                print("│  No prescribed BCs")
 
             # Compute the load factor and crack angle.
+
+            print("│  Determination of propagation angle and load factor")
             load_factor_solver = LoadFactorSolver(model, self.Gc)
             opti_res = load_factor_solver.solve(
                 phi0, SIFs_controlled, SIFs_prescribed, self.s
@@ -227,7 +229,7 @@ class GCrackBaseData(ABC):
             # Get the results
             phi_ = opti_res[0]
             lambda_ = opti_res[1]
-            # NOTE: DEBUG
+            # # NOTE: DEBUG
             # load_factor_solver.export_minimization_plots(
             #     phi_,
             #     lambda_,
@@ -242,14 +244,14 @@ class GCrackBaseData(ABC):
             da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
             crack_points.append(crack_points[-1] + da_vec)
 
-            print("├─ Results of the step")
+            print("│  Results of the step")
             print(
-                f"│  ├─ Crack propagation angle : {phi_:.3f} rad / {phi_ * 180 / np.pi:.3f}°"
+                f"│  │  Crack propagation angle : {phi_:.3f} rad / {phi_ * 180 / np.pi:.3f}°"
             )
-            print(f"│  ├─ Load factor             : {lambda_:.3g}")
-            print(f"│  └─ New crack tip position  : {crack_points[-1]}")
+            print(f"│  │  Load factor             : {lambda_:.3g}")
+            print(f"│  │  New crack tip position  : {crack_points[-1]}")
 
-            print("├─ Postprocess")
+            print("│  Postprocess")
             # Scale the displacement field
             u_scaled = u_controlled.copy()
             u_scaled.x.array[:] = lambda_ * u_controlled.x.array + u_prescribed.x.array
@@ -258,7 +260,7 @@ class GCrackBaseData(ABC):
             fimp = compute_measured_forces(domain, model, u_scaled, self)
             uimp = compute_measured_displacement(domain, u_scaled, self)
 
-            print("└─ Export the results")
+            print("│  Export the results")
             # Export the elastic solution
             export_function(u_scaled, t, dir_name)
             # Store and export the results

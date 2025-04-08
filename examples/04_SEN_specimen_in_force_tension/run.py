@@ -5,8 +5,10 @@ sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 from typing import List
 
 import numpy as np
+import jax.numpy as jnp
 
 import gmsh
+
 from gcrack import GCrackBaseData
 from boundary_conditions import DisplacementBC, ForceBC
 
@@ -17,8 +19,8 @@ class GCrackData(GCrackBaseData):
         gmsh.clear()
         # Parameters
         L = self.pars["L"]
-        h = L / 128
-        h_min = self.R_int / 32
+        h = L / 64
+        h_min = self.R_int / 8
         # Points
         # Bot
         p1: int = gmsh.model.geo.addPoint(0, 0, 0, h)
@@ -98,8 +100,8 @@ class GCrackData(GCrackBaseData):
         gmsh.model.mesh.field.setNumber(field1, "Sampling", 100)
         field2: int = gmsh.model.mesh.field.add("Threshold")
         gmsh.model.mesh.field.setNumber(field2, "InField", field1)
-        gmsh.model.mesh.field.setNumber(field2, "DistMin", 2 * self.R_ext)
-        gmsh.model.mesh.field.setNumber(field2, "DistMax", 4 * self.R_ext)
+        gmsh.model.mesh.field.setNumber(field2, "DistMin", self.R_ext)
+        gmsh.model.mesh.field.setNumber(field2, "DistMax", 2 * self.R_ext)
         gmsh.model.mesh.field.setNumber(field2, "SizeMin", h_min)
         gmsh.model.mesh.field.setNumber(field2, "SizeMax", h)
         gmsh.model.geo.synchronize()
@@ -115,7 +117,7 @@ class GCrackData(GCrackBaseData):
         Returns:
             List: Coordinate of the point where the displacement is measured
         """
-        return [0, self.pars["L"]]
+        return [self.pars["L"], 0]
 
     def locate_measured_forces(self) -> int:
         """Define the boundary where the reaction force are measured.
@@ -131,15 +133,11 @@ class GCrackData(GCrackBaseData):
         Returns:
             List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
         """
-        return [DisplacementBC(self.boundaries["bot"], [float("nan"), 0.0])]
-
-    def define_controlled_forces(self) -> List[ForceBC]:
-        """Define the list of imposed forces.
-
-        Returns:
-            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
-        """
-        return [ForceBC(self.boundaries["top"], [0.0, 1.0])]
+        return [
+            DisplacementBC(
+                boundary_id=self.boundaries["bot"], u_imp=[float("nan"), 0.0]
+            ),
+        ]
 
     def define_locked_points(self) -> List[List[float]]:
         """Define the list of locked points.
@@ -147,29 +145,52 @@ class GCrackData(GCrackBaseData):
         Returns:
             List[List[float]]: A list of points (list) coordinates.
         """
-        return [[0, 0, 0]]
+        return [
+            [0.0, 0.0, 0.0],
+        ]
+
+    def define_controlled_forces(self) -> List[ForceBC]:
+        """Define the list of imposed forces.
+
+        Returns:
+            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
+        """
+        return [
+            ForceBC(boundary_id=self.boundaries["top"], f_imp=[0.0, 1.0]),
+        ]
 
     def Gc(self, phi):
-        return self.pars["Gc"]
+        # Get the parameters
+        Gc_min = self.pars["Gc_min"]
+        Gc_max = self.pars["Gc_max"]
+        theta0 = self.pars["theta0"]
+        # Compute associated parameters
+        Gc = jnp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
+        ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
+        # Define expression of the energy release rate
+        Gc_expression = Gc * jnp.sqrt(
+            1 + ag * (jnp.sin(phi - theta0) ** 2 - jnp.cos(phi - theta0) ** 2)
+        )
+        return Gc_expression
+        # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
 
 
 if __name__ == "__main__":
     # Define user parameters
     pars = {
         "L": 1.0,
-        "Gc": 1.0,
+        "Gc_min": 10_000,
+        "Gc_max": 20_000,
+        "theta0": 25 * np.pi / 180,
     }
 
     gcrack_data = GCrackData(
-        E=1.0,
+        E=1e9,
         nu=0.3,
         da=pars["L"] / 128,
-        Nt=1,
-        xc0=[0.5 * pars["L"], pars["L"] / 2, 0],
+        Nt=60,
+        xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",
         pars=pars,
-        sif_method="williams",
-        # sif_method="i-integral",
-        s=0.0,
     )
-    gcrack_data.gcrack()
+    gcrack_data.run()

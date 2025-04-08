@@ -2,10 +2,9 @@ import sys
 
 sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
-import jax.numpy as jnp
 
 import gmsh
 
@@ -20,7 +19,7 @@ class GCrackData(GCrackBaseData):
         # Parameters
         L = self.pars["L"]
         h = L / 64
-        h_min = self.R_int / 8
+        h_min = self.R_int / 16
         # Points
         # Bot
         p1: int = gmsh.model.geo.addPoint(0, 0, 0, h)
@@ -82,6 +81,7 @@ class GCrackData(GCrackBaseData):
         self.boundaries = {
             "bot": 11,
             "top": 12,
+            "sides": 13,
         }
         # Physical groups
         # Domain
@@ -92,6 +92,10 @@ class GCrackData(GCrackBaseData):
         gmsh.model.setPhysicalName(1, bot, "bot")
         top: int = gmsh.model.addPhysicalGroup(1, [l6], tag=self.boundaries["top"])
         gmsh.model.setPhysicalName(1, top, "top")
+        sides: int = gmsh.model.addPhysicalGroup(
+            1, [l2, l5, l7, l9], tag=self.boundaries["sides"]
+        )
+        gmsh.model.setPhysicalName(1, sides, "sides")
 
         # Element size
         # Refine around the crack line
@@ -134,63 +138,31 @@ class GCrackData(GCrackBaseData):
             List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
         """
         return [
+            DisplacementBC(boundary_id=self.boundaries["bot"], u_imp=[0, 0]),
+            DisplacementBC(boundary_id=self.boundaries["top"], u_imp=[1, 0]),
             DisplacementBC(
-                boundary_id=self.boundaries["bot"], u_imp=[float("nan"), 0.0]
+                boundary_id=self.boundaries["sides"], u_imp=[float("nan"), 0]
             ),
         ]
 
-    def define_locked_points(self) -> List[List[float]]:
-        """Define the list of locked points.
-
-        Returns:
-            List[List[float]]: A list of points (list) coordinates.
-        """
-        return [
-            [0.0, 0.0, 0.0],
-        ]
-
-    def define_controlled_forces(self) -> List[ForceBC]:
-        """Define the list of imposed forces.
-
-        Returns:
-            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
-        """
-        return [
-            ForceBC(boundary_id=self.boundaries["top"], f_imp=[0.0, 1.0]),
-        ]
-
     def Gc(self, phi):
-        # Get the parameters
-        Gc_min = self.pars["Gc_min"]
-        Gc_max = self.pars["Gc_max"]
-        theta0 = self.pars["theta0"]
-        # Compute associated parameters
-        Gc = jnp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
-        ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
-        # Define expression of the energy release rate
-        Gc_expression = Gc * jnp.sqrt(
-            1 + ag * (jnp.sin(phi - theta0) ** 2 - jnp.cos(phi - theta0) ** 2)
-        )
-        return Gc_expression
-        # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
+        return self.pars["Gc"]
 
 
 if __name__ == "__main__":
     # Define user parameters
     pars = {
-        "L": 1.0,
-        "Gc_min": 10_000,
-        "Gc_max": 20_000,
-        "theta0": 25 * np.pi / 180,
+        "L": 1e-3,
+        "Gc": 2_700,
     }
 
     gcrack_data = GCrackData(
-        E=1e9,
-        nu=0.3,
-        da=pars["L"] / 128,
-        Nt=60,
+        E=230.77e9,
+        nu=0.43,
+        da=pars["L"] / 64,
+        Nt=35,
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",
         pars=pars,
     )
-    gcrack_data.gcrack()
+    gcrack_data.run()

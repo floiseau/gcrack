@@ -225,4 +225,4 @@ if __name__ == "__main__":
         pars=pars,
         phi0=angle,
     )
-    gcrack_data.gcrack()
+    gcrack_data.run()

@@ -43,7 +43,6 @@ class LoadFactorSolver:
         )
 
     def solve(self, phi0: float, SIFs_controlled, SIFs_prescribed, s):
-        print("├─ Determination of propagation angle (GMERR) and load factor (GMERR)")
         KIc, KIIc, Tc = (
             SIFs_controlled["KI"],
             SIFs_controlled["KII"],
@@ -69,11 +68,11 @@ class LoadFactorSolver:
         }
 
         # There are two cases: continuous vs discontinuous derivative
-        # TODO: Make it a user-specified parameter
+        # TODO: The gradient descent with line search works for both cases
         case = "continuous"  # "discontinuous"
         match case:
             case "continuous":
-                phi = gradient_descent_with_armijo_line_search(
+                phi = gradient_descent_with_line_search(
                     phi0, self.objective, self.grad, kwargs=kwargs
                 )
             case "discontinuous":
@@ -85,13 +84,13 @@ class LoadFactorSolver:
         hess = self.hess([phi], **kwargs)[0][0]
         solution_is_max = hess < 0
         if solution_is_max:
-            # TODO: Check is this case really occurs
             print("Found a maximum instead of minimum -> perturbating the objective")
+            print("Note: this test might also be triggered by cups!")
 
             match case:
                 case "continuous":
                     # phi = gradient_descent(phi0, self.grad_pert, kwargs=kwargs)
-                    phi = gradient_descent_with_armijo_line_search(
+                    phi = gradient_descent_with_line_search(
                         phi0, self.objective_pert, self.grad_pert, kwargs=kwargs
                     )
                 case "discontinuous":
@@ -209,47 +208,40 @@ def gradient_descent(phi0, f, tol: float = 1e-6, max_iter=100_000, kwargs={}):
     return phi
 
 
-def gradient_descent_with_armijo_line_search(
-    phi0, obj, gra, tol: float = 1e-6, beta: float = 0.5, max_iter=100, kwargs={}
+def gradient_descent_with_line_search(
+    phi0, obj, gra, tol: float = 1e-9, beta: float = 0.5, max_iter=100, kwargs={}
 ):
-    print("│  └─ Running the gradient descent")
+    print("│  │  Running the gradient descent with custom line search")
     # Initialization
     phi = float(phi0)
     converged = False
     for i in range(max_iter):
         # Determine the direction
-        inc = -gra([phi], **kwargs)[0]
+        direction = -gra([phi], **kwargs)[0]
         # Apply line-seach
-        cs = [0.0] + [beta**k for k in reversed(range(31))]
+        cs = [0.0] + [beta**k for k in reversed(range(-31, 32))]
         # print(cs)
-        phis_test = [phi + c * inc for c in cs]
+        phis_test = [phi + c * direction for c in cs]
         obj_vals = jnp.array([obj([phi_test], **kwargs) for phi_test in phis_test])
 
         # Get the index associated with the first increase of the objective
-        # NOTE: It gives the index of the minimum
         diff = jnp.diff(obj_vals)
-        # print(f"{obj_vals=}")
-        # print(f"{diff=}")
         idx = jnp.where(diff > 0)[0][0]
+        # Calculate the increment
+        dphi = cs[idx] * direction
         # If there is nothing in the list, it means that the calculation is converged
-        if idx == 0:
+        print(
+            f"│  │  │  Step: {i + 1:06d} | phi: {jnp.rad2deg(phi):+7.2f}° | dphi: {abs(dphi):8.3g}"
+        )
+        if dphi <= tol:
             converged = True
-            print(
-                f"│     ├─ Step: {i + 1:06d} | Phi: {jnp.rad2deg(phi):+7.2f}° | Error: {abs(inc):8.3g}",
-            )
-            print("│     └─ Converged")
+            print("│  │  │  Converged")
             break
         else:
-            # Get the coefficient k
-            c = cs[idx]
             # Update the solution
-            phi += c * inc
+            phi += dphi
             # Clip the angle phi
             phi = min(max(phi0 - 2 * jnp.pi / 3, phi), phi0 + 2 * jnp.pi / 3)
-            print(
-                f"│     ├─ Step: {i + 1:06d} | Phi: {jnp.rad2deg(phi):+7.2f}° | Error: {abs(inc):8.3g}",
-                # end="\r",
-            )
     # Check the convergence
     if not converged:
         raise RuntimeError(" └─ Gradient descent failed to converge!")

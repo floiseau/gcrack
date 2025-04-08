@@ -5,14 +5,14 @@ sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
 from typing import List, Tuple
 
 import numpy as np
+import jax.numpy as jnp
 
 import gmsh
-
-from gcrack import GCrackBaseData
+from icrack import ICrackBase
 from boundary_conditions import DisplacementBC, ForceBC
 
 
-class GCrackData(GCrackBaseData):
+class ICrack(ICrackBase):
     def generate_mesh(self, crack_points: List[np.ndarray]) -> gmsh.model:
         # Clear existing model
         gmsh.clear()
@@ -79,23 +79,26 @@ class GCrackData(GCrackBaseData):
 
         # Boundaries
         self.boundaries = {
-            "bot": 11,
-            "top": 12,
-            "sides": 13,
+            "left_top": l9,
+            "left_bot": l5,
+            "bot": l1,
+            "top": l6,
         }
         # Physical groups
         # Domain
         domain: int = gmsh.model.addPhysicalGroup(2, [s1, s2], tag=21)
         gmsh.model.setPhysicalName(2, domain, "domain")
         # Boundaries
-        bot: int = gmsh.model.addPhysicalGroup(1, [l1], tag=self.boundaries["bot"])
-        gmsh.model.setPhysicalName(1, bot, "bot")
-        top: int = gmsh.model.addPhysicalGroup(1, [l6], tag=self.boundaries["top"])
-        gmsh.model.setPhysicalName(1, top, "top")
-        sides: int = gmsh.model.addPhysicalGroup(
-            1, [l2, l5, l7, l9], tag=self.boundaries["sides"]
-        )
-        gmsh.model.setPhysicalName(1, sides, "sides")
+        for name, id in self.boundaries.items():
+            b_tag: int = gmsh.model.addPhysicalGroup(1, [id], tag=id)
+            gmsh.model.setPhysicalName(1, b_tag, name)
+
+        # # Display and exit for debug purposes
+        # # Synchronize the model
+        # gmsh.model.geo.synchronize()
+        # # Display the GMSH window
+        # gmsh.fltk.run()
+        # exit()
 
         # Element size
         # Refine around the crack line
@@ -104,8 +107,8 @@ class GCrackData(GCrackBaseData):
         gmsh.model.mesh.field.setNumber(field1, "Sampling", 100)
         field2: int = gmsh.model.mesh.field.add("Threshold")
         gmsh.model.mesh.field.setNumber(field2, "InField", field1)
-        gmsh.model.mesh.field.setNumber(field2, "DistMin", self.R_ext)
-        gmsh.model.mesh.field.setNumber(field2, "DistMax", 2 * self.R_ext)
+        gmsh.model.mesh.field.setNumber(field2, "DistMin", 2 * self.R_ext)
+        gmsh.model.mesh.field.setNumber(field2, "DistMax", 4 * self.R_ext)
         gmsh.model.mesh.field.setNumber(field2, "SizeMin", h_min)
         gmsh.model.mesh.field.setNumber(field2, "SizeMax", h)
         gmsh.model.geo.synchronize()
@@ -121,7 +124,7 @@ class GCrackData(GCrackBaseData):
         Returns:
             List: Coordinate of the point where the displacement is measured
         """
-        return [self.pars["L"], 0]
+        return [0, self.pars["L"]]
 
     def locate_measured_forces(self) -> int:
         """Define the boundary where the reaction force are measured.
@@ -129,40 +132,63 @@ class GCrackData(GCrackBaseData):
         Returns:
             int: Identifier (id) of the boundary in GMSH.
         """
-        return self.boundaries["top"]
+        return self.boundaries["left_top"]
 
-    def define_controlled_displacements(self) -> List[DisplacementBC]:
-        """Define the imposed displacement boundary conditions.
+    def define_boundary_displacements(self, l: float) -> List[DisplacementBC]:
+        """Define the displacement boundary conditions as a function of the load factor.
 
         Returns:
             List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
         """
+        nan = float("nan")
         return [
-            DisplacementBC(boundary_id=self.boundaries["bot"], u_imp=[0, 0]),
-            DisplacementBC(boundary_id=self.boundaries["top"], u_imp=[1, 0]),
-            DisplacementBC(
-                boundary_id=self.boundaries["sides"], u_imp=[float("nan"), 0]
-            ),
+            DisplacementBC(boundary_id=self.boundaries["left_bot"], u_imp=[nan, -l]),
+            DisplacementBC(boundary_id=self.boundaries["left_top"], u_imp=[nan, l]),
         ]
 
+    def define_locked_points(self) -> List[List[float]]:
+        """Define the list of locked points.
+
+        Returns:
+            List[List[float]]: A list of points (list) coordinates.
+        """
+        return [[self.pars["L"], self.pars["L"] / 2, 0]]
+
     def Gc(self, phi):
-        return self.pars["Gc"]
+        # # Get the parameters
+        # Gc_min = 10_000
+        # Gc_max = 20_000
+        # theta0 = np.deg2rad(25)
+        # # Compute associated parameters
+        # Gc = jnp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
+        # ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
+        # # Define expression of the energy release rate
+        # Gc_expression = Gc * jnp.sqrt(
+        #     1 + ag * (jnp.sin(phi - theta0) ** 2 - jnp.cos(phi - theta0) ** 2)
+        # )
+        # return Gc_expression
+        # # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
+        return self.pars["Gc"] * np.ones(phi.shape)
 
 
 if __name__ == "__main__":
     # Define user parameters
     pars = {
-        "L": 1e-3,
-        "Gc": 2_700,
+        "L": 1.0,
+        "Gc": 10_000,
     }
 
-    gcrack_data = GCrackData(
-        E=230.77e9,
-        nu=0.43,
-        da=pars["L"] / 64,
-        Nt=35,
+    icrack = ICrack(
+        E=1e9,
+        nu=0.3,
+        da=pars["L"] / 128,
+        dl=1e-3,
+        l0=5e-3,
+        l_max=1e-2,
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",
         pars=pars,
+        sif_method="i-integral",  # "i-integral" "willliams"
+        s=0,  # s=pars["L"] / 256,
     )
-    gcrack_data.gcrack()
+    icrack.run()

@@ -397,6 +397,6 @@ def compute_SIFs(
 
     # Display informations
     for name, val in SIFs.items():
-        print(f"│  ├─ {name: <3}: {val:.3g}")
-    print("│  └─ End of SIF calculations")
+        print(f"│  │  {name: <3}: {val:.3g}")
+    print("│  │  End of SIF calculations")
     return SIFs
