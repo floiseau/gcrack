@@ -2,7 +2,7 @@ from math import pi
 
 import matplotlib.pyplot as plt
 import jax.numpy as jnp
-from jax import jit, jacobian, hessian, random
+from jax import jit, grad, hessian, random
 
 from gcrack.lefm import G_star, G_star_coupled
 # NOTE: Use from lefm import KII_star for PLS
@@ -18,10 +18,10 @@ class LoadFactorSolver:
         # Set the critical energy release rate function
         self.Gc = jit(Gc_func)
         # Automatic differentiation of the objective function
-        self.grad = jit(jacobian(self.objective))
+        self.grad = jit(grad(self.objective))
         self.hess = jit(hessian(self.objective))
         # Automatic differentiation of the perturbated objective function
-        self.grad_pert = jit(jacobian(self.objective_pert))
+        self.grad_pert = jit(grad(self.objective_pert))
         self.hess_pert = jit(hessian(self.objective_pert))
 
     def objective(self, x, Ep, s, KIc, KIIc, Tc, KIp, KIIp, Tp, phi0):
@@ -152,6 +152,7 @@ class LoadFactorSolver:
         plt.xlabel(r"Bifurcation angle $\varphi$ (rad)")
         plt.ylabel(r"Derivative of the load factor")
         grads = [self.grad([phi_], **kwargs)[0] for phi_ in phis]
+        plt.scatter([phi], [self.grad([phi], **kwargs)[0]], c="r")
         plt.plot(phis, grads)
         # plt.scatter([phi], [self.grad([phi], **kwargs)[0]], c="r")
         plt.grid()
@@ -209,7 +210,7 @@ def gradient_descent(phi0, f, tol: float = 1e-6, max_iter=100_000, kwargs={}):
 
 
 def gradient_descent_with_line_search(
-    phi0, obj, gra, tol: float = 1e-9, beta: float = 0.5, max_iter=100, kwargs={}
+    phi0, obj, gra, tol: float = 1e-6, max_iter: int = 100, kwargs={}
 ):
     print("│  │  Running the gradient descent with custom line search")
     # Initialization
@@ -219,29 +220,33 @@ def gradient_descent_with_line_search(
         # Determine the direction
         direction = -gra([phi], **kwargs)[0]
         # Apply line-seach
-        cs = [0.0] + [beta**k for k in reversed(range(-31, 32))]
-        # print(cs)
-        phis_test = [phi + c * direction for c in cs]
-        obj_vals = jnp.array([obj([phi_test], **kwargs) for phi_test in phis_test])
-
+        cs = [0.0] + [0.9**k for k in reversed(range(-31, 32))]
+        phis_test = jnp.array([phi + c * direction for c in cs])
         # Get the index associated with the first increase of the objective
-        diff = jnp.diff(obj_vals)
-        idx = jnp.where(diff > 0)[0][0]
+        diff = jnp.array([-gra([phi_test], **kwargs)[0] for phi_test in phis_test])
+        if all(diff < 0):  # If it only decreases, take the largest step
+            idx = -1
+        else:  # If it increases after a decrease, then local minimum
+            idx = jnp.where(diff > 0)[0][0] - 1
         # Calculate the increment
         dphi = cs[idx] * direction
-        # If there is nothing in the list, it means that the calculation is converged
-        print(
-            f"│  │  │  Step: {i + 1:06d} | phi: {jnp.rad2deg(phi):+7.2f}° | dphi: {abs(dphi):8.3g}"
-        )
-        if dphi <= tol:
-            converged = True
+        # Update the solution
+        phi += dphi
+        # Generate an info message
+        msg = "│  │  │  "
+        msg += f"Step: {i + 1:06d} | "
+        msg += f"phi: {jnp.rad2deg(phi):+7.2f}° | "
+        msg += f"dphi: {abs(dphi):8.3g}"
+        print(msg)
+        # Check the convergence
+        converged = abs(dphi) <= tol
+        if converged:
             print("│  │  │  Converged")
             break
         else:
-            # Update the solution
-            phi += dphi
             # Clip the angle phi
             phi = min(max(phi0 - 2 * jnp.pi / 3, phi), phi0 + 2 * jnp.pi / 3)
+
     # Check the convergence
     if not converged:
         raise RuntimeError(" └─ Gradient descent failed to converge!")

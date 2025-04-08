@@ -76,7 +76,6 @@ class ICrackBase(ABC):
         Returns:
             List[List[float]]: A list of points (list) coordinates.
         """
-        print("TODO: use self.l")
         return []
 
     def define_boundary_displacements(self, l: float) -> List[DisplacementBC]:
@@ -142,11 +141,9 @@ class ICrackBase(ABC):
         while self.l < self.l_max:
             print(f"\nLOAD FACTOR {self.l:.3g}")
             # Initialize the crack propagation flag as true
-            crack_propagates = False
+            crack_propagates = True
 
-            # TODO: Add exports
-
-            while not crack_propagates:
+            while crack_propagates:
                 # Update the current crack angle
                 phi0 = res["phi"]
 
@@ -169,7 +166,7 @@ class ICrackBase(ABC):
                 # Solve the elastic problem
                 u = solve_elastic_problem(domain, model, bcs)
 
-                export_function(u, 0, dir_name)
+                export_function(u, t, dir_name)
 
                 print(f"│  Compute the SIFs ({self.sif_method})")
                 # Compute the SIFs for the controlled problem
@@ -190,11 +187,23 @@ class ICrackBase(ABC):
                 # Compute the load factor and crack angle.
                 load_factor_solver = LoadFactorSolver(model, self.Gc)
                 opti_res = load_factor_solver.solve(phi0, SIFs, SIFs_prescribed, self.s)
+
+                # NOTE: DEBUG
+                load_factor_solver.export_minimization_plots(
+                    opti_res[0],
+                    opti_res[1],
+                    phi0,
+                    SIFs,
+                    SIFs_prescribed,
+                    self.s,
+                    t,
+                    dir_name,
+                )
                 # Get the results
                 phi_ = opti_res[0]
-                crack_propagates = opti_res[1] >= 1
+                crack_propagates = opti_res[1] <= 1
                 # Add a new crack point
-                if not crack_propagates:
+                if crack_propagates:
                     print("│  │  The crack propagates: continue the propagation")
                     da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
                     crack_points.append(crack_points[-1] + da_vec)
@@ -227,6 +236,9 @@ class ICrackBase(ABC):
                 export_res_to_csv(res, dir_name / "results.csv")
                 # Increment time
                 t += 1
+
+                if crack_propagates:
+                    print("-  Next crack increment")
             # Increment the load
             self.l += self.dl
 
