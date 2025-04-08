@@ -1,6 +1,9 @@
-from domain import Domain
-from models import ElasticModel
-from boundary_conditions import BoundaryConditions, get_dirichlet_boundary_conditions
+from gcrack.domain import Domain
+from gcrack.models import ElasticModel
+from gcrack.boundary_conditions import (
+    BoundaryConditions,
+    get_dirichlet_boundary_conditions,
+)
 
 import ufl
 import dolfinx

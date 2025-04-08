@@ -8,7 +8,7 @@ import sympy as sp
 import dolfinx
 from dolfinx import fem
 
-from domain import Domain
+from gcrack.domain import Domain
 
 
 @dataclass
@@ -82,7 +82,7 @@ def get_dirichlet_boundary_conditions(
                 # Define an FEM function (to control the BC)
                 bc_func = fem.Function(V_u.sub(comp).collapse()[0])
                 # Update the load
-                with bc_func.vector.localForm() as bc_local:
+                with bc_func.x.petsc_vec.localForm() as bc_local:
                     bc_local.set(u_bc.u_imp[comp])
             # Get the DOFs
             boundary_dof = boundary_dofs[f"{u_bc.boundary_id}_{comp}"]

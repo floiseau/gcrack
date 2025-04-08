@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
-
 from typing import List, Tuple
 
 import numpy as np
@@ -9,7 +5,7 @@ import jax.numpy as jnp
 
 import gmsh
 from icrack import ICrackBase
-from boundary_conditions import DisplacementBC, ForceBC
+from gcrack.boundary_conditions import DisplacementBC, ForceBC
 
 
 class ICrack(ICrackBase):

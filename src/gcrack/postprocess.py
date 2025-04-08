@@ -3,8 +3,8 @@ import numpy as np
 import ufl
 from dolfinx import geometry, fem
 
-from domain import Domain
-from models import ElasticModel
+from gcrack.domain import Domain
+from gcrack.models import ElasticModel
 
 
 def compute_measured_forces(

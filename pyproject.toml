@@ -1,0 +1,22 @@
+[project]
+name = "gcrack"
+version = "0.0.1"
+authors = [
+  { name="Flavien Loiseau", email="flavien.loiseau@ensta.fr" },
+]
+description = "A package to simulate crack propagation in anisotropic media"
+# readme = "README.md"
+requires-python = ">=3.9"
+# dependencies = [
+#   "numpy",
+#   "jax",
+#   "sympy",
+#   "pyvista",
+#   "gmsh",
+#   "fenics-dolfinx",
+#   "fenics-ufl",
+# ]
+
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"

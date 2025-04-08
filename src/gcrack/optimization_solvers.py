@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import jax.numpy as jnp
 from jax import jit, jacobian, hessian, random
 
-from lefm import G_star, G_star_coupled
+from gcrack.lefm import G_star, G_star_coupled
 # NOTE: Use from lefm import KII_star for PLS
 
 prng_key = random.key(0)

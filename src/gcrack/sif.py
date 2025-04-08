@@ -4,10 +4,10 @@ import ufl
 import dolfinx
 from dolfinx import fem, default_scalar_type
 
-from domain import Domain
-from models import ElasticModel
-from utils.geometry import distance_point_to_segment
-from utils.williams_series import Gamma_I, Gamma_II
+from gcrack.domain import Domain
+from gcrack.models import ElasticModel
+from gcrack.utils.geometry import distance_point_to_segment
+from gcrack.utils.williams_series import Gamma_I, Gamma_II
 
 
 def compute_theta_field(domain, crack_tip, R_int, R_ext):

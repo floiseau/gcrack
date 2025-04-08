@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append("/home/flavien.loiseau/sdrive/codes/gcrack/src/gcrack")
-
 from typing import List
 
 import numpy as np
@@ -9,11 +5,11 @@ import jax.numpy as jnp
 
 import gmsh
 
-from gcrack import GCrackBaseData
-from boundary_conditions import DisplacementBC, ForceBC
+from gcrack import GCrackBase
+from gcrack.boundary_conditions import DisplacementBC, ForceBC
 
 
-class GCrackData(GCrackBaseData):
+class GCrackData(GCrackBase):
     def generate_mesh(self, crack_points: List[np.ndarray]) -> gmsh.model:
         # Clear existing model
         gmsh.clear()

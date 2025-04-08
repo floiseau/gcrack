@@ -9,18 +9,18 @@ import numpy as np
 
 from dolfinx.fem import Constant
 
-from domain import Domain
-from models import ElasticModel
-from boundary_conditions import (
+from gcrack.domain import Domain
+from gcrack.models import ElasticModel
+from gcrack.boundary_conditions import (
     DisplacementBC,
     ForceBC,
     BoundaryConditions,
 )
-from solvers import solve_elastic_problem
-from sif import compute_SIFs
-from optimization_solvers import LoadFactorSolver
-from postprocess import compute_measured_forces, compute_measured_displacement
-from exporters import export_function, export_res_to_csv, clean_vtk_files
+from gcrack.solvers import solve_elastic_problem
+from gcrack.sif import compute_SIFs
+from gcrack.optimization_solvers import LoadFactorSolver
+from gcrack.postprocess import compute_measured_forces, compute_measured_displacement
+from gcrack.exporters import export_function, export_res_to_csv, clean_vtk_files
 
 
 @dataclass
