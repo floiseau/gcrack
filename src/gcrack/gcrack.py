@@ -160,7 +160,7 @@ class GCrackBase(ABC):
             phi0 = res["phi"]
 
             # Run the user defined load step initialization
-            self.user_load_step_initialization(self, res)
+            self.user_load_step_initialization(res)
 
             print("│  Meshing the cracked domain")
             gmsh_model = self.generate_mesh(crack_points)
