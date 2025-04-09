@@ -220,6 +220,7 @@ class ICrackBase(ABC):
                 uimp = compute_measured_displacement(domain, u, self)
                 # Store and export the results
                 print("│  Results of the step")
+                res["t"] = t
                 res["a"] += self.da
                 res["phi"] = phi_
                 res["lambda"] = self.l
