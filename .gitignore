@@ -1,3 +1,6 @@
+# Directories
+others/
+
 # VTK files
 *.pvd
 *.vtu
