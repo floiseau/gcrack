@@ -23,17 +23,34 @@ from gcrack.exporters import export_function, export_res_to_csv, clean_vtk_files
 
 @dataclass
 class GCrackBase(ABC):
+    """
+    GCrackBase is an abstract base class for simulating crack propagation in elastic materials using the Finite Element Method (FEM).
+    """
+
     E: float
+    """E (float): Young's modulus of the material."""
     nu: float
+    """nu (float): Poisson's ratio of the material."""
     da: float
+    """da (float): Crack increment length."""
     Nt: int
+    """Nt (int): Number of crack increment."""
     xc0: np.array
+    """xc0 (np.array): Initial crack tip coordinates."""
     assumption_2D: str
-    pars: dict  # User defined parameters (passed to user-defined functions)
+    """assumption_2D (str): Assumption for 2D elasticity (e.g., 'plane stress', 'plane strain')."""
+    pars: dict
+    """pars (dict): User-defined parameters passed to user-defined functions."""
+    l0: Optional[float] = 0.0
+    """l0 (Optional[float]): Initial load factor, defaults to 0.0."""
     phi0: Optional[float] = 0.0
-    s: Optional[float] = 0  # Internal length associated with T-stress
+    """phi0 (Optional[float]): Initial crack propagation angle, defaults to 0.0."""
+    s: Optional[float] = 0
+    """s (Optional[float]): Internal length associated with T-stress, defaults to 0."""
     sif_method: Optional[str] = "I-integral"
+    """sif_method (Optional[str]): Method for computing Stress Intensity Factors (SIFs), defaults to "I-integral"."""
     criterion: Optional[str] = "gmerr"
+    """criterion (Optional[str]): Criterion for crack propagation, defaults to "gmerr"."""
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
