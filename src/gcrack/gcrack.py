@@ -106,6 +106,15 @@ class GCrackBase(ABC):
         """
         return []
 
+    def user_load_step_initialization(self, res: dict) -> None:
+        """User-defined load step initialization.
+
+        Customize load step initialization using results from the previous step.
+        This can include creating custom variables for boundary conditions.
+        This function is called at the very beginning of the load step.
+        """
+        ...
+
     def run(self):
         # Initialize GMSH
         gmsh.initialize()
@@ -149,6 +158,9 @@ class GCrackBase(ABC):
             print(f"\nLOAD STEP {t}")
             # Get current crack properties
             phi0 = res["phi"]
+
+            # Run the user defined load step initialization
+            self.user_load_step_initialization(self, res)
 
             print("│  Meshing the cracked domain")
             gmsh_model = self.generate_mesh(crack_points)
