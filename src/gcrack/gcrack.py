@@ -157,7 +157,7 @@ class GCrackBase(ABC):
             "t": 0,
             "a": 0,
             "phi": self.phi0,
-            "lambda": 0,
+            "lambda": self.l0,
             "xc_1": crack_points[-1][0],
             "xc_2": crack_points[-1][1],
             "xc_3": crack_points[-1][2],
@@ -292,7 +292,7 @@ class GCrackBase(ABC):
             # Export the elastic solution
             export_function(u_scaled, t, dir_name)
             # Store and export the results
-            res["t"] = t + 1
+            res["t"] = t
             res["a"] += self.da
             res["phi"] = phi_
             res["lambda"] = lambda_
