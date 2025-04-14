@@ -1,9 +1,7 @@
 import numpy as np
-
 import ufl
 import dolfinx
 from dolfinx import fem, default_scalar_type
-
 from gcrack.domain import Domain
 from gcrack.models import ElasticModel
 from gcrack.utils.geometry import distance_point_to_segment
@@ -37,7 +35,8 @@ def compute_theta_field(domain, crack_tip, R_int, R_ext):
     bcs = [bc_out, bc_inner]
     # Solve the problem
     problem = fem.petsc.LinearProblem(a, L, bcs=bcs)
-    return problem.solve()
+    theta_field = problem.solve()
+    return theta_field
 
 
 def compute_auxiliary_displacement_field(
@@ -65,10 +64,14 @@ def compute_auxiliary_displacement_field(
     ka = model.ka
     # Compute the functions f
     f_I, f_II = [0, 0], [0, 0]
-    f_I[0] = (ka - 1 + 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
-    f_I[1] = (ka + 1 - 2 * ufl.cos(theta / 2) ** 2) * ufl.sin(theta / 2)
-    f_II[0] = (ka + 1 + 2 * ufl.cos(theta / 2) ** 2) * ufl.sin(theta / 2)
-    f_II[1] = -(ka - 1 - 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
+    # f_I[0] = (ka - 1 + 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
+    # f_I[1] = (ka + 1 - 2 * ufl.cos(theta / 2) ** 2) * ufl.sin(theta / 2)
+    # f_II[0] = (ka + 1 + 2 * ufl.cos(theta / 2) ** 2) * ufl.sin(theta / 2)
+    # f_II[1] = -(ka - 1 - 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
+    f_I[0] = (ka - ufl.cos(theta)) * ufl.cos(theta / 2)
+    f_I[1] = (ka - ufl.cos(theta)) * ufl.sin(theta / 2)
+    f_II[0] = (2 + ka + ufl.cos(theta)) * ufl.sin(theta / 2)
+    f_II[1] = (2 - ka - ufl.cos(theta)) * ufl.cos(theta / 2)
     # Compute the displacement field
     ui = (
         ufl.sqrt(r / (2 * np.pi))
@@ -179,8 +182,7 @@ def compute_T_stress_with_I_integral(
     # Compute the interaction integral expression
     I_expr = Ig12 + Ig21 - Iw12 - Iw21
     # Compute the T-stress value
-    Ep = E
-    Ep /= (1 - model.nu**2) if model.assumption == "plane_strain" else 1
+    Ep = model.Ep
     T_expr = Ep / F * I_expr
     # Compute the interaction integral form
     T_form = fem.form(T_expr)
@@ -200,32 +202,13 @@ def compute_SIFs_with_I_integral(
     # Get the theta field
     theta_field = compute_theta_field(domain, xc, R_int, R_ext)
     theta = ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)]) * theta_field
-    # # DEBUG
-    # from dolfinx import io
-    # new_file = io.VTKFile(theta_field.function_space.mesh.comm, "theta.pvd", "w")
-    # new_file.write_function(theta_field, 0)
-    # new_file.close()
-    # input("Press enter to continue.")
-    # # END DEBUG
-    # Compute auxialiary displacement fields
+    # Compute auxiliary displacement fields
     u_I_aux = compute_auxiliary_displacement_field(
         domain, model, xc, phi0, K_I_aux=1, K_II_aux=0
     )
     u_II_aux = compute_auxiliary_displacement_field(
         domain, model, xc, phi0, K_I_aux=0, K_II_aux=1
     )
-
-    # # DEBUG
-    # from dolfinx import io
-    # V = u.function_space
-    # uIaux = fem.Function(V, dtype=default_scalar_type)
-    # uIaux.interpolate(fem.Expression(u_I_aux,V.element.interpolation_points()))
-    # vtkfile = io.VTKFile(V.mesh.comm, "u_I_aux.pvd", "w")
-    # vtkfile.write_function(uIaux, 0)
-    # vtkfile.close()
-    # input("Press enter to continue.")
-    # # END DEBUG
-
     # Compute the I-integrals
     I_I = compute_I_integral(domain, model, u, u_I_aux, theta)
     I_II = compute_I_integral(domain, model, u, u_II_aux, theta)
@@ -280,28 +263,6 @@ def compute_SIFs_from_William_series_interpolation(
     us[:, 0] -= u.x.array[2 * crack_tip_id]
     us[:, 1] -= u.x.array[2 * crack_tip_id + 1]
 
-    # # DEBUG Check the Williams series displacement fields
-    # # Compute the theoretical displacement fields
-    # K_I = 4e11 # 1e9
-    # K_II = 0
-    # zs = (xs[:, 0] + 1j * xs[:, 1]) * np.exp(-1j*phi0)
-    # us_comp = K_I * Gamma_I(1, zs, model.mu, model.ka) + K_II * Gamma_II(
-    #     1, zs, model.mu, model.ka
-    # )
-    # us_comp *= np.exp(1j*phi0)
-    # us_williams = np.empty(us.shape)
-    # us_williams[:, 0] = np.real(us_comp)
-    # us_williams[:, 1] = np.imag(us_comp)
-
-    # s = 0.01  # scale factor
-    # plt.figure()
-    # plt.scatter(xs[:, 0], xs[:, 1], marker=".", label="Initial pos")
-    # plt.scatter(xs[:, 0] + s * us_williams[:, 0], xs[:, 1] + s * us_williams[:, 1], marker="s", label="Williams")
-    # plt.scatter(xs[:, 0] + s * us[:, 0], xs[:, 1] + s * us[:, 1], marker="s", label="FEM")
-    # plt.grid()
-    # plt.legend()
-    # plt.show()
-
     # Define the Williams series field
     N_min = -3  # -3
     N_max = 9  # 9
@@ -325,15 +286,12 @@ def compute_SIFs_from_William_series_interpolation(
         Gamma[yaxis, 2 * i] = np.imag(GI)
         Gamma[xaxis, 2 * i + 1] = np.real(GII)
         Gamma[yaxis, 2 * i + 1] = np.imag(GII)
-    # Define the linear system
-    GT_G = np.matmul(Gamma.T, Gamma)
-    GT_UF = np.matmul(Gamma.T, UF)
-    # Solve the linear system
-    sol = np.linalg.solve(GT_G, GT_UF)
+    # Solve the least square problem
+    sol, res, _, _ = np.linalg.lstsq(Gamma, UF)
     # Extract KI and KII
     KI = sol[2 * (1 - N_min)]
     KII = sol[2 * (1 - N_min) + 1]
-    T = 4 * np.sqrt(2 * np.pi) * sol[2 * (2 - N_min)]  # TODO Verify this !!!!
+    T = 2 * np.sqrt(2) / np.sqrt(np.pi) * sol[2 * (2 - N_min)]
     # Extract KI and KII
     return {"KI": KI, "KII": KII, "T": T}
 
