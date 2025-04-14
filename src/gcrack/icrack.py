@@ -137,6 +137,8 @@ class ICrackBase(ABC):
         self.l = self.l0
         # Initialize a time counter
         t = 0
+        # Initialize the crack angle
+        phi0 = res["phi"]
 
         while self.l < self.l_max:
             print(f"\nLOAD FACTOR {self.l:.3g}")
@@ -144,9 +146,6 @@ class ICrackBase(ABC):
             crack_propagates = True
 
             while crack_propagates:
-                # Update the current crack angle
-                phi0 = res["phi"]
-
                 print("│  Meshing the cracked domain")
                 gmsh_model = self.generate_mesh(crack_points)
                 # Define the domain
@@ -205,9 +204,12 @@ class ICrackBase(ABC):
                 # Add a new crack point
                 if crack_propagates:
                     print("│  │  The crack propagates: continue the propagation")
+                    # Increment the crack
                     da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
                     crack_points.append(crack_points[-1] + da_vec)
                     print(f"│  │  New crack tip position  : {crack_points[-1]}")
+                    # Update the previous crack angle
+                    phi0 = res["phi"]
                 else:
                     print("│  │  The crack does not propagates: end of the load step")
 
