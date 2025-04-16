@@ -67,18 +67,8 @@ class LoadFactorSolver:
             "phi0": phi0,
         }
 
-        # There are two cases: continuous vs discontinuous derivative
-        # TODO: The gradient descent with line search works for both cases
-        case = "continuous"  # "discontinuous"
-        match case:
-            case "continuous":
-                phi = gradient_descent_with_line_search(
-                    phi0, self.objective, self.grad, kwargs=kwargs
-                )
-            case "discontinuous":
-                phi = bisection(
-                    self.grad, phi0 - jnp.pi / 2, phi0 + jnp.pi / 2, kwargs=kwargs
-                )
+        # print(f"phi  = {float(jnp.rad2deg(phi))}")
+        phi = gradient_descent_with_line_search(phi0, self.grad, kwargs=kwargs)
 
         # Check the stability of the solution (i.e., check if solution is a max)
         hess = self.hess([phi], **kwargs)[0][0]
@@ -86,20 +76,8 @@ class LoadFactorSolver:
         if solution_is_max:
             print("Found a maximum instead of minimum -> perturbating the objective")
             print("Note: this test might also be triggered by cups!")
-
-            match case:
-                case "continuous":
-                    # phi = gradient_descent(phi0, self.grad_pert, kwargs=kwargs)
-                    phi = gradient_descent_with_line_search(
-                        phi0, self.objective_pert, self.grad_pert, kwargs=kwargs
-                    )
-                case "discontinuous":
-                    # Choose an arbitrary side ???
-                    # TODO: Check the bounds
-                    # NOTE: Maybe need to try both sides
-                    phi = bisection(
-                        self.grad, phi0 - jnp.pi / 2, phi0 - 1e-6, kwargs=kwargs
-                    )
+            # Perform another gradient descent on the perturbated objective
+            phi = gradient_descent_with_line_search(phi0, self.grad_pert, kwargs=kwargs)
 
         # Compute the load factor
         load_factor = self.objective([phi], **kwargs)
@@ -137,9 +115,9 @@ class LoadFactorSolver:
         plt.figure()
         plt.xlabel(r"Bifurcation angle $\varphi$ (rad)")
         plt.ylabel(r"Load factor $\sqrt{\frac{G_c(\varphi)}{G^*(\varphi)}}$")
-        phis = jnp.linspace(-pi / 2, pi / 2, num=180).__array__()
-        objs = self.objective([phis], **kwargs)
-        objs_pert = self.objective_pert([phis], **kwargs)
+        phis = jnp.linspace(phi0 - pi / 2, phi0 + pi / 2, num=180).__array__()
+        objs = [self.objective([phi], **kwargs) for phi in phis]
+        objs_pert = [self.objective_pert([phi], **kwargs) for phi in phis]
         plt.plot(phis, objs, label="Objective")
         plt.plot(phis, objs_pert, label="Perturbated objective")
         plt.scatter([phi], [self.objective([phi], **kwargs)], c="r")
@@ -159,22 +137,22 @@ class LoadFactorSolver:
         plt.tight_layout()
         plt.savefig(dir_name / f"residual_function_{t:08d}.svg")
 
-        phis = jnp.linspace(-pi / 2, pi / 2, num=180)
-        Gcs_inv = 1 / self.Gc(phis)
-        Gss_inv = 1 / (
-            load_factor**2 * G_star(phis, phi0, KIc, KIIc, Tc, self.model.Ep, s)
-        )
+        # phis = jnp.linspace(-pi / 2, pi / 2, num=180)
+        # Gcs_inv = 1 / self.Gc(phis)
+        # Gss_inv = 1 / (
+        #     load_factor**2 * G_star(phis, phi0, KIc, KIIc, Tc, self.model.Ep, s)
+        # )
 
-        # NOTE: This plot is invalid if there is a prescribed loading !
-        # To make it valid, see the calculation with superimposition of the controlled and prescribed loads.
-        fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
-        ax.plot(phis, Gcs_inv, label=r"$G_c^{-1} (\varphi)$")
-        ax.plot(phis, Gss_inv, label=r"$G^{* -1} (\varphi)$")
-        ax.scatter([phi], [1 / self.Gc(phi)], label="Min", color="r")
-        ax.grid(True)
-        ax.legend()
-        ax.set_title("Wulff plot")
-        plt.savefig(dir_name / f"wulff_plot_{t:08d}.svg")
+        # # NOTE: This plot is invalid if there is a prescribed loading !
+        # # To make it valid, see the calculation with superimposition of the controlled and prescribed loads.
+        # fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+        # ax.plot(phis, Gcs_inv, label=r"$G_c^{-1} (\varphi)$")
+        # ax.plot(phis, Gss_inv, label=r"$G^{* -1} (\varphi)$")
+        # ax.scatter([phi], [1 / self.Gc(phi)], label="Min", color="r")
+        # ax.grid(True)
+        # ax.legend()
+        # ax.set_title("Wulff plot")
+        # plt.savefig(dir_name / f"wulff_plot_{t:08d}.svg")
 
         plt.close("all")
 
@@ -182,35 +160,8 @@ class LoadFactorSolver:
 ### Optimizers
 
 
-def gradient_descent(phi0, f, tol: float = 1e-6, max_iter=100_000, kwargs={}):
-    print("│  └─ Running the gradient descent")
-    # Initialization
-    phi = float(phi0)
-    converged = False
-    for i in range(max_iter):
-        inc = -f([phi], **kwargs)[0]
-        phi += inc
-        phi = min(max(phi0 - 2 * jnp.pi / 3, phi), phi0 + 2 * jnp.pi / 3)
-        print(
-            f"│     ├─ Step: {i + 1:06d} | Phi: {jnp.rad2deg(phi):+7.2f}° | Error: {abs(inc):8.3g}",
-            end="\r",
-        )
-        if abs(inc) < tol:
-            converged = True
-            print(
-                f"│     ├─ Step: {i + 1:06d} | Phi: {jnp.rad2deg(phi):+7.2f}° | Error: {abs(inc):8.3g}",
-            )
-            print("│     └─ Converged")
-            break
-
-    # Check the convergence
-    if not converged:
-        raise RuntimeError(" └─ Gradient descent failed to converge!")
-    return phi
-
-
 def gradient_descent_with_line_search(
-    phi0, obj, gra, tol: float = 1e-6, max_iter: int = 100, kwargs={}
+    phi0, gra, tol: float = 1e-6, max_iter: int = 100, kwargs={}
 ):
     print("│  │  Running the gradient descent with custom line search")
     # Initialization
@@ -219,17 +170,22 @@ def gradient_descent_with_line_search(
     for i in range(max_iter):
         # Determine the direction
         direction = -gra([phi], **kwargs)[0]
-        # Apply line-seach
-        cs = [0.0] + [0.9**k for k in reversed(range(-31, 32))]
-        phis_test = jnp.array([phi + c * direction for c in cs])
-        # Get the index associated with the first increase of the objective
-        diff = jnp.array([-gra([phi_test], **kwargs)[0] for phi_test in phis_test])
-        if all(diff < 0):  # If it only decreases, take the largest step
-            idx = -1
-        else:  # If it increases after a decrease, then local minimum
-            idx = jnp.where(diff > 0)[0][0] - 1
-        # Calculate the increment
-        dphi = cs[idx] * direction
+        # Check if the direction is close to 0
+        if jnp.isclose(direction, 0):
+            # Set a null increment
+            dphi = 0
+        else:
+            # Apply line-seach
+            cs = [0.0] + [0.9**k for k in reversed(range(-31, 32))]
+            phis_test = jnp.array([phi + c * direction for c in cs])
+            # Get the index associated with the first increase of the objective
+            diff = jnp.array([-gra([phi_test], **kwargs)[0] for phi_test in phis_test])
+            if all(diff < 0):  # If it only decreases, take the largest step
+                idx = -1
+            else:  # If it increases after a decrease, then local minimum
+                idx = jnp.where(diff > 0)[0][0] - 1
+            # Calculate the increment
+            dphi = cs[idx] * direction
         # Update the solution
         phi += dphi
         # Generate an info message
@@ -250,55 +206,4 @@ def gradient_descent_with_line_search(
     # Check the convergence
     if not converged:
         raise RuntimeError(" └─ Gradient descent failed to converge!")
-    return phi
-
-
-def bisection(f, a, b, tol: float = 1e-6, kwargs: dict = {}):
-    # Evaluate f at bounds
-    fa = f([a], **kwargs)[0]
-    fb = f([b], **kwargs)[0]
-    # check if a and b bound a root
-    if jnp.sign(fa) == jnp.sign(fb):
-        raise Exception("The scalars a and b do not bound a root")
-
-    # get midpoint
-    m = (a + b) / 2
-    print(m)
-    # evaluate f at midpoint
-    fm = f([m], **kwargs)[0]
-
-    # if jnp.abs(fm) < tol:
-    if b - a < tol:
-        # stopping condition, report m as root
-        return m
-    elif jnp.sign(fa) == jnp.sign(fm):
-        # case where m is an improvement on a.
-        # Make recursive call with a = m
-        return bisection(f, m, b, tol, kwargs)
-    elif jnp.sign(fb) == jnp.sign(fm):
-        # case where m is an improvement on b.
-        # Make recursive call with b = m
-        return bisection(f, a, m, tol, kwargs)
-
-
-def newton(phi0, f, df, tol: float = 1e-6, max_iter: int = 1000, kwargs: dict = {}):
-    print("│  └─ Running the Newton method")
-    # Initialization
-    phi = float(phi0)
-    converged = False
-    for i in range(max_iter):
-        inc = -f([phi], **kwargs)[0] / df([phi], **kwargs)[0][0]
-        phi += inc
-        # phi = min(max(phi0 - jnp.pi / 2, phi), phi0 + jnp.pi / 2)
-        print(
-            f"│     ├─ Step: {i + 1:03d} | Phi: {jnp.rad2deg(phi):+7.2f}° | Error: {abs(inc):.3g}"
-        )
-        if abs(inc) < tol:
-            converged = True
-            print("│     └─ Converged")
-            break
-
-    # Check the convergence
-    if not converged:
-        raise RuntimeError(" └─ Newton method failed to converge!")
     return phi
