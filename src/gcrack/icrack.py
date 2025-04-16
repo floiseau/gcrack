@@ -150,7 +150,6 @@ class ICrackBase(ABC):
                 gmsh_model = self.generate_mesh(crack_points)
                 # Define the domain
                 domain = Domain(gmsh_model)
-                print(f"phi0={np.rad2deg(phi_nm1)}°")
 
                 # Get the controlled boundary conditions
                 bcs = BoundaryConditions(
