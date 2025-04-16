@@ -71,6 +71,11 @@ def F22(m):
 
 
 @jit
+def Fmat(m):
+    return jnp.array([[F11(m), F12(m)], [F21(m), F22(m)]])
+
+
+@jit
 def G1(m):
     return (
         (2 * pi) ** (3 / 2) * m**2
@@ -103,34 +108,29 @@ def G2(m):
 
 
 @jit
-def KI_star(m, KI, KII, T, s):
-    return F11(m) * KI + F12(m) * KII + T * jnp.sqrt(s) * G1(m)
-
-
-@jit
-def KII_star(m, KI, KII, T, s):
-    return F21(m) * KI + F22(m) * KII + T * jnp.sqrt(s) * G2(m)
-
-
-@jit
 def G_star(phi, phi0, KI, KII, T, Ep, s):
     # Calculate m
     m = (phi - phi0) / pi
-    # Compute the star SIFs
-    kI_star = KI_star(m, KI, KII, T, s)
-    kII_star = KII_star(m, KI, KII, T, s)
+    # Compute F^T * F
+    F = Fmat(m)
+    FT_F = F.T @ F
+    # Store the SIFs in an array
+    k = jnp.array([KI, KII])
+    print("T stress in not accounted for in the calculation of G_star")
     # Compute the G star
-    return 1 / Ep * (kI_star**2 + kII_star**2)
+    return 1 / Ep * jnp.einsum("i,ij,j->", k, FT_F, k)
 
 
 @jit
 def G_star_coupled(phi, phi0, KI1, KII1, T1, KI2, KII2, T2, Ep, s):
     # Calculate m
     m = (phi - phi0) / pi
-    # Compute the star SIFs
-    kI1_star = KI_star(m, KI1, KII1, T1, s)
-    kII1_star = KII_star(m, KI1, KII1, T1, s)
-    kI2_star = KI_star(m, KI2, KII2, T2, s)
-    kII2_star = KII_star(m, KI2, KII2, T2, s)
-    # Compute the coupled G star
-    return 2 / Ep * (kI1_star * kI2_star + kII1_star * kII2_star)
+    # Compute F^T * F
+    F = Fmat(m)
+    FT_F = F.T @ F
+    # Store the SIFs in an array
+    k1 = jnp.array([KI1, KII1])
+    k2 = jnp.array([KI2, KII2])
+    print("T stress in not accounted for in the calculation of G_star")
+    # Compute the G star
+    return 2 / Ep * jnp.einsum("i,ij,j->", k1, FT_F, k2)
