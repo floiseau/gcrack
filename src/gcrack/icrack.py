@@ -137,8 +137,8 @@ class ICrackBase(ABC):
         self.l = self.l0
         # Initialize a time counter
         t = 0
-        # Initialize the crack angle
-        phi0 = res["phi"]
+        # Initialize the previous crack angle
+        phi_nm1 = self.phi0
 
         while self.l < self.l_max:
             print(f"\nLOAD FACTOR {self.l:.3g}")
@@ -150,6 +150,7 @@ class ICrackBase(ABC):
                 gmsh_model = self.generate_mesh(crack_points)
                 # Define the domain
                 domain = Domain(gmsh_model)
+                print(f"phi0={np.rad2deg(phi_nm1)}°")
 
                 # Get the controlled boundary conditions
                 bcs = BoundaryConditions(
@@ -165,8 +166,6 @@ class ICrackBase(ABC):
                 # Solve the elastic problem
                 u = solve_elastic_problem(domain, model, bcs)
 
-                export_function(u, t, dir_name)
-
                 print(f"│  Compute the SIFs ({self.sif_method})")
                 # Compute the SIFs for the controlled problem
                 SIFs = compute_SIFs(
@@ -174,7 +173,7 @@ class ICrackBase(ABC):
                     model,
                     u,
                     crack_points[-1],
-                    phi0,
+                    phi_nm1,
                     self.R_int,
                     self.R_ext,
                     self.sif_method,
@@ -185,13 +184,15 @@ class ICrackBase(ABC):
                 print("│  Check if the crack propagates")
                 # Compute the load factor and crack angle.
                 load_factor_solver = LoadFactorSolver(model, self.Gc)
-                opti_res = load_factor_solver.solve(phi0, SIFs, SIFs_prescribed, self.s)
+                opti_res = load_factor_solver.solve(
+                    phi_nm1, SIFs, SIFs_prescribed, self.s
+                )
 
                 # NOTE: DEBUG
                 load_factor_solver.export_minimization_plots(
                     opti_res[0],
                     opti_res[1],
-                    phi0,
+                    phi_nm1,
                     SIFs,
                     SIFs_prescribed,
                     self.s,
@@ -209,7 +210,7 @@ class ICrackBase(ABC):
                     crack_points.append(crack_points[-1] + da_vec)
                     print(f"│  │  New crack tip position  : {crack_points[-1]}")
                     # Update the previous crack angle
-                    phi0 = res["phi"]
+                    phi_nm1 = phi_
                 else:
                     print("│  │  The crack does not propagates: end of the load step")
 
