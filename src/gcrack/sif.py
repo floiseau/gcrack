@@ -280,8 +280,8 @@ def compute_SIFs_from_William_series_interpolation(
     # Get the Gamma matrix
     Gamma = np.empty((Ndof, 2 * (N_max - N_min + 1)))
     for i, n in enumerate(range(N_min, N_max + 1)):
-        GI = Gamma_I(n, zs, model.mu, model.ka)
-        GII = Gamma_II(n, zs, model.mu, model.ka)
+        GI = Gamma_I(n, zs, model.mu, model.ka) * np.exp(1j * phi0)
+        GII = Gamma_II(n, zs, model.mu, model.ka) * np.exp(1j * phi0)
         Gamma[xaxis, 2 * i] = np.real(GI)
         Gamma[yaxis, 2 * i] = np.imag(GI)
         Gamma[xaxis, 2 * i + 1] = np.real(GII)
