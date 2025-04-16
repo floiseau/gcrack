@@ -130,4 +130,29 @@ class ElasticModel:
         # Get elastic parameters
         mu, la = self.mu, self.la
         # Compute the stess
-        return la * ufl.nabla_div(u) * ufl.Identity(len(u)) + 2.0 * mu * self.eps(u)
+        return la * ufl.nabla_div(u) * ufl.Identity(len(u)) + 2 * mu * self.eps(u)
+
+    def elastic_energy(self, u, domain):
+        """
+        Compute the elastic energy.
+
+        Parameters
+        ----------
+        state : dict
+            Dictionary containing state variables.
+        domain : Domain
+            The domain object representing the computational domain.
+
+        Returns
+        -------
+        ufl.form.Expression
+            Elastic energy.
+        """
+        # Get the integrands
+        dx = ufl.Measure("dx", domain=domain.mesh, metadata={"quadrature_degree": 12})
+        # Compute the stress
+        sig = self.sig(u)
+        # Compute the strain
+        eps = self.eps(u)
+        # Define the total energy
+        return 1 / 2 * ufl.inner(sig, eps) * dx

@@ -17,15 +17,21 @@ def solve_elastic_problem(
     # Define the displacement function space
     shape_u = (domain.mesh.geometry.dim,)
     V_u = fem.functionspace(domain.mesh, ("Lagrange", 1, shape_u))
-
+    # Define the displacement field
+    u = fem.Function(V_u, name="Displacement")
     # Define the boundary conditions
     dirichlet_bcs = get_dirichlet_boundary_conditions(domain, V_u, bcs)
-
+    # Define the total energy
+    energy = model.elastic_energy(u, domain)
+    external_work = compute_external_work(domain, u, bcs)
+    if external_work:
+        energy -= external_work
+    # Derive the energy to obtain the variational formulation
+    E_u = ufl.derivative(energy, u, ufl.TestFunction(V_u))
+    E_du = ufl.replace(E_u, {u: ufl.TrialFunction(V_u)})
     # Define the variational formulation
-    u = ufl.TrialFunction(V_u)
-    v = ufl.TestFunction(V_u)
-    a = ufl.inner(model.sig(u), model.eps(v)) * ufl.dx
-    L = compute_external_work(domain, v, bcs)
+    a = ufl.lhs(E_du)
+    L = ufl.rhs(E_du)
 
     #  Define and solve the problem
     problem = LinearProblem(
