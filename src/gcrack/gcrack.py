@@ -54,8 +54,8 @@ class GCrackBase(ABC):
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
-        self.R_int = 2 * self.da
-        self.R_ext = 4 * self.da
+        self.R_int = 1 / 8 * self.da
+        self.R_ext = 1 / 4 * self.da
 
     @abstractmethod
     def generate_mesh(self, crack_points) -> gmsh.model:
@@ -136,7 +136,7 @@ class GCrackBase(ABC):
         # Initialize GMSH
         gmsh.initialize()
         gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
-        gmsh.option.setNumber("Mesh.Algorithm", 1)
+        gmsh.option.setNumber("Mesh.Algorithm", 5)
         # 1: meshadapt; 5: delaunay, 6: frontal-delaunay
 
         # Initialize export directory

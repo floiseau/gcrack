@@ -41,8 +41,8 @@ class ICrackBase(ABC):
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
-        self.R_int = 2 * self.da
-        self.R_ext = 4 * self.da
+        self.R_int = 1 / 8 * self.da
+        self.R_ext = 1 / 4 * self.da
 
     @abstractmethod
     def generate_mesh(self, crack_points) -> gmsh.model:
@@ -98,7 +98,7 @@ class ICrackBase(ABC):
         # Initialize GMSH
         gmsh.initialize()
         gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
-        gmsh.option.setNumber("Mesh.Algorithm", 1)
+        gmsh.option.setNumber("Mesh.Algorithm", 5)
         # 1: meshadapt; 5: delaunay, 6: frontal-delaunay
 
         # Initialize export directory
@@ -114,6 +114,8 @@ class ICrackBase(ABC):
         }
         # Initialize the crack points
         crack_points = [self.xc0]
+        # Initialize a time counter
+        t = -1
         # Initialize results storage
         res = {
             "t": 0,
@@ -135,13 +137,13 @@ class ICrackBase(ABC):
 
         # Initialize the load factor
         self.l = self.l0
-        # Initialize a time counter
-        t = 0
         # Initialize the previous crack angle
         phi_nm1 = self.phi0
 
         while self.l < self.l_max:
             print(f"\nLOAD FACTOR {self.l:.3g}")
+            # Increment time
+            t += 1
             # Initialize the crack propagation flag as true
             crack_propagates = True
 
@@ -237,8 +239,6 @@ class ICrackBase(ABC):
                 res["KII"] = SIFs["KII"]
                 res["T"] = SIFs["T"]
                 export_res_to_csv(res, dir_name / "results.csv")
-                # Increment time
-                t += 1
 
                 if crack_propagates:
                     print("-  Next crack increment")
