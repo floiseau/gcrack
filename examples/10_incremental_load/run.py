@@ -4,7 +4,7 @@ import numpy as np
 import jax.numpy as jnp
 
 import gmsh
-from icrack import ICrackBase
+from gcrack import ICrackBase
 from gcrack.boundary_conditions import DisplacementBC, ForceBC
 
 
@@ -151,20 +151,21 @@ class ICrack(ICrackBase):
         return [[self.pars["L"], self.pars["L"] / 2, 0]]
 
     def Gc(self, phi):
-        # # Get the parameters
-        # Gc_min = 10_000
-        # Gc_max = 20_000
-        # theta0 = np.deg2rad(25)
-        # # Compute associated parameters
-        # Gc = jnp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
-        # ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
-        # # Define expression of the energy release rate
+        # Get the parameters
+        Gc_min = 10_000
+        Gc_max = 20_000
+        theta0 = np.deg2rad(25)
+        # Compute associated parameters
+        Gc = jnp.sqrt(1 / 2 * (Gc_min**2 + Gc_max**2))
+        ag = 1 / 2 * (Gc_max**2 - Gc_min**2) / Gc**2
+        # Define expression of the energy release rate
         # Gc_expression = Gc * jnp.sqrt(
         #     1 + ag * (jnp.sin(phi - theta0) ** 2 - jnp.cos(phi - theta0) ** 2)
         # )
         # return Gc_expression
-        # # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
-        return self.pars["Gc"] * np.ones(phi.shape)
+        return Gc_max * (
+            1 + 199 * jnp.abs(jnp.cos(2 * (phi + jnp.pi / 4 - theta0)))
+        ) ** (1 / 4)
 
 
 if __name__ == "__main__":
@@ -184,7 +185,7 @@ if __name__ == "__main__":
         xc0=[pars["L"] / 2, pars["L"] / 2, 0],
         assumption_2D="plane_stress",
         pars=pars,
-        sif_method="i-integral",  # "i-integral" "willliams"
+        sif_method="williams",  # "i-integral" "willliams"
         s=0,  # s=pars["L"] / 256,
     )
     icrack.run()
