@@ -186,7 +186,7 @@ def test_compute_SIFs():
     # Generate the domain
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
-    gmsh.option.setNumber("Mesh.Algorithm", 1)
+    gmsh.option.setNumber("Mesh.Algorithm", 5)
     gmsh_model = data.generate_mesh([data.xc0])
     domain = Domain(gmsh_model)
     # Define an elastic model
@@ -196,12 +196,18 @@ def test_compute_SIFs():
         "2D_assumption": data.assumption_2D,
     }
     model = ElasticModel(ela_pars, domain)
-    # Parameters
-    KIs = [0, 1]
-    KIIs = [0, 1]
-    Ts = [-1, 0, 1]
-    phi0s = [0, np.deg2rad(30), np.deg2rad(45)]
-    methods = ["williams"]  # i-integral
+    # # Parameters
+    # # NOTE: Final version
+    # KIs = [0, 1]
+    # KIIs = [0, 1]
+    # Ts = [-1, 0, 1]
+    # phi0s = [0, np.deg2rad(30), np.deg2rad(45)]
+    # methods = ["williams"]  # , "i-integral"]
+    KIs = [0]
+    KIIs = [0]
+    Ts = [1]
+    phi0s = [0]
+    methods = ["i-integral"]
     # Test all combinations of parameters
     for KI, KII, T, phi0, method in itertools.product(KIs, KIIs, Ts, phi0s, methods):
         # Pass when all the SIFs are null

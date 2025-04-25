@@ -1,7 +1,7 @@
 import numpy as np
 import ufl
 import dolfinx
-from dolfinx import fem, default_scalar_type
+from dolfinx import fem
 from gcrack.domain import Domain
 from gcrack.models import ElasticModel
 from gcrack.utils.geometry import distance_point_to_segment
@@ -9,34 +9,16 @@ from gcrack.utils.williams_series import Gamma_I, Gamma_II
 
 
 def compute_theta_field(domain, crack_tip, R_int, R_ext):
-    # Define the distance to the crack tip
-    def distance_to_crack_tip(x):
-        return np.sqrt((x[0] - crack_tip[0]) ** 2 + (x[1] - crack_tip[1]) ** 2)
-
-    # Define the variational problem to define theta
-    V_theta = fem.functionspace(domain.mesh, ("Lagrange", 1))
-    theta, theta_ = ufl.TrialFunction(V_theta), ufl.TestFunction(V_theta)
-    a = ufl.dot(ufl.grad(theta), ufl.grad(theta_)) * ufl.dx
-    L = (
-        fem.Constant(domain.mesh, default_scalar_type(0.0))
-        * theta_
-        * ufl.dx(domain=domain.mesh)
-    )
-    # Set the boundary conditions
-    # Imposing 1 in the inner circle and zero in the outer circle
-    dofs_inner = fem.locate_dofs_geometrical(
-        V_theta, lambda x: distance_to_crack_tip(x) <= R_int
-    )
-    dofs_out = fem.locate_dofs_geometrical(
-        V_theta, lambda x: distance_to_crack_tip(x) >= R_ext
-    )
-    bc_inner = fem.dirichletbc(default_scalar_type(1.0), dofs_inner, V_theta)
-    bc_out = fem.dirichletbc(default_scalar_type(0.0), dofs_out, V_theta)
-    bcs = [bc_out, bc_inner]
-    # Solve the problem
-    problem = fem.petsc.LinearProblem(a, L, bcs=bcs)
-    theta_field = problem.solve()
-    return theta_field
+    # Get the cartesian coordinates
+    x = ufl.SpatialCoordinate(domain.mesh)
+    # Get the crack tip
+    x_tip = ufl.as_vector(crack_tip[:2])
+    # Get the polar coordinates
+    r = ufl.sqrt(ufl.dot(x - x_tip, x - x_tip))
+    # Define the ufl expression of the theta field
+    theta_temp = (R_ext - r) / (R_ext - R_int)
+    # Clip the value and return
+    return ufl.max_value(0.0, ufl.min_value(theta_temp, 1.0))
 
 
 def compute_auxiliary_displacement_field(
@@ -44,8 +26,9 @@ def compute_auxiliary_displacement_field(
     model: ElasticModel,
     xc: np.ndarray,
     phi0: float,
-    K_I_aux: float,
-    K_II_aux: float,
+    K_I_aux: float = 0,
+    K_II_aux: float = 0,
+    T_aux: float = 0,
 ):
     # Get the cartesian coordinates
     x = ufl.SpatialCoordinate(domain.mesh)
@@ -63,131 +46,60 @@ def compute_auxiliary_displacement_field(
     # Get kappa
     ka = model.ka
     # Compute the functions f
-    f_I, f_II = [0, 0], [0, 0]
-    # f_I[0] = (ka - 1 + 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
-    # f_I[1] = (ka + 1 - 2 * ufl.cos(theta / 2) ** 2) * ufl.sin(theta / 2)
-    # f_II[0] = (ka + 1 + 2 * ufl.cos(theta / 2) ** 2) * ufl.sin(theta / 2)
-    # f_II[1] = -(ka - 1 - 2 * ufl.sin(theta / 2) ** 2) * ufl.cos(theta / 2)
-    f_I[0] = (ka - ufl.cos(theta)) * ufl.cos(theta / 2)
-    f_I[1] = (ka - ufl.cos(theta)) * ufl.sin(theta / 2)
-    f_II[0] = (2 + ka + ufl.cos(theta)) * ufl.sin(theta / 2)
-    f_II[1] = (2 - ka - ufl.cos(theta)) * ufl.cos(theta / 2)
-    # Compute the displacement field
-    ui = (
-        ufl.sqrt(r / (2 * np.pi))
-        / (2 * mu)
-        * ufl.as_vector(
-            [
-                K_I_aux * f_I[0] + K_II_aux * f_II[0],
-                K_I_aux * f_I[1] + K_II_aux * f_II[1],
-            ]
-        )
+    fx_I = ufl.cos(theta / 2) * (ka - 1 + 2 * ufl.sin(theta / 2) ** 2)
+    fy_I = ufl.sin(theta / 2) * (ka + 1 - 2 * ufl.cos(theta / 2) ** 2)
+    fx_II = ufl.sin(theta / 2) * (ka + 1 + 2 * ufl.cos(theta / 2) ** 2)
+    fy_II = -ufl.cos(theta / 2) * (ka - 1 - 2 * ufl.sin(theta / 2) ** 2)
+    # Compute the displacement field for mode I
+    u_I = ufl.sqrt(r / (2 * np.pi)) / (2 * mu) * K_I_aux * ufl.as_vector([fx_I, fy_I])
+    # Compute the displacement field for mode II
+    u_II = (
+        ufl.sqrt(r / (2 * np.pi)) / (2 * mu) * K_II_aux * ufl.as_vector([fx_II, fy_II])
     )
+    # Compute the displacement field for mode T
+    ux_T = (
+        -1 / np.pi * (ka + 1) / (8 * mu) * ufl.ln(r)
+        - 1 / np.pi * 1 / (4 * mu) * ufl.sin(theta) ** 2
+    )
+    uy_T = -1 / np.pi * (ka - 1) / (8 * mu) * theta + 1 / np.pi * 1 / (
+        4 * mu
+    ) * ufl.sin(theta) * ufl.cos(theta)
+    u_T = T_aux * ufl.as_vector([ux_T, uy_T])
+    # Compute the total displacement field and rotate it
+    u_tot = R * (u_I + u_II + u_T)
     # Rotate the displacement vectors
-    return R * ui
+    return u_tot
 
 
 def compute_I_integral(
     domain: Domain,
     model: ElasticModel,
     u: fem.Function,
-    u_aux: fem.Function,
-    theta: fem.Function,
-):
+    u_aux: ufl.core.expr.Expr,
+    theta: ufl.core.expr.Expr,
+) -> float:
     # Compute the gradients
     grad_u = ufl.grad(u)
     grad_u_aux = ufl.grad(u_aux)
     # Compute the strains
-    eps = ufl.sym(grad_u)
-    eps_aux = ufl.sym(grad_u_aux)
+    eps = model.eps(u)
+    eps_aux = model.eps(u_aux)
     # Compute the stresses
     sig = model.sig(u)
     sig_aux = model.sig(u_aux)
     # Compute theta gradient and div
     div_theta = ufl.div(theta)
     grad_theta = ufl.grad(theta)
-    # Compute the terms of the interaction integral
-    dx = ufl.dx(domain=domain.mesh)
-    Iw12 = 1 / 2 * ufl.inner(sig, eps_aux) * div_theta * dx
-    Iw21 = 1 / 2 * ufl.inner(sig_aux, eps) * div_theta * dx
-    Ig12 = ufl.inner(sig, grad_u_aux * grad_theta) * dx
-    Ig21 = ufl.inner(sig_aux, grad_u * grad_theta) * dx
-    # Compute the interaction integral expression
-    I_expr = Ig12 + Ig21 - Iw12 - Iw21
-    return fem.assemble_scalar(fem.form(I_expr))
-
-
-def compute_T_stress_with_I_integral(
-    domain: Domain,
-    model: ElasticModel,
-    u: fem.Function,
-    xc: np.ndarray,
-    phi0: float,
-    R_int: float,
-    R_ext: float,
-):
-    # Read the parameters
-    xc = np.array(xc)
-    # Get the theta field
-    theta_field = compute_theta_field(domain, xc, R_int, R_ext)
-    theta_vector = ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)]) * theta_field
-    # Get the elastic parameters
-    E = model.E
-    mu = model.mu
-    ka = model.ka
-    # Other parameters
-    F = 1
-    d = 1
-    # Get the cartesian coordinates
-    x = ufl.SpatialCoordinate(domain.mesh)
-    # Get the crack tip
-    x_tip = ufl.as_vector(xc[:2])
-    # Translate the domain to set the crack tip as origin
-    r_vec_init = x - x_tip
-    # Rotate the spatial coordinates to match the crack direction
-    R = ufl.as_tensor([[ufl.cos(phi0), -ufl.sin(phi0)], [ufl.sin(phi0), ufl.cos(phi0)]])
-    r_vec = ufl.transpose(R) * r_vec_init
-    # Get the polar coordinates
-    r = ufl.sqrt(ufl.dot(r_vec, r_vec))
-    phi = ufl.atan2(r_vec[1], r_vec[0])
-    # Compute the auxiliary displacement field
-    u_1_aux = (
-        -F / np.pi * (ka + 1) / (8 * mu) * ufl.ln(r / d)
-        - F / np.pi * 1 / (4 * mu) * ufl.sin(phi) ** 2
-    )
-    u_2_aux = -F / np.pi * (ka - 1) / (8 * mu) * phi + F / np.pi * 1 / (
-        4 * mu
-    ) * ufl.sin(phi) * ufl.cos(phi)
-    u_aux_init = ufl.as_vector([u_1_aux, u_2_aux])
-    # Rotate the auxiliary field
-    u_aux = R * u_aux_init
-    # Compute displacement gradients
-    grad_u = ufl.grad(u)
-    grad_u_aux = ufl.grad(u_aux)
-    # Compute the strains
-    eps = ufl.sym(grad_u)
-    eps_aux = ufl.sym(grad_u_aux)
-    # Compute the stresses
-    sig = model.sig(u)
-    sig_aux = model.sig(u_aux)
-    # Compute theta gradient and div
-    div_theta = ufl.div(theta_vector)
-    grad_theta = ufl.grad(theta_vector)
-    # Compute the terms of the interaction integral
-    dx = ufl.dx(domain=domain.mesh)
-    Iw12 = 1 / 2 * ufl.inner(sig, eps_aux) * div_theta * dx
-    Iw21 = 1 / 2 * ufl.inner(sig_aux, eps) * div_theta * dx
-    Ig12 = ufl.inner(sig, grad_u_aux * grad_theta) * dx
-    Ig21 = ufl.inner(sig_aux, grad_u * grad_theta) * dx
-    # Compute the interaction integral expression
-    I_expr = Ig12 + Ig21 - Iw12 - Iw21
-    # Compute the T-stress value
-    Ep = model.Ep
-    T_expr = Ep / F * I_expr
-    # Compute the interaction integral form
-    T_form = fem.form(T_expr)
-    # Initialize the
-    return fem.assemble_scalar(T_form)
+    # Compute the interaction integral (reduce the quadrature degree for faster evaluation)
+    dx = ufl.Measure("dx", domain=domain.mesh, metadata={"quadrature_degree": 4})
+    I_expr = (
+        ufl.inner(sig, grad_u_aux * grad_theta)
+        + ufl.inner(sig_aux, grad_u * grad_theta)
+        - 1.0 / 2.0 * ufl.inner(sig, eps_aux) * div_theta
+        - 1.0 / 2.0 * ufl.inner(sig_aux, eps) * div_theta
+    ) * dx
+    I_integral = fem.assemble_scalar(fem.form(I_expr))
+    return I_integral
 
 
 def compute_SIFs_with_I_integral(
@@ -201,21 +113,25 @@ def compute_SIFs_with_I_integral(
 ):
     # Get the theta field
     theta_field = compute_theta_field(domain, xc, R_int, R_ext)
-    theta = ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)]) * theta_field
+    theta = theta_field * ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)])
     # Compute auxiliary displacement fields
     u_I_aux = compute_auxiliary_displacement_field(
-        domain, model, xc, phi0, K_I_aux=1, K_II_aux=0
+        domain, model, xc, phi0, K_I_aux=1.0, K_II_aux=0.0, T_aux=0.0
     )
     u_II_aux = compute_auxiliary_displacement_field(
-        domain, model, xc, phi0, K_I_aux=0, K_II_aux=1
+        domain, model, xc, phi0, K_I_aux=0.0, K_II_aux=1.0, T_aux=0.0
+    )
+    u_T_aux = compute_auxiliary_displacement_field(
+        domain, model, xc, phi0, K_I_aux=0.0, K_II_aux=0.0, T_aux=1.0
     )
     # Compute the I-integrals
     I_I = compute_I_integral(domain, model, u, u_I_aux, theta)
     I_II = compute_I_integral(domain, model, u, u_II_aux, theta)
+    I_T = compute_I_integral(domain, model, u, u_T_aux, theta)
     # Compute the SIF
     K_I = model.Ep / 2 * I_I
     K_II = model.Ep / 2 * I_II
-    T = compute_T_stress_with_I_integral(domain, model, u, xc, phi0, R_int, R_ext)
+    T = model.Ep * I_T
     # Return SIF array
     return {"KI": K_I, "KII": K_II, "T": T}
 
