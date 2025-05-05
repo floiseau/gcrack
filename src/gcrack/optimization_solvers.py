@@ -161,7 +161,7 @@ class LoadFactorSolver:
 
 
 def gradient_descent_with_line_search(
-    phi0, gra, tol: float = 1e-6, max_iter: int = 100, kwargs={}
+    phi0, gra, tol: float = 1e-6, max_iter: int = 10_000, kwargs={}
 ):
     print("│  │  Running the gradient descent with custom line search")
     # Initialization
@@ -176,16 +176,24 @@ def gradient_descent_with_line_search(
             dphi = 0
         else:
             # Apply line-seach
-            cs = [0.0] + [0.9**k for k in reversed(range(-31, 32))]
-            phis_test = jnp.array([phi + c * direction for c in cs])
+            cs = [0.0] + [(jnp.pi / 2) ** k for k in range(-29, 2)]
+            phis_test = jnp.array([phi + c * jnp.sign(direction) for c in cs])
             # Get the index associated with the first increase of the objective
-            diff = jnp.array([-gra([phi_test], **kwargs)[0] for phi_test in phis_test])
-            if all(diff < 0):  # If it only decreases, take the largest step
+            diff = jnp.array([gra([phi_test], **kwargs)[0] for phi_test in phis_test])
+            # Create an array with the slope "in the direction of minimization"
+            slope = jnp.sign(direction) * diff
+            if all(slope < 0):  # If the slope is always negative, take the largest step
                 idx = -1
-            else:  # If it increases after a decrease, then local minimum
-                idx = jnp.where(diff > 0)[0][0] - 1
+            elif all(slope > 0):  # If the slope is always positive, take no step
+                idx = 0
+            else:  # If the slope increases after a decrease, then local minimum
+                idx = jnp.where(slope > 0)[0][0] - 1
+                # If the first grad is positif, we are at the solution
+                # This case only occurs when the grad id discontinuous (cups)
+                if idx == -1:
+                    idx = 0
             # Calculate the increment
-            dphi = cs[idx] * direction
+            dphi = phis_test[idx] - phi
         # Update the solution
         phi += dphi
         # Generate an info message
@@ -195,7 +203,7 @@ def gradient_descent_with_line_search(
         msg += f"dphi: {abs(dphi):8.3g}"
         print(msg)
         # Check the convergence
-        converged = abs(dphi) <= tol
+        converged = idx == 0 or abs(dphi) <= tol
         if converged:
             print("│  │  │  Converged")
             break
