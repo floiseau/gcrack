@@ -204,12 +204,18 @@ def compute_SIFs_from_William_series_interpolation(
         Gamma[yaxis, 2 * i + 1] = np.imag(GII)
     # Solve the least square problem
     sol, res, _, _ = np.linalg.lstsq(Gamma, UF)
-    # Extract KI and KII
-    KI = sol[2 * (1 - N_min)]
-    KII = sol[2 * (1 - N_min) + 1]
-    T = 2 * np.sqrt(2) / np.sqrt(np.pi) * sol[2 * (2 - N_min)]
-    # Extract KI and KII
-    return {"KI": KI, "KII": KII, "T": T}
+    # Create the SIF dictionary
+    SIFs = {}
+    # Extract KI, KII and T
+    SIFs["KI"] = sol[2 * (1 - N_min)]
+    SIFs["KII"] = sol[2 * (1 - N_min) + 1]
+    SIFs["T"] = 2 * np.sqrt(2) / np.sqrt(np.pi) * sol[2 * (2 - N_min)]
+    # Store the other coefficients of the seriess
+    for i, n in enumerate(range(N_min, N_max + 1)):
+        SIFs[f"aI_{n}"] = sol[2 * (n - N_min)]
+        SIFs[f"aII_{n}"] = sol[2 * (n - N_min) + 1]
+    # Return the SIFs
+    return SIFs
 
 
 def compute_SIFs(

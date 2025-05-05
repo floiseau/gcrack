@@ -235,10 +235,9 @@ class ICrackBase(ABC):
                 res["uimp_2"] = uimp[1]
                 res["fimp_1"] = fimp[0]
                 res["fimp_2"] = fimp[1]
-                res["KI"] = SIFs["KI"]
-                res["KII"] = SIFs["KII"]
-                res["T"] = SIFs["T"]
-                export_res_to_csv(res, dir_name / "results.csv")
+                for sif_name in SIFs:
+                    res[sif_name] = SIFs[sif_name]
+                    export_res_to_csv(res, dir_name / "results.csv")
 
                 if crack_propagates:
                     print("-  Next crack increment")

@@ -169,7 +169,6 @@ class GCrackBase(ABC):
             "KII": 0.0,
             "T": 0.0,
         }
-        export_res_to_csv(res, dir_name / "results.csv")
 
         for t in range(1, self.Nt + 1):
             print(f"\nLOAD STEP {t}")
@@ -240,11 +239,7 @@ class GCrackBase(ABC):
                 u_prescribed = u_controlled.copy()
                 u_prescribed.x.array[:] = 0.0
                 # Set the SIFs to 0
-                SIFs_prescribed = {
-                    "KI": 0.0,
-                    "KII": 0.0,
-                    "T": 0.0,
-                }
+                SIFs_prescribed = {key: 0.0 for key in SIFs_controlled}
                 print("│  No prescribed BCs")
 
             # Compute the load factor and crack angle.
@@ -291,7 +286,7 @@ class GCrackBase(ABC):
             print("│  Export the results")
             # Export the elastic solution
             export_function(u_scaled, t, dir_name)
-            # Store and export the results
+            # Store the results
             res["t"] = t
             res["a"] += self.da
             res["phi"] = phi_
@@ -303,9 +298,18 @@ class GCrackBase(ABC):
             res["uimp_2"] = uimp[1]
             res["fimp_1"] = fimp[0]
             res["fimp_2"] = fimp[1]
-            res["KI"] = lambda_ * SIFs_controlled["KI"] + SIFs_prescribed["KI"]
-            res["KII"] = lambda_ * SIFs_controlled["KII"] + SIFs_prescribed["KII"]
-            res["T"] = lambda_ * SIFs_controlled["T"] + SIFs_prescribed["T"]
+            for sif_name in SIFs_controlled:
+                res[sif_name] = (
+                    lambda_ * SIFs_controlled[sif_name] + SIFs_prescribed[sif_name]
+                )
+            # At first load step, also export the initial state
+            if t == 1:
+                res_init = res.copy()
+                for key in res_init:
+                    res_init[key] = 0.0
+                export_res_to_csv(res_init, dir_name / "results.csv")
+                del res_init
+            # Export the current results to csv
             export_res_to_csv(res, dir_name / "results.csv")
         print("\nFinalize exports")
         # Group clean the results directory
