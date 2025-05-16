@@ -21,7 +21,7 @@ To install gcrack, follow these steps:
 
 2. **Install the required dependencies**:
     ```shell
-    conda install -c conda-forge numpy jax sympy mpich python-gmsh fenics-dolfinx pyvista
+    conda install -c conda-forge numpy sympy mpich python-gmsh fenics-dolfinx pyvista jax jaxlib=*=*cpu*
     ```
 
 3. **Install gcrack**:
