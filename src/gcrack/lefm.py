@@ -108,17 +108,23 @@ def G2(m):
 
 
 @jit
+def Gvec(m):
+    return jnp.array([G1(m), G2(m)])
+
+
+@jit
 def G_star(phi, phi0, KI, KII, T, Ep, s):
-    # Calculate m
-    m = (phi - phi0) / pi
-    # Compute F^T * F
-    F = Fmat(m)
-    FT_F = F.T @ F
     # Store the SIFs in an array
     k = jnp.array([KI, KII])
-    print("T stress in not accounted for in the calculation of G_star")
+    # Calculate m
+    m = (phi - phi0) / pi
+    # Compute the AM functinos
+    f_mat = Fmat(m)
+    g_vec = Gvec(m)
+    # Apply Amestoy-Leblond formula
+    ks = f_mat @ k + g_vec * T * jnp.sqrt(s)
     # Compute the G star
-    return 1 / Ep * jnp.einsum("i,ij,j->", k, FT_F, k)
+    return 1 / Ep * jnp.dot(ks, ks)
 
 
 @jit
@@ -131,6 +137,5 @@ def G_star_coupled(phi, phi0, KI1, KII1, T1, KI2, KII2, T2, Ep, s):
     # Store the SIFs in an array
     k1 = jnp.array([KI1, KII1])
     k2 = jnp.array([KI2, KII2])
-    print("T stress in not accounted for in the calculation of G_star")
     # Compute the G star
     return 2 / Ep * jnp.einsum("i,ij,j->", k1, FT_F, k2)

@@ -180,8 +180,8 @@ def compute_SIFs_from_William_series_interpolation(
     us[:, 1] -= u.x.array[2 * crack_tip_id + 1]
 
     # Define the Williams series field
-    N_min = -3  # -3
-    N_max = 9  # 9
+    N_min = -1  # -3
+    N_max = 7  # 9
 
     # Get the complex coordinates around crack tip
     zs = xs[:, 0] + 1j * xs[:, 1]
@@ -212,8 +212,8 @@ def compute_SIFs_from_William_series_interpolation(
     SIFs["T"] = 2 * np.sqrt(2) / np.sqrt(np.pi) * sol[2 * (2 - N_min)]
     # Store the other coefficients of the seriess
     for i, n in enumerate(range(N_min, N_max + 1)):
-        SIFs[f"aI_{n}"] = sol[2 * (n - N_min)]
-        SIFs[f"aII_{n}"] = sol[2 * (n - N_min) + 1]
+        SIFs[f"aI_{n}"] = sol[2 * i]
+        SIFs[f"aII_{n}"] = sol[2 * i + 1]
     # Return the SIFs
     return SIFs
 
