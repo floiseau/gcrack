@@ -174,6 +174,8 @@ def gradient_descent_with_line_search(
         if jnp.isclose(direction, 0):
             # Set a null increment
             dphi = 0
+            # Set a null idx
+            idx = 0
         else:
             # Apply line-seach
             cs = [0.0] + [(jnp.pi / 2) ** k for k in range(-29, 2)]
