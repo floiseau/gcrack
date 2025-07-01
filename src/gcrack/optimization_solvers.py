@@ -39,7 +39,7 @@ class LoadFactorSolver:
 
     def objective_pert(self, x, Ep, s, KIc, KIIc, Tc, KIp, KIIp, Tp, phi0):
         return (
-            self.objective(x, Ep, s, KIc, KIIc, Tc, KIp, KIIp, Tp, phi0) + 1e-6 * x[0]
+            self.objective(x, Ep, s, KIc, KIIc, Tc, KIp, KIIp, Tp, phi0) + 1e-5 * x[0]
         )
 
     def solve(self, phi0: float, SIFs_controlled, SIFs_prescribed, s):
