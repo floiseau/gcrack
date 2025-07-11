@@ -79,7 +79,17 @@ def compute_external_work(
     # Initialize the external work
     f = fem.Constant(domain.mesh, [0.0, 0.0])
     external_work = ufl.dot(f, v) * ufl.dx
-    # Iterate through the forces
+    # Iterate through the body forces
+    for bf in bcs.body_forces:
+        # Define the integrand
+        dx = ufl.Measure("dx", domain=domain.mesh)
+        # TODO: For space-dependent body forces, do as space-dependent BC !!!
+        # Convert to ufl vector
+        f = ufl.as_vector(bf.f_imp)
+        # Add constant body force to the external work
+        external_work += ufl.dot(f, v) * dx
+
+    # Iterate through the force boundary conditions
     for f_bc in bcs.force_bcs:
         # Define the integrand
         ds = ufl.Measure(

@@ -24,9 +24,15 @@ class ForceBC:
 
 
 @dataclass
+class BodyForce:
+    f_imp: List[float]
+
+
+@dataclass
 class BoundaryConditions:
     displacement_bcs: List[DisplacementBC]
     force_bcs: List[ForceBC]
+    body_forces: List[BodyForce]
     locked_points: List[List[float]]
 
     def is_empty(self) -> bool:

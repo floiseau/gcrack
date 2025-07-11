@@ -12,6 +12,7 @@ from gcrack.models import ElasticModel
 from gcrack.boundary_conditions import (
     DisplacementBC,
     ForceBC,
+    BodyForce,
     BoundaryConditions,
 )
 from gcrack.solvers import solve_elastic_problem
@@ -51,6 +52,8 @@ class GCrackBase(ABC):
     """sif_method (Optional[str]): Method for computing Stress Intensity Factors (SIFs), defaults to "I-integral"."""
     criterion: Optional[str] = "gmerr"
     """criterion (Optional[str]): Criterion for crack propagation, defaults to "gmerr"."""
+    name: Optional[str] = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    """name (Optional[str]): Name of the simulation used to name the results directory."""
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -107,6 +110,14 @@ class GCrackBase(ABC):
         """
         return []
 
+    def define_controlled_body_forces(self) -> List[BodyForce]:
+        """Define the controlled body forces that are affected by the load factor.
+
+        Returns:
+            List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.
+        """
+        return []
+
     def define_prescribed_displacements(self) -> List[DisplacementBC]:
         """Define the prescribed displacement boundary conditions that are not affected by the load factor.
 
@@ -120,6 +131,14 @@ class GCrackBase(ABC):
 
         Returns:
             List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
+        """
+        return []
+
+    def define_prescribed_body_forces(self) -> List[BodyForce]:
+        """Define the prescribed body forces that are not affected by the load factor.
+
+        Returns:
+            List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.
         """
         return []
 
@@ -140,8 +159,7 @@ class GCrackBase(ABC):
         # 1: meshadapt; 5: delaunay, 6: frontal-delaunay
 
         # Initialize export directory
-        now = datetime.now()
-        dir_name = Path("results_" + now.strftime("%Y-%m-%d_%H-%M-%S"))
+        dir_name = Path("results_" + self.name)
         dir_name.mkdir(parents=True, exist_ok=True)
 
         # Get the elastic parameters
@@ -185,6 +203,7 @@ class GCrackBase(ABC):
             controlled_bcs = BoundaryConditions(
                 displacement_bcs=self.define_controlled_displacements(),
                 force_bcs=self.define_controlled_forces(),
+                body_forces=self.define_controlled_body_forces(),
                 locked_points=self.define_locked_points(),
             )
 
@@ -192,6 +211,7 @@ class GCrackBase(ABC):
             prescribed_bcs = BoundaryConditions(
                 displacement_bcs=self.define_prescribed_displacements(),
                 force_bcs=self.define_prescribed_forces(),
+                body_forces=self.define_prescribed_body_forces(),
                 locked_points=self.define_locked_points(),
             )
 
@@ -252,17 +272,17 @@ class GCrackBase(ABC):
             # Get the results
             phi_ = opti_res[0]
             lambda_ = opti_res[1]
-            # # NOTE: DEBUG
-            # load_factor_solver.export_minimization_plots(
-            #     phi_,
-            #     lambda_,
-            #     phi0,
-            #     SIFs_controlled,
-            #     SIFs_prescribed,
-            #     self.s,
-            #     t,
-            #     dir_name,
-            # )
+            # NOTE: DEBUG
+            load_factor_solver.export_minimization_plots(
+                phi_,
+                lambda_,
+                phi0,
+                SIFs_controlled,
+                SIFs_prescribed,
+                self.s,
+                t,
+                dir_name,
+            )
             # Add a new crack point
             da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
             crack_points.append(crack_points[-1] + da_vec)
