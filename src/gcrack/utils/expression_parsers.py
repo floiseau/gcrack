@@ -1,15 +1,25 @@
+from math import isnan
 import sympy as sp
 
+from dolfinx import fem
 
-def get_gc_function(gc_pars):
-    # Get the expression
-    gc_str = gc_pars["Gc"]
-    # Perform the substitution of the variables
-    for symb, val in gc_pars.items():
-        if symb == "Gc":
-            continue
-        gc_str = gc_str.replace(symb, str(val))
-    # Convert it into an expression
-    phi_symb = sp.symbols("phi")
-    gc_expr = sp.sympify(gc_str, locals={"phi": phi_symb})
-    return sp.lambdify([phi_symb], gc_expr)
+
+def parse_expression(value, space):
+    # Check if the DOF is imposed
+    if isinstance(value, str):
+        # Parse the function
+        x = sp.Symbol("x")
+        # Parse the expression using sympy
+        par_lambda = sp.utilities.lambdify(x, value, "numpy")
+        # Create and interpolate the fem function
+        func = fem.Function(space)
+        func.interpolate(lambda xx: par_lambda(xx))
+    elif isnan(value):
+        return None
+    else:
+        # Define an FEM function (to control the BC)
+        func = fem.Function(space)
+        # Update the load
+        with func.x.petsc_vec.localForm() as local_func:
+            local_func.set(value)
+    return func

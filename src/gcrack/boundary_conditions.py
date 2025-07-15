@@ -1,14 +1,13 @@
 from dataclasses import dataclass
 from typing import List
-from math import isnan
 
 import numpy as np
-import sympy as sp
 
 import dolfinx
 from dolfinx import fem
 
 from gcrack.domain import Domain
+from gcrack.utils.expression_parsers import parse_expression
 
 
 @dataclass
@@ -73,23 +72,10 @@ def get_dirichlet_boundary_conditions(
     for u_bc in bcs.displacement_bcs:
         # Iterate through the axis
         for comp in range(dim):
-            # Check if the DOF is imposed
-            if isinstance(u_bc.u_imp[comp], str):
-                # Parse the function
-                x = sp.Symbol("x")
-                # Parse the expression using sympy
-                par_lambda = sp.utilities.lambdify(x, u_bc.u_imp[comp], "numpy")
-                # Create and interpolate the fem function
-                bc_func = fem.Function(V_u.sub(comp).collapse()[0])
-                bc_func.interpolate(lambda xx: par_lambda(xx))
-            elif isnan(u_bc.u_imp[comp]):
+            # Parse the boundary condition
+            bc_func = parse_expression(u_bc.u_imp[comp], V_u.sub(comp).collapse()[0])
+            if bc_func is None:
                 continue
-            else:
-                # Define an FEM function (to control the BC)
-                bc_func = fem.Function(V_u.sub(comp).collapse()[0])
-                # Update the load
-                with bc_func.x.petsc_vec.localForm() as bc_local:
-                    bc_local.set(u_bc.u_imp[comp])
             # Get the DOFs
             boundary_dof = boundary_dofs[f"{u_bc.boundary_id}_{comp}"]
             # Create the Dirichlet boundary condition

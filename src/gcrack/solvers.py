@@ -1,3 +1,4 @@
+from gcrack.utils.expression_parsers import parse_expression
 from gcrack.domain import Domain
 from gcrack.models import ElasticModel
 from gcrack.boundary_conditions import (
@@ -79,13 +80,18 @@ def compute_external_work(
     # Initialize the external work
     f = fem.Constant(domain.mesh, [0.0, 0.0])
     external_work = ufl.dot(f, v) * ufl.dx
+    # Create a function space for body forces
+    bf_space = fem.functionspace(domain.mesh, ("Lagrange", 1))
     # Iterate through the body forces
     for bf in bcs.body_forces:
         # Define the integrand
         dx = ufl.Measure("dx", domain=domain.mesh)
-        # TODO: For space-dependent body forces, do as space-dependent BC !!!
         # Convert to ufl vector
-        f = ufl.as_vector(bf.f_imp)
+        f_list = []
+        for i, f_comp in enumerate(bf.f_imp):
+            f_comp_parsed = parse_expression(f_comp, bf_space)
+            f_list.append(f_comp_parsed)
+        f = ufl.as_vector(f_list)
         # Add constant body force to the external work
         external_work += ufl.dot(f, v) * dx
 
