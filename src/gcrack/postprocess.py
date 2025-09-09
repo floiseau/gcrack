@@ -81,3 +81,42 @@ def compute_measured_displacement(
     u_meas = uh.eval(xs, cell)
     # Initialize the probes values
     return u_meas
+
+
+def compute_elastic_energy(
+    domain: Domain, model: ElasticModel, uh: fem.Function
+) -> float:
+    """Compute the elastic energy in the domain.
+
+    Args:
+        domain (Domain): The domain of the problem.
+        model (ElasticModel): The elastic model being used.
+        uh (Function): The displacement solution of the elastic problem.
+
+    Returns:
+        float: Elastic energy.
+    """
+    # Compute the elastic energy
+    return fem.assemble_scalar(fem.form(model.elastic_energy(uh, domain)))
+
+
+def compute_external_work(
+    domain: Domain, model: ElasticModel, uh: fem.Function
+) -> float:
+    """Compute the external work.
+
+    Args:
+        domain (Domain): The domain of the problem.
+        model (ElasticModel): The elastic model being used.
+        uh (Function): The displacement solution of the elastic problem.
+
+    Returns:
+        float: External work.
+    """
+    # Get measures
+    ds = ufl.Measure("ds", domain=domain.mesh)
+    n = ufl.FacetNormal(domain.mesh)
+    # Define the ufl expression of the external work
+    ew_ufl = ufl.dot(ufl.dot(model.sig(uh), n), uh) * ds
+    # Compute the elastic energy
+    return fem.assemble_scalar(fem.form(ew_ufl))

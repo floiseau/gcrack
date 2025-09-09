@@ -18,7 +18,12 @@ from gcrack.boundary_conditions import (
 from gcrack.solvers import solve_elastic_problem
 from gcrack.sif import compute_SIFs
 from gcrack.optimization_solvers import LoadFactorSolver
-from gcrack.postprocess import compute_measured_forces, compute_measured_displacement
+from gcrack.postprocess import (
+    compute_measured_forces,
+    compute_measured_displacement,
+    compute_elastic_energy,
+    compute_external_work,
+)
 from gcrack.exporters import export_function, export_res_to_csv, clean_vtk_files
 
 
@@ -186,6 +191,9 @@ class GCrackBase(ABC):
             "KI": 0.0,
             "KII": 0.0,
             "T": 0.0,
+            "elastic_energy": 0.0,
+            "fracture_dissipation": 0.0,
+            "external_work": 0.0,
         }
 
         for t in range(1, self.Nt + 1):
@@ -302,6 +310,9 @@ class GCrackBase(ABC):
             # Compute the reaction force
             fimp = compute_measured_forces(domain, model, u_scaled, self)
             uimp = compute_measured_displacement(domain, u_scaled, self)
+            # COmpute energies
+            elastic_energy = compute_elastic_energy(domain, model, u_scaled)
+            external_work = compute_external_work(domain, model, u_scaled)
 
             print("│  Export the results")
             # Export the elastic solution
@@ -322,6 +333,9 @@ class GCrackBase(ABC):
                 res[sif_name] = (
                     lambda_ * SIFs_controlled[sif_name] + SIFs_prescribed[sif_name]
                 )
+            res["elastic_energy"] = elastic_energy
+            res["fracture_dissipation"] += self.da * self.Gc(np.array(["phi_"]))[0]
+            res["external_work"] = external_work
             # At first load step, also export the initial state
             if t == 1:
                 res_init = res.copy()
