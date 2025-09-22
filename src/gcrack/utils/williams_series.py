@@ -36,3 +36,18 @@ def Gamma_II(n: int, z: complex, mu: float, ka: float):
             - (n / 2 - (-1) ** n) * jnp.exp(-1j * n * theta / 2)
         )
     )
+
+
+@jax.jit
+def Gamma_III(n: int, z: complex, mu: float, ka: float):
+    # Compute the polar coordinates
+    r = jnp.abs(z)
+    theta = jnp.angle(z)
+    # Compute the factor
+    # NOTE: Minus sign to recover the classic mode II (+ux above the crack and -ux below the crack)
+    return (
+        r ** (n + 1 / 2)
+        * jnp.sqrt(2)
+        / (mu * jnp.sqrt(jnp.pi))
+        * jnp.sin((1 / 2 - n) * theta)
+    )

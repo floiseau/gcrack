@@ -16,7 +16,12 @@ def solve_elastic_problem(
     domain: Domain, model: ElasticModel, bcs: BoundaryConditions
 ) -> fem.Function:
     # Define the displacement function space
-    shape_u = (domain.mesh.geometry.dim,)
+    if model.assumption.startswith("plane"):
+        shape_u = (2,)
+    elif model.assumption in ["anti_plane"]:
+        shape_u = (1,)
+    else:
+        raise ValueError(f"Unknown 2D assumption: {model.assumption}.")
     V_u = fem.functionspace(domain.mesh, ("Lagrange", 1, shape_u))
     # Define the displacement field
     u = fem.Function(V_u, name="Displacement")
@@ -77,8 +82,10 @@ def compute_external_work(
         over the domain or used in variational formulations.
 
     """
+    # Get the number of components in u
+    N_comp = v.function_space.value_shape[0]
     # Initialize the external work
-    f = fem.Constant(domain.mesh, [0.0, 0.0])
+    f = fem.Constant(domain.mesh, [0.0] * N_comp)
     external_work = ufl.dot(f, v) * ufl.dx
     # Create a function space for body forces
     bf_space = fem.functionspace(domain.mesh, ("Lagrange", 1))

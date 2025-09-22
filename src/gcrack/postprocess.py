@@ -22,8 +22,11 @@ def compute_measured_forces(
     """
     # Get the dimension of the domain
     dim: int = domain.dim
+    # Get the number of components
+    N_comp = uh.function_space.value_shape[0]
     # Get the normal to the boundary
-    n: ufl.FacetNormal = ufl.FacetNormal(domain.mesh)
+    facet_normal: ufl.FacetNormal = ufl.FacetNormal(domain.mesh)
+    n = ufl.as_vector([facet_normal[0], facet_normal[1], 0])
     # Get the boundary id
     boundary_id = gcrack_data.locate_measured_forces()
     # Get the integrand over the boundary
@@ -33,15 +36,19 @@ def compute_measured_forces(
         subdomain_data=domain.facet_markers,
         subdomain_id=boundary_id,
     )
+    # Compute the stress
+    sig = model.sig(uh)
+    # Compute the traction vector
+    T = ufl.dot(sig, n)
     # Initialize the force array
-    f = np.empty((2,))
-    for comp in range(dim):
+    f = np.empty((3,))
+    for comp in range(N_comp):
         # Elementary vector for the current component
-        elem_vec_np = np.zeros((dim,))
+        elem_vec_np = np.zeros((3,))
         elem_vec_np[comp] = 1
         elem_vec = fem.Constant(domain.mesh, elem_vec_np)
         # Expression for the reaction force for the current component
-        expr = ufl.dot(ufl.dot(model.sig(uh), n), elem_vec) * ds
+        expr = ufl.dot(T, elem_vec) * ds
         # Form for the reaction force expression
         form = fem.form(expr)
         # Assemble the form to get the reaction force component
@@ -113,10 +120,14 @@ def compute_external_work(
     Returns:
         float: External work.
     """
-    # Get measures
+    # Get surface measure
     ds = ufl.Measure("ds", domain=domain.mesh)
-    n = ufl.FacetNormal(domain.mesh)
+    # Get the normal
+    facet_normal: ufl.FacetNormal = ufl.FacetNormal(domain.mesh)
+    n = ufl.as_vector([facet_normal[0], facet_normal[1], 0])
+    # Convert displacement to 3D
+    uh3D = model.u_to_3D(uh)
     # Define the ufl expression of the external work
-    ew_ufl = ufl.dot(ufl.dot(model.sig(uh), n), uh) * ds
+    ew_ufl = ufl.dot(ufl.dot(model.sig(uh), n), uh3D) * ds
     # Compute the elastic energy
     return fem.assemble_scalar(fem.form(ew_ufl))

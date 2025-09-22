@@ -5,7 +5,7 @@ from dolfinx import fem
 from gcrack.domain import Domain
 from gcrack.models import ElasticModel
 from gcrack.utils.geometry import distance_point_to_segment
-from gcrack.utils.williams_series import Gamma_I, Gamma_II
+from gcrack.utils.williams_series import Gamma_I, Gamma_II, Gamma_III
 
 
 def compute_theta_field(domain, crack_tip, R_int, R_ext):
@@ -28,15 +28,23 @@ def compute_auxiliary_displacement_field(
     phi0: float,
     K_I_aux: float = 0,
     K_II_aux: float = 0,
+    K_III_aux: float = 0,
     T_aux: float = 0,
 ):
     # Get the cartesian coordinates
-    x = ufl.SpatialCoordinate(domain.mesh)
-    x_tip = ufl.as_vector(xc[:2])
+    x_2D = ufl.SpatialCoordinate(domain.mesh)
+    x = ufl.as_vector([x_2D[0], x_2D[1], 0])
+    x_tip = ufl.as_vector(xc)
     # Translate the domain to set the crack tip as origin
     r_vec_init = x - x_tip
     # Rotate the spatial coordinates to match the crack direction
-    R = ufl.as_tensor([[ufl.cos(phi0), -ufl.sin(phi0)], [ufl.sin(phi0), ufl.cos(phi0)]])
+    R = ufl.as_tensor(
+        [
+            [ufl.cos(phi0), -ufl.sin(phi0), 0.0],
+            [ufl.sin(phi0), ufl.cos(phi0), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
     r_vec = ufl.transpose(R) * r_vec_init
     # Get the polar coordinates
     r = ufl.sqrt(ufl.dot(r_vec, r_vec))
@@ -50,12 +58,14 @@ def compute_auxiliary_displacement_field(
     fy_I = ufl.sin(theta / 2) * (ka + 1 - 2 * ufl.cos(theta / 2) ** 2)
     fx_II = ufl.sin(theta / 2) * (ka + 1 + 2 * ufl.cos(theta / 2) ** 2)
     fy_II = -ufl.cos(theta / 2) * (ka - 1 - 2 * ufl.sin(theta / 2) ** 2)
+    fz_III = 4 * ufl.sin(theta / 2)
+    # Introduce the factor u_fac
+    u_fac = ufl.sqrt(r / (2 * np.pi)) / (2 * mu)
     # Compute the displacement field for mode I
-    u_I = ufl.sqrt(r / (2 * np.pi)) / (2 * mu) * K_I_aux * ufl.as_vector([fx_I, fy_I])
+    u_I = K_I_aux * u_fac * ufl.as_vector([fx_I, fy_I, 0])
     # Compute the displacement field for mode II
-    u_II = (
-        ufl.sqrt(r / (2 * np.pi)) / (2 * mu) * K_II_aux * ufl.as_vector([fx_II, fy_II])
-    )
+    u_II = K_II_aux * u_fac * ufl.as_vector([fx_II, fy_II, 0])
+    u_III = K_III_aux * u_fac * ufl.as_vector([0, 0, fz_III])
     # Compute the displacement field for mode T
     ux_T = (
         -1 / np.pi * (ka + 1) / (8 * mu) * ufl.ln(r)
@@ -64,9 +74,9 @@ def compute_auxiliary_displacement_field(
     uy_T = -1 / np.pi * (ka - 1) / (8 * mu) * theta + 1 / np.pi * 1 / (
         4 * mu
     ) * ufl.sin(theta) * ufl.cos(theta)
-    u_T = T_aux * ufl.as_vector([ux_T, uy_T])
+    u_T = T_aux * ufl.as_vector([ux_T, uy_T, 0])
     # Compute the total displacement field and rotate it
-    u_tot = R * (u_I + u_II + u_T)
+    u_tot = R * (u_I + u_II + u_III + u_T)
     # Rotate the displacement vectors
     return u_tot
 
@@ -79,17 +89,32 @@ def compute_I_integral(
     theta: ufl.core.expr.Expr,
 ) -> float:
     # Compute the gradients
-    grad_u = ufl.grad(u)
-    grad_u_aux = ufl.grad(u_aux)
-    # Compute the strains
-    eps = model.eps(u)
-    eps_aux = model.eps(u_aux)
-    # Compute the stresses
-    sig = model.sig(u)
-    sig_aux = model.sig(u_aux)
+    grad_u = model.grad_u(u)
+    gua_2D = ufl.grad(u_aux)
     # Compute theta gradient and div
     div_theta = ufl.div(theta)
-    grad_theta = ufl.grad(theta)
+    gt_2D = ufl.grad(theta)
+    # Convert the 2D gradient to 3D
+    grad_u_aux = ufl.as_tensor(
+        [
+            [gua_2D[0, 0], gua_2D[0, 1], 0],
+            [gua_2D[1, 0], gua_2D[1, 1], 0],
+            [gua_2D[2, 0], gua_2D[2, 1], 0],
+        ]
+    )
+    grad_theta = ufl.as_tensor(
+        [
+            [gt_2D[0, 0], gt_2D[0, 1], 0],
+            [gt_2D[1, 0], gt_2D[1, 1], 0],
+            [0, 0, 0],
+        ]
+    )
+    # Compute the strains
+    eps = model.eps(u)
+    eps_aux = ufl.sym(grad_u_aux)
+    # Compute the stresses
+    sig = model.sig(u)
+    sig_aux = model.la * ufl.tr(eps_aux) * ufl.Identity(3) + 2 * model.mu * eps_aux
     # Compute the interaction integral (reduce the quadrature degree for faster evaluation)
     dx = ufl.Measure("dx", domain=domain.mesh, metadata={"quadrature_degree": 4})
     I_expr = (
@@ -116,24 +141,29 @@ def compute_SIFs_with_I_integral(
     theta = theta_field * ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)])
     # Compute auxiliary displacement fields
     u_I_aux = compute_auxiliary_displacement_field(
-        domain, model, xc, phi0, K_I_aux=1.0, K_II_aux=0.0, T_aux=0.0
+        domain, model, xc, phi0, K_I_aux=1.0, K_II_aux=0.0, K_III_aux=0.0, T_aux=0.0
     )
     u_II_aux = compute_auxiliary_displacement_field(
-        domain, model, xc, phi0, K_I_aux=0.0, K_II_aux=1.0, T_aux=0.0
+        domain, model, xc, phi0, K_I_aux=0.0, K_II_aux=1.0, K_III_aux=0.0, T_aux=0.0
+    )
+    u_III_aux = compute_auxiliary_displacement_field(
+        domain, model, xc, phi0, K_I_aux=0.0, K_II_aux=0.0, K_III_aux=1.0, T_aux=0.0
     )
     u_T_aux = compute_auxiliary_displacement_field(
-        domain, model, xc, phi0, K_I_aux=0.0, K_II_aux=0.0, T_aux=1.0
+        domain, model, xc, phi0, K_I_aux=0.0, K_II_aux=0.0, K_III_aux=0.0, T_aux=1.0
     )
     # Compute the I-integrals
     I_I = compute_I_integral(domain, model, u, u_I_aux, theta)
     I_II = compute_I_integral(domain, model, u, u_II_aux, theta)
+    I_III = compute_I_integral(domain, model, u, u_III_aux, theta)
     I_T = compute_I_integral(domain, model, u, u_T_aux, theta)
     # Compute the SIF
     K_I = model.Ep / 2 * I_I
     K_II = model.Ep / 2 * I_II
+    K_III = model.E / (2 * (1 + model.nu)) * I_III
     T = model.Ep * I_T
     # Return SIF array
-    return {"KI": K_I, "KII": K_II, "T": T}
+    return {"KI": K_I, "KII": K_II, "KIII": K_III, "T": T}
 
 
 def compute_SIFs_from_William_series_interpolation(
@@ -168,16 +198,23 @@ def compute_SIFs_from_William_series_interpolation(
     # Get the node coordinates (and set the crack tip as the origin)
     xs = domain.mesh.geometry.x[dof_unique_ids] - np.array(xc)[np.newaxis, :]
 
-    # Get the displacement values
-    us = np.empty((xs.shape[0], 2))
-    us[:, 0] = u.x.array[2 * dof_unique_ids]
-    us[:, 1] = u.x.array[2 * dof_unique_ids + 1]
-    # Find crack tip element
-    xs_all = domain.mesh.geometry.x - xc
-    crack_tip_id = np.argmin(np.linalg.norm(xs_all, axis=1))
-    # Remove crack tip motion
-    us[:, 0] -= u.x.array[2 * crack_tip_id]
-    us[:, 1] -= u.x.array[2 * crack_tip_id + 1]
+    # Construct the displacement vector
+    N_comp = u.function_space.value_shape[0]
+    us = np.empty((xs.shape[0], N_comp))
+    # Get the displacements
+    if model.assumption.startswith("plane"):
+        # Get the displacement values
+        us[:, 0] = u.x.array[2 * dof_unique_ids]
+        us[:, 1] = u.x.array[2 * dof_unique_ids + 1]
+        # Find crack tip element
+        xs_all = domain.mesh.geometry.x - xc
+        crack_tip_id = np.argmin(np.linalg.norm(xs_all, axis=1))
+        # Remove crack tip motion
+        us[:, 0] -= u.x.array[2 * crack_tip_id]
+        us[:, 1] -= u.x.array[2 * crack_tip_id + 1]
+    elif model.assumption == "anti_plane":
+        # Get the displacement values
+        us[:, 0] = u.x.array[dof_unique_ids]
 
     # Define the Williams series field
     N_min = -1  # -3
@@ -189,31 +226,52 @@ def compute_SIFs_from_William_series_interpolation(
     # Compute the sizes
     Nn = us.shape[0]  # Number of nodes
     Ndof = us.shape[0] * us.shape[1]  # Number of dof
-    xaxis = np.array([2 * n for n in range(Nn)])  # Mask to isolate x axis
-    yaxis = np.array([2 * n + 1 for n in range(Nn)])  # Mask to isolate y axis
-    # Get the displacement vector (from FEM)
-    UF = us.flatten()
-    # Get the Gamma matrix
-    Gamma = np.empty((Ndof, 2 * (N_max - N_min + 1)))
-    for i, n in enumerate(range(N_min, N_max + 1)):
-        GI = Gamma_I(n, zs, model.mu, model.ka) * np.exp(1j * phi0)
-        GII = Gamma_II(n, zs, model.mu, model.ka) * np.exp(1j * phi0)
-        Gamma[xaxis, 2 * i] = np.real(GI)
-        Gamma[yaxis, 2 * i] = np.imag(GI)
-        Gamma[xaxis, 2 * i + 1] = np.real(GII)
-        Gamma[yaxis, 2 * i + 1] = np.imag(GII)
+
+    # Construct the matrix Gamma
+    if model.assumption.startswith("plane"):
+        xaxis = np.array([2 * n for n in range(Nn)])  # Mask to isolate x axis
+        yaxis = np.array([2 * n + 1 for n in range(Nn)])  # Mask to isolate y axis
+        # Get the displacement vector (from FEM)
+        UF = us.flatten()
+        # Get the Gamma matrix
+        Gamma = np.empty((Ndof, 2 * (N_max - N_min + 1)))
+        for i, n in enumerate(range(N_min, N_max + 1)):
+            GI = Gamma_I(n, zs, model.mu, model.ka) * np.exp(1j * phi0)
+            GII = Gamma_II(n, zs, model.mu, model.ka) * np.exp(1j * phi0)
+            Gamma[xaxis, 2 * i] = np.real(GI)
+            Gamma[yaxis, 2 * i] = np.imag(GI)
+            Gamma[xaxis, 2 * i + 1] = np.real(GII)
+            Gamma[yaxis, 2 * i + 1] = np.imag(GII)
+    elif model.assumption == "anti_plane":
+        # Get the displacement vector (from FEM)
+        UF = us.flatten()
+        # Get the Gamma matrix
+        Gamma = np.empty((Ndof, 2 * (N_max - N_min + 1)))
+        for i, n in enumerate(range(N_min, N_max + 1)):
+            GIII = Gamma_III(n, zs, model.mu, model.ka)
+            Gamma[:, i] = GIII
     # Solve the least square problem
     sol, res, _, _ = np.linalg.lstsq(Gamma, UF)
     # Create the SIF dictionary
     SIFs = {}
-    # Extract KI, KII and T
-    SIFs["KI"] = sol[2 * (1 - N_min)]
-    SIFs["KII"] = sol[2 * (1 - N_min) + 1]
-    SIFs["T"] = 2 * np.sqrt(2) / np.sqrt(np.pi) * sol[2 * (2 - N_min)]
-    # Store the other coefficients of the seriess
-    for i, n in enumerate(range(N_min, N_max + 1)):
-        SIFs[f"aI_{n}"] = sol[2 * i]
-        SIFs[f"aII_{n}"] = sol[2 * i + 1]
+    if model.assumption.startswith("plane"):
+        # Extract KI, KII and T
+        SIFs["KI"] = sol[2 * (1 - N_min)]
+        SIFs["KII"] = sol[2 * (1 - N_min) + 1]
+        SIFs["KIII"] = 0
+        SIFs["T"] = 2 * np.sqrt(2) / np.sqrt(np.pi) * sol[2 * (2 - N_min)]
+        # Store the other coefficients of the seriess
+        for i, n in enumerate(range(N_min, N_max + 1)):
+            SIFs[f"aI_{n}"] = sol[2 * i]
+            SIFs[f"aII_{n}"] = sol[2 * i + 1]
+    elif model.assumption == "anti_plane":
+        SIFs["KI"] = 0
+        SIFs["KII"] = 0
+        SIFs["KIII"] = sol[0 - N_min]
+        SIFs["T"] = 0
+        # Store the other coefficients of the seriess
+        for i, n in enumerate(range(N_min, N_max + 1)):
+            SIFs[f"aIII_{n}"] = sol[i]
     # Return the SIFs
     return SIFs
 
@@ -249,6 +307,7 @@ def compute_SIFs(
     Returns:
         dict: A dict containing the calculated Stress Intensity Factors.
     """
+    # Compute the SIFs
     match method.lower():
         case "i-integral":
             SIFs = compute_SIFs_with_I_integral(

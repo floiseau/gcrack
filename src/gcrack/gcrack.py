@@ -334,7 +334,7 @@ class GCrackBase(ABC):
                     lambda_ * SIFs_controlled[sif_name] + SIFs_prescribed[sif_name]
                 )
             res["elastic_energy"] = elastic_energy
-            res["fracture_dissipation"] += self.da * self.Gc(np.array(["phi_"]))[0]
+            res["fracture_dissipation"] += self.da * self.Gc(np.array([phi_]))[0]
             res["external_work"] = external_work
             # At first load step, also export the initial state
             if t == 1:

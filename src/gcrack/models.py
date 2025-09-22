@@ -43,12 +43,17 @@ class ElasticModel:
             self.assumption = pars["2D_assumption"]
             match self.assumption:
                 case "plane_stress":
-                    self.la = 2 * self.mu * self.la / (self.la + 2 * self.mu)
                     self.Ep = self.E
                     self.ka = (3 - self.nu) / (1 + self.nu)
                 case "plane_strain":
                     self.Ep = self.E / (1 - self.nu**2)
                     self.ka = 3 - 4 * self.nu
+                case "anti_plane":
+                    print(
+                        "For anti-plane, we assume plane strain for SIF calculations."
+                    )
+                    self.Ep = self.E
+                    self.ka = (3 - self.nu) / (1 + self.nu)
                 case _:
                     raise ValueError(
                         f'The 2D assumption "{self.assumption}" in unknown'
@@ -97,6 +102,71 @@ class ElasticModel:
             # Return the fem function
             return par_func
 
+    def u_to_3D(self, u: fem.Function) -> ufl.classes.Expr:
+        """
+        Convert the displacement to its 3D version.
+        The results depends on the 2D assumption.
+
+        Parameters
+        ----------
+        u : fem.Function
+            FEM function of the displacement field.
+
+        Returns
+        -------
+        ufl.form.Expression
+            Displacement in 3D.
+        """
+        if self.assumption.startswith("plane"):
+            return ufl.as_vector([u[0], u[1], 0])
+        elif self.assumption == "anti_plane":
+            return ufl.as_vector([0.0, 0.0, u[0]])
+        else:
+            raise ValueError(f"Unknown 2D assumption: {self.assumption}.")
+
+    def grad_u(self, u: fem.Function) -> ufl.classes.Expr:
+        """
+        Compute the gradient of the displacement field.
+
+        Parameters
+        ----------
+        u : fem.Function
+            FEM function of the displacement field.
+
+        Returns
+        -------
+        ufl.form.Expression
+            Gradient of the displacement field.
+        """
+        # Convert the displacement to 3D
+        u3D = self.u_to_3D(u)
+        # Compute the 2D gradient of the field
+        g_u3D = ufl.grad(u3D)
+        # Construct the strain tensor
+        if self.assumption.startswith("plane"):
+            eps_zz = (
+                -self.la / (2 * self.mu + self.la) * (g_u3D[0, 0] + g_u3D[1, 1])
+                if self.assumption == "plane_stress"
+                else 0
+            )
+            grad_u3D = ufl.as_tensor(
+                [
+                    [g_u3D[0, 0], g_u3D[0, 1], 0],
+                    [g_u3D[1, 0], g_u3D[1, 1], 0],
+                    [0, 0, eps_zz],
+                ]
+            )
+        elif self.assumption == "anti_plane":
+            grad_u3D = ufl.as_tensor(
+                [
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [g_u3D[2, 0], g_u3D[2, 1], 0],
+                ]
+            )
+        # Return the gradient
+        return grad_u3D
+
     def eps(self, u: fem.Function) -> ufl.classes.Expr:
         """
         Compute the strain tensor.
@@ -111,7 +181,8 @@ class ElasticModel:
         ufl.form.Expression
             Strain tensor.
         """
-        return ufl.sym(ufl.grad(u))
+        # Symmetrize the gradient
+        return ufl.sym(self.grad_u(u))
 
     def sig(self, u: fem.Function) -> ufl.classes.Expr:
         """
@@ -130,7 +201,8 @@ class ElasticModel:
         # Get elastic parameters
         mu, la = self.mu, self.la
         # Compute the stess
-        return la * ufl.nabla_div(u) * ufl.Identity(len(u)) + 2 * mu * self.eps(u)
+        eps = self.eps(u)
+        return la * ufl.tr(eps) * ufl.Identity(3) + 2 * mu * eps
 
     def elastic_energy(self, u, domain):
         """

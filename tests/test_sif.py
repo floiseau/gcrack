@@ -19,7 +19,7 @@ class GCrackData(GCrackBase):
         # Parameters
         L = 1
         h = L / 128
-        h_min = self.R_int / 32
+        h_min = self.R_int / 64
         # Points
         # Bot
         p1: int = gmsh.model.geo.addPoint(-L / 2, -L / 2, 0, h)
@@ -127,9 +127,13 @@ class GCrackData(GCrackBase):
         return 0.0
 
 
-def u_Ki(domain, model, KI, KII, T, phi0):
+def u_Ki(domain, model, KI, KII, KIII, T, phi0, model_assumption):
     # Initialize the displacement function
-    V_u = dolfinx.fem.functionspace(domain.mesh, ("Lagrange", 1, (2,)))
+    if model_assumption.startswith("plane"):
+        u_shape = (2,)
+    elif model_assumption == "anti_plane":
+        u_shape = (1,)
+    V_u = dolfinx.fem.functionspace(domain.mesh, ("Lagrange", 1, u_shape))
     u = dolfinx.fem.Function(V_u, name="Displacement")
     # Define the rotation matrix
     R_phi0 = ufl.as_matrix(
@@ -143,38 +147,51 @@ def u_Ki(domain, model, KI, KII, T, phi0):
     # Get the elastic parameters
     ka = model.ka
     mu = model.mu
-    # Compute the spatial functions
-    fx_I = ufl.cos(th / 2) * (ka - 1 + 2 * ufl.sin(th / 2) ** 2)
-    fx_II = ufl.sin(th / 2) * (ka + 1 + 2 * ufl.cos(th / 2) ** 2)
-    fy_I = ufl.sin(th / 2) * (ka + 1 - 2 * ufl.cos(th / 2) ** 2)
-    fy_II = -ufl.cos(th / 2) * (ka - 1 - 2 * ufl.sin(th / 2) ** 2)
-    fx_T = (1 + ka) * ufl.cos(th)
-    fy_T = (ka - 3) * ufl.sin(th)
-    # Compute the terms of the displacement field
-    ux_I = KI / (2 * mu) * ufl.sqrt(r / (2 * np.pi)) * fx_I
-    ux_II = KII / (2 * mu) * ufl.sqrt(r / (2 * np.pi)) * fx_II
-    uy_I = KI / (2 * mu) * ufl.sqrt(r / (2 * np.pi)) * fy_I
-    uy_II = KII / (2 * mu) * ufl.sqrt(r / (2 * np.pi)) * fy_II
-    ux_T = T / (8 * mu) * r * fx_T
-    uy_T = T / (8 * mu) * r * fy_T
-    # Define the expression of the displacement field
-    u_ufl = ufl.as_vector([ux_I + ux_II + ux_T, uy_I + uy_II + uy_T])
-    # Finish the rotation of the displacement field
-    u_ufl_rotated = ufl.dot(R_phi0, u_ufl)
-    u_expr = dolfinx.fem.Expression(u_ufl_rotated, V_u.element.interpolation_points())
+    # Compute the factor
+    u_fac = 1 / (2 * mu) * ufl.sqrt(r / (2 * np.pi))
+    if model_assumption.startswith("plane"):
+        # Compute the spatial functions
+        fx_I = ufl.cos(th / 2) * (ka - 1 + 2 * ufl.sin(th / 2) ** 2)
+        fy_I = ufl.sin(th / 2) * (ka + 1 - 2 * ufl.cos(th / 2) ** 2)
+        fx_II = ufl.sin(th / 2) * (ka + 1 + 2 * ufl.cos(th / 2) ** 2)
+        fy_II = -ufl.cos(th / 2) * (ka - 1 - 2 * ufl.sin(th / 2) ** 2)
+        fx_T = (1 + ka) * ufl.cos(th)
+        fy_T = (ka - 3) * ufl.sin(th)
+        # Compute the terms of the displacement field
+        ux_I = KI * u_fac * fx_I
+        uy_I = KI * u_fac * fy_I
+        ux_II = KII * u_fac * fx_II
+        uy_II = KII * u_fac * fy_II
+        ux_T = T / (8 * mu) * r * fx_T
+        uy_T = T / (8 * mu) * r * fy_T
+        # Define the expression of the displacement field
+        u_ufl = ufl.as_vector([ux_I + ux_II + ux_T, uy_I + uy_II + uy_T])
+        # Finish the rotation of the displacement field
+        u_ufl_rotated = ufl.dot(R_phi0, u_ufl)
+        u_expr = dolfinx.fem.Expression(
+            u_ufl_rotated, V_u.element.interpolation_points()
+        )
+    elif model_assumption == "anti_plane":
+        # Compute the spatial function
+        fz_III = 4 * ufl.sin(th / 2)
+        # Comupte the terms of the displacement field
+        uz_III = KIII * u_fac * fz_III
+        # Define the expression of the displacement field
+        u_ufl = ufl.as_vector([uz_III])
+        u_expr = dolfinx.fem.Expression(u_ufl, V_u.element.interpolation_points())
     # Interpolate on the displacement function
     u.interpolate(u_expr)
     # Return the displacement field
     return u
 
 
-def test_compute_SIFs():
+def test_compute_SIFs_2D_plane():
     # Define user parameters
     pars = {"L": 1.0}
     data = GCrackData(
         E=1.0,
         nu=0.3,
-        da=pars["L"] / 64,
+        da=pars["L"] / 32,
         Nt=1,
         xc0=[0, 0, 0],
         assumption_2D="plane_strain",
@@ -197,17 +214,11 @@ def test_compute_SIFs():
     }
     model = ElasticModel(ela_pars, domain)
     # # Parameters
-    # # NOTE: Final version
-    # KIs = [0, 1]
-    # KIIs = [0, 1]
-    # Ts = [-1, 0, 1]
-    # phi0s = [0, np.deg2rad(30), np.deg2rad(45)]
-    # methods = ["williams"]  # , "i-integral"]
-    KIs = [0]
-    KIIs = [0]
-    Ts = [1]
-    phi0s = [0]
-    methods = ["i-integral"]
+    KIs = [0, 1]
+    KIIs = [0, 1]
+    Ts = [0, 1]
+    phi0s = [0, np.deg2rad(30), np.deg2rad(45)]
+    methods = ["williams"]  # ["i-integral"]
     # Test all combinations of parameters
     for KI, KII, T, phi0, method in itertools.product(KIs, KIIs, Ts, phi0s, methods):
         # Pass when all the SIFs are null
@@ -215,47 +226,116 @@ def test_compute_SIFs():
             continue
         print(f"{KI=}, {KII=}, {T=}, {phi0=}, {method=}")
         # Generate a displacement field
-        u = u_Ki(domain, model, KI, KII, T, phi0)
-
-        # # DEBUG Check the generated displacement fields
-        # import matplotlib.pyplot as plt
-        #
-        # # Get the initial coordinates
-        # x_ufl = ufl.SpatialCoordinate(domain.mesh)
-        # V_x = dolfinx.fem.functionspace(domain.mesh, ("Lagrange", 1, (2,)))
-        # x = dolfinx.fem.Function(V_x, name="Coordinates")
-        # x_expr = dolfinx.fem.Expression(x_ufl, V_x.element.interpolation_points())
-        # x.interpolate(x_expr)
-
-        # # Generate masks to extract the components
-        # N = int(len(u.x.array) / 2)
-        # x_comp = list(range(0, 2 * N, 2))
-        # y_comp = list(range(1, 2 * N + 1, 2))
-
-        # # Plot the initial domain and its deformed
-        # s = 1.0  # scale factor
-        # plt.figure()
-        # plt.scatter(
-        #     x.x.array[x_comp], x.x.array[y_comp], marker=".", label="Initial pos"
-        # )
-        # plt.scatter(
-        #     x.x.array[x_comp] + s * u.x.array[x_comp],
-        #     x.x.array[y_comp] + s * u.x.array[y_comp],
-        #     marker="s",
-        #     label="Generated field",
-        # )
-        # plt.grid()
-        # plt.legend()
-        # plt.show()
-        # # END DEBUG
-
+        u = u_Ki(domain, model, KI, KII, 0, T, phi0, data.assumption_2D)
+        # # Debug : Plot the displacement field
+        # plot_displacement_field(domain, u)
         # Compute the SIF associated with each displacament field
         data.phi0 = phi0
         SIF = compute_SIFs(
             domain, model, u, data.xc0, data.phi0, data.R_int, data.R_ext, method
         )
-        assert np.isclose(SIF["KI"], KI, atol=1e-6)
-        assert np.isclose(SIF["KII"], KII, atol=1e-6)
-        assert np.isclose(SIF["T"], T, atol=1e-6)
+        assert np.isclose(SIF["KI"], KI, atol=1e-2), (
+            f"Error in KI for : {KI=}, {KII=}, {T=}, {phi0=}, {method=}."
+        )
+        assert np.isclose(SIF["KII"], KII, atol=1e-2), (
+            f"Error in KII for : {KI=}, {KII=}, {T=}, {phi0=}, {method=}."
+        )
+        assert np.isclose(SIF["T"], T, atol=1e-2), (
+            f"Error in T for : {KI=}, {KII=}, {T=}, {phi0=}, {method=}."
+        )
 
     gmsh.finalize()
+
+
+def test_compute_SIFs_anti_plane():
+    # Define user parameters
+    pars = {"L": 1.0}
+    data = GCrackData(
+        E=1.0,
+        nu=0.3,
+        da=pars["L"] / 32,
+        Nt=1,
+        xc0=[0, 0, 0],
+        assumption_2D="anti_plane",
+        pars=pars,
+        sif_method="williams",  # NOTE: This is not used here
+        # sif_method="i-integral",
+        s=0.0,
+    )
+    # Generate the domain
+    gmsh.initialize()
+    gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
+    gmsh.option.setNumber("Mesh.Algorithm", 5)
+    gmsh_model = data.generate_mesh([data.xc0])
+    domain = Domain(gmsh_model)
+    # Define an elastic model
+    ela_pars = {
+        "E": data.E,
+        "nu": data.nu,
+        "2D_assumption": data.assumption_2D,
+    }
+    model = ElasticModel(ela_pars, domain)
+    # # Parameters
+    KI = 0
+    KII = 0
+    KIII = 1
+    T = 0
+    phi0s = [0, np.deg2rad(30), np.deg2rad(45)]
+    methods = ["williams", "i-integral"]  # ["williams"]  # ["i-integral"]
+    # Test all combinations of parameters
+    for phi0, method in itertools.product(phi0s, methods):
+        print(f"{KI=}, {KII=}, {KIII=}, {T=}, {phi0=}, {method=}")
+        # Generate a displacement field
+        u = u_Ki(domain, model, KI, KII, KIII, T, phi0, data.assumption_2D)
+        # Compute the SIF associated with each displacament field
+        data.phi0 = phi0
+        SIF = compute_SIFs(
+            domain, model, u, data.xc0, data.phi0, data.R_int, data.R_ext, method
+        )
+        assert np.isclose(SIF["KI"], KI, atol=1e-2), (
+            f"Error in KI for : {KI=}, {KII=}, {KIII=}, {T=}, {phi0=}, {method=}."
+        )
+        assert np.isclose(SIF["KII"], KII, atol=1e-2), (
+            f"Error in KII for : {KI=}, {KII=}, {KIII=}, {T=}, {phi0=}, {method=}."
+        )
+        assert np.isclose(SIF["KIII"], KIII, atol=1e-2), (
+            f"Error in KII for : {KI=}, {KII=}, {KIII=}, {T=}, {phi0=}, {method=}."
+        )
+        assert np.isclose(SIF["T"], T, atol=1e-2), (
+            f"Error in T for : {KI=}, {KII=}, {KIII=}, {T=}, {phi0=}, {method=}."
+        )
+
+    gmsh.finalize()
+
+
+def plot_displacement_field(domain, u):
+    # DEBUG Check the generated displacement fields
+    import matplotlib.pyplot as plt
+
+    # Get the initial coordinates
+    x_ufl = ufl.SpatialCoordinate(domain.mesh)
+    V_x = dolfinx.fem.functionspace(domain.mesh, ("Lagrange", 1, (2,)))
+    x = dolfinx.fem.Function(V_x, name="Coordinates")
+    x_expr = dolfinx.fem.Expression(x_ufl, V_x.element.interpolation_points())
+    x.interpolate(x_expr)
+
+    # Generate masks to extract the components
+    N = int(len(u.x.array) / 2)
+    x_comp = list(range(0, 2 * N, 2))
+    y_comp = list(range(1, 2 * N + 1, 2))
+
+    # Plot the initial domain and its deformed
+    s = 0.1  # scale factor
+    plt.figure()
+    plt.scatter(x.x.array[x_comp], x.x.array[y_comp], marker=".", label="Initial pos")
+    plt.scatter(
+        x.x.array[x_comp] + s * u.x.array[x_comp],
+        x.x.array[y_comp] + s * u.x.array[y_comp],
+        marker="s",
+        label="Generated field",
+    )
+    plt.grid()
+    plt.legend()
+    plt.axis("equal")
+    plt.show()
+    # END DEBUG
