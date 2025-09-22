@@ -20,8 +20,6 @@ def compute_measured_forces(
     Returns:
         np.array: The computed reaction forces as a numpy array.
     """
-    # Get the dimension of the domain
-    dim: int = domain.dim
     # Get the number of components
     N_comp = uh.function_space.value_shape[0]
     # Get the normal to the boundary
@@ -53,7 +51,6 @@ def compute_measured_forces(
         form = fem.form(expr)
         # Assemble the form to get the reaction force component
         f[comp] = fem.assemble_scalar(form)
-
     return f
 
 
