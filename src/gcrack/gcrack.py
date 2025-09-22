@@ -59,6 +59,8 @@ class GCrackBase(ABC):
     """criterion (Optional[str]): Criterion for crack propagation, defaults to "gmerr"."""
     name: Optional[str] = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     """name (Optional[str]): Name of the simulation used to name the results directory."""
+    no_propagation: Optional[bool] = False
+    """no_propagation (Optional[bool]): Flag to only run skip the crack propagation phase."""
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -273,27 +275,34 @@ class GCrackBase(ABC):
             # Compute the load factor and crack angle.
 
             print("│  Determination of propagation angle and load factor")
-            load_factor_solver = LoadFactorSolver(model, self.Gc)
-            opti_res = load_factor_solver.solve(
-                phi0, SIFs_controlled, SIFs_prescribed, self.s
-            )
-            # Get the results
-            phi_ = opti_res[0]
-            lambda_ = opti_res[1]
-            # NOTE: DEBUG
-            load_factor_solver.export_minimization_plots(
-                phi_,
-                lambda_,
-                phi0,
-                SIFs_controlled,
-                SIFs_prescribed,
-                self.s,
-                t,
-                dir_name,
-            )
-            # Add a new crack point
-            da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
-            crack_points.append(crack_points[-1] + da_vec)
+            if not self.no_propagation:
+                load_factor_solver = LoadFactorSolver(model, self.Gc)
+                opti_res = load_factor_solver.solve(
+                    phi0, SIFs_controlled, SIFs_prescribed, self.s
+                )
+                # Get the results
+                phi_ = opti_res[0]
+                lambda_ = opti_res[1]
+                # NOTE: DEBUG
+                load_factor_solver.export_minimization_plots(
+                    phi_,
+                    lambda_,
+                    phi0,
+                    SIFs_controlled,
+                    SIFs_prescribed,
+                    self.s,
+                    t,
+                    dir_name,
+                )
+                # Add a new crack point
+                da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
+                crack_points.append(crack_points[-1] + da_vec)
+            else:
+                # Display a warning message
+                print("│  Running in no propagation mode (set arbitrary results).")
+                # Set arbitrary results
+                phi_ = 0
+                lambda_ = 1
 
             print("│  Results of the step")
             print(
@@ -325,10 +334,10 @@ class GCrackBase(ABC):
             res["xc_1"] = crack_points[-1][0]
             res["xc_2"] = crack_points[-1][1]
             res["xc_3"] = crack_points[-1][2]
-            res["uimp_1"] = uimp[0]
-            res["uimp_2"] = uimp[1]
-            res["fimp_1"] = fimp[0]
-            res["fimp_2"] = fimp[1]
+            for comp, uimp_comp in enumerate(uimp):
+                res[f"uimp_{comp + 1}"] = uimp[comp]
+            for comp, fimp_comp in enumerate(fimp):
+                res[f"fimp_{comp + 1}"] = fimp[comp]
             for sif_name in SIFs_controlled:
                 res[sif_name] = (
                     lambda_ * SIFs_controlled[sif_name] + SIFs_prescribed[sif_name]
