@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List
+from math import isnan
 
 import numpy as np
 
@@ -28,11 +29,18 @@ class BodyForce:
 
 
 @dataclass
+class NodalDisplacement:
+    x: List[float]
+    u_imp: List[float]
+
+
+@dataclass
 class BoundaryConditions:
     displacement_bcs: List[DisplacementBC]
     force_bcs: List[ForceBC]
     body_forces: List[BodyForce]
     locked_points: List[List[float]]
+    nodal_displacements: List[NodalDisplacement]
 
     def is_empty(self) -> bool:
         """Check if all boundary condition lists are empty."""
@@ -107,4 +115,37 @@ def get_dirichlet_boundary_conditions(
         locked_bc = fem.dirichletbc(np.array([0.0] * N_comp), locked_dofs, V_u)
         # Append the boundary condition to the list of boundary condition
         dirichlet_bcs.append(locked_bc)
+
+    # Add the nodal displacements
+    for nd in bcs.nodal_displacements:
+        # Extract the quantities
+        p = np.array(nd.x)
+        u_imp = nd.u_imp
+
+        # Define the location function
+        def on_locked_point(x):
+            return np.logical_and(np.isclose(x[0], p[0]), np.isclose(x[1], p[1]))
+
+        for comp in range(N_comp):
+            # Check if the imposed displement is nan
+            if isnan(u_imp[comp]):
+                continue
+            # Get the locked dofs
+            dof = fem.locate_dofs_geometrical(
+                (V_u.sub(comp), V_u.sub(comp).collapse()[0]), on_locked_point
+            )
+            if not dof:
+                raise ValueError(
+                    f"No node found at {nd.x} to impose nodal displacement."
+                )
+            # Parse the nodal value
+            V_u_comp = V_u if N_comp == 1 else V_u.sub(comp).collapse()[0]
+            bc_func = parse_expression(u_imp[comp], V_u_comp)
+            # Create the Dirichlet boundary condition
+            if N_comp == 1:  # TODO: Clean (idk why no syntax works in both cases)
+                bc = fem.dirichletbc(bc_func, dof)
+            else:
+                bc = fem.dirichletbc(bc_func, dof, V_u)
+            # Append the boundary condition to the list
+            dirichlet_bcs.append(bc)
     return dirichlet_bcs

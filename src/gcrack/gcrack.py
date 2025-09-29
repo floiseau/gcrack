@@ -13,6 +13,7 @@ from gcrack.boundary_conditions import (
     DisplacementBC,
     ForceBC,
     BodyForce,
+    NodalDisplacement,
     BoundaryConditions,
 )
 from gcrack.solvers import solve_elastic_problem
@@ -98,6 +99,14 @@ class GCrackBase(ABC):
 
         Returns:
             List[List[float]]: A list of points (list) coordinates.
+        """
+        return []
+
+    def define_nodal_displacements(self) -> List[NodalDisplacement]:
+        """Define a list of imposed nodal displacements.
+
+        Returns:
+            List[NodalDisplacements]: A list of NodalDisplacement.
         """
         return []
 
@@ -215,6 +224,7 @@ class GCrackBase(ABC):
                 force_bcs=self.define_controlled_forces(),
                 body_forces=self.define_controlled_body_forces(),
                 locked_points=self.define_locked_points(),
+                nodal_displacements=self.define_nodal_displacements(),
             )
 
             # Get the controlled boundary conditions
@@ -223,6 +233,7 @@ class GCrackBase(ABC):
                 force_bcs=self.define_prescribed_forces(),
                 body_forces=self.define_prescribed_body_forces(),
                 locked_points=self.define_locked_points(),
+                nodal_displacements=self.define_nodal_displacements(),
             )
 
             # Define the domain
