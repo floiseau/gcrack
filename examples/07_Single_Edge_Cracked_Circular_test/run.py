@@ -221,7 +221,7 @@ class GCrackData(GCrackBase):
         return [x, y]
 
     def Gc(self, phi):
-        return self.pars["Gc"]
+        return self.pars["Gc"] + 0.0 * phi
 
 
 if __name__ == "__main__":
