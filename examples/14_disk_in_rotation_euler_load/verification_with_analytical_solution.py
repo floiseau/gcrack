@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 # Geometry
@@ -13,9 +12,10 @@ G = E / (2 * (1 + nu))
 # Load
 wd = 1.0
 
+print("=== Verification of Euler load")
 # Read the numerical solution
 sol = np.loadtxt(
-    "results_numeric/results.csv",
+    "results_numeric_euler/results.csv",
     delimiter=",",
     dtype=float,
     skiprows=1,

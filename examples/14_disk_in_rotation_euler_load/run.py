@@ -118,14 +118,14 @@ class GCrack(GCrackBase):
         w = self.pars["w"]
         wd = self.pars["wd"]
         # Compute the polar coordinates
-        r = "sqrt(x[0]**2 + x[1]**2)"
-        th = "atan2(x[1], x[0]) - pi/2"
+        r = "sqrt((x[0])**2 + x[1]**2)"
+        th = "atan2(x[1], x[0])"
         # Calculate the amplitude of each forces
         fw_amp = f"({rho} * {w}**2 * {r})"
         fe_amp = f"(- {rho} * {wd} * {r})"
         # Project onto the x and y axis
-        fx = f"{fw_amp} * (-sin({th})) + {fe_amp} * (-cos({th}))"
-        fy = f"{fw_amp} * cos({th}) + {fe_amp} * (-sin({th}))"
+        fx = f"{fw_amp} * (+cos({th})) + {fe_amp} * (-sin({th}))"
+        fy = f"{fw_amp} * (+sin({th})) + {fe_amp} * (+cos({th}))"
         return [BodyForce(f_imp=[fx, fy])]
 
     def Gc(self, phi):
@@ -159,6 +159,7 @@ if __name__ == "__main__":
         sif_method="williams",
         # Other parameters
         pars=pars,
-        name="numeric",
+        name="numeric_euler",
+        no_propagation=True,
     )
     gcrack.run()
