@@ -196,7 +196,7 @@ def test_compute_SIFs_2D_plane():
         xc0=[0, 0, 0],
         assumption_2D="plane_strain",
         pars=pars,
-        sif_method="williams",  # NOTE: This is not used here
+        sif_method="williams",  # NOTE: This is overwritten afterward.
         # sif_method="i-integral",
         s=0.0,
     )

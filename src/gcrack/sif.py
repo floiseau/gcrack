@@ -259,6 +259,7 @@ def compute_SIFs_from_William_series_interpolation(
         SIFs["KI"] = sol[2 * (1 - N_min)]
         SIFs["KII"] = sol[2 * (1 - N_min) + 1]
         SIFs["KIII"] = 0
+        # TODO: Check this scaling. It seems to be false to me
         SIFs["T"] = 2 * np.sqrt(2) / np.sqrt(np.pi) * sol[2 * (2 - N_min)]
         # Store the other coefficients of the seriess
         for i, n in enumerate(range(N_min, N_max + 1)):
@@ -267,7 +268,7 @@ def compute_SIFs_from_William_series_interpolation(
     elif model.assumption == "anti_plane":
         SIFs["KI"] = 0
         SIFs["KII"] = 0
-        SIFs["KIII"] = sol[0 - N_min]
+        SIFs["KIII"] = sol[1 - N_min] / 4
         SIFs["T"] = 0
         # Store the other coefficients of the seriess
         for i, n in enumerate(range(N_min, N_max + 1)):
