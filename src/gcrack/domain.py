@@ -39,7 +39,11 @@ class Domain:
         """
         # Get the dimension
         self.dim = gmsh_model.getDimension()
-        # Convert the model into a mesh
-        self.mesh, self.cell_markers, self.facet_markers = io.gmshio.model_to_mesh(
+        # Generate mesh data from the gmsh model
+        self.mesh_data = io.gmsh.model_to_mesh(
             gmsh_model, MPI.COMM_WORLD, 0, gdim=self.dim
         )
+        # Extract the mesh and the tags
+        self.mesh = self.mesh_data.mesh
+        self.cell_markers = self.mesh_data.cell_tags
+        self.facet_markers = self.mesh_data.facet_tags

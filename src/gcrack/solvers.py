@@ -53,6 +53,7 @@ def solve_elastic_problem(
         #     "pc_gamg_agg_nsmooths": 1,
         #     "pc_gamg_esteig_ksp_type": "cg",
         # },
+        petsc_options_prefix="basic_linear_problem",
         petsc_options={
             "ksp_type": "preonly",
             "pc_type": "cholesky",
