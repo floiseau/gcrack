@@ -62,6 +62,8 @@ class GCrackBase(ABC):
     """name (Optional[str]): Name of the simulation used to name the results directory."""
     no_propagation: Optional[bool] = False
     """no_propagation (Optional[bool]): Flag to only run skip the crack propagation phase."""
+    no_meshing: Optional[bool] = False
+    """no_meshing (Optional[bool]): Flag to skip mesh generation when a mesh has already been created."""
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -215,8 +217,12 @@ class GCrackBase(ABC):
             # Run the user defined load step initialization
             self.user_load_step_initialization(res)
 
-            print("│  Meshing the cracked domain")
-            gmsh_model = self.generate_mesh(crack_points)
+            # Generate the mesh
+            if not self.no_meshing:
+                print("│  Meshing the cracked domain")
+                gmsh_model = self.generate_mesh(crack_points)
+            else:
+                print("│  Skip meshing (no_meshing = True)")
 
             # Get the controlled boundary conditions
             controlled_bcs = BoundaryConditions(
@@ -237,19 +243,20 @@ class GCrackBase(ABC):
             )
 
             # Define the domain
-            domain = Domain(gmsh_model)
+            if not self.no_meshing:
+                self.domain = Domain(gmsh_model)
 
             # Define an elastic model
-            model = ElasticModel(ela_pars, domain)
+            model = ElasticModel(ela_pars, self.domain)
 
             print("│  Solve the controlled elastic problem with FEM")
             # Solve the controlled elastic problem
-            u_controlled = solve_elastic_problem(domain, model, controlled_bcs)
+            u_controlled = solve_elastic_problem(self.domain, model, controlled_bcs)
 
             print(f"│  Compute the SIFs for the controlled problem ({self.sif_method})")
             # Compute the SIFs for the controlled problem
             SIFs_controlled = compute_SIFs(
-                domain,
+                self.domain,
                 model,
                 u_controlled,
                 crack_points[-1],
@@ -263,10 +270,10 @@ class GCrackBase(ABC):
             if not prescribed_bcs.is_empty():
                 print("│  Solve the prescribed elastic problem with FEM")
                 # Solve the prescribed elastic problem
-                u_prescribed = solve_elastic_problem(domain, model, prescribed_bcs)
+                u_prescribed = solve_elastic_problem(self.domain, model, prescribed_bcs)
                 # Compute the SIFs for the prescribed problem
                 SIFs_prescribed = compute_SIFs(
-                    domain,
+                    self.domain,
                     model,
                     u_prescribed,
                     crack_points[-1],
@@ -328,11 +335,11 @@ class GCrackBase(ABC):
             u_scaled.x.array[:] = lambda_ * u_controlled.x.array + u_prescribed.x.array
             u_scaled.name = "Displacement"
             # Compute the reaction force
-            fimp = compute_measured_forces(domain, model, u_scaled, self)
-            uimp = compute_measured_displacement(domain, u_scaled, self)
+            fimp = compute_measured_forces(self.domain, model, u_scaled, self)
+            uimp = compute_measured_displacement(self.domain, u_scaled, self)
             # COmpute energies
-            elastic_energy = compute_elastic_energy(domain, model, u_scaled)
-            external_work = compute_external_work(domain, model, u_scaled)
+            elastic_energy = compute_elastic_energy(self.domain, model, u_scaled)
+            external_work = compute_external_work(self.domain, model, u_scaled)
 
             print("│  Export the results")
             # Export the elastic solution
