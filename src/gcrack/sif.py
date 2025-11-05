@@ -246,7 +246,7 @@ def compute_SIFs_from_William_series_interpolation(
         # Get the displacement vector (from FEM)
         UF = us.flatten()
         # Get the Gamma matrix
-        Gamma = np.empty((Ndof, 2 * (N_max - N_min + 1)))
+        Gamma = np.empty((Ndof, N_max - N_min + 1))
         for i, n in enumerate(range(N_min, N_max + 1)):
             GIII = Gamma_III(n, zs, model.mu, model.ka)
             Gamma[:, i] = GIII
