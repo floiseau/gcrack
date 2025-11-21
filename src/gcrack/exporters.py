@@ -31,7 +31,8 @@ def export_function(u: fem.Function, t: int, dir_path: Path):
     Export a FEniCS function to a VTK file.
 
     This function writes the given FEniCS function to a VTK file for visualization. The filename
-    is constructed using the provided time step `t`, and the file is saved in the specified directory.
+    is constructed using the function name with the provided time step `t`, and the file is saved
+    in the specified directory.
 
     Args:
         u (fem.Function): The FEniCS function to be exported.
@@ -43,7 +44,7 @@ def export_function(u: fem.Function, t: int, dir_path: Path):
     """
     # Get function info
     V = u.function_space
-    vtkfile = io.VTKFile(V.mesh.comm, dir_path / f"u_{t:04d}_.pvd", "w")
+    vtkfile = io.VTKFile(V.mesh.comm, dir_path / f"{u.name}_{t:04d}_.pvd", "w")
     vtkfile.write_function(u, 0)
     vtkfile.close()
 
