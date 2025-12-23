@@ -1,6 +1,6 @@
 [project]
 name = "gcrack"
-version = "0.0.1"
+version = "2025-12-23"
 authors = [
   { name="Flavien Loiseau", email="flavien.loiseau@ensta.fr" },
 ]
