@@ -1,3 +1,15 @@
+"""
+Module with solution method for the elastic problem.
+
+This module provides functions for solving elastic problems using the finite element method.
+
+Functions:
+    solve_elastic_problem:
+        Solves an elastic problem using the finite element method.
+    compute_external_work:
+        Computes the external work due to imposed forces and body forces.
+"""
+
 from gcrack.utils.expression_parsers import parse_expression
 from gcrack.domain import Domain
 from gcrack.models import ElasticModel
@@ -15,6 +27,23 @@ from dolfinx.fem.petsc import LinearProblem
 def solve_elastic_problem(
     domain: Domain, model: ElasticModel, bcs: BoundaryConditions
 ) -> fem.Function:
+    """Solves an elastic problem using the finite element method.
+
+    This function sets up and solves a linear elastic problem using the finite element method.
+    It defines the function space, boundary conditions, and variational formulation based on the elastic energy and external work.
+    The problem is solved using PETSc's LinearProblem.
+
+    Args:
+        domain (Domain): The domain object representing the physical space.
+        model (ElasticModel): The elastic model defining the material properties.
+        bcs (BoundaryConditions): The boundary conditions for the problem.
+
+    Returns:
+        fem.Function: The displacement solution of the elastic problem.
+
+    Raises:
+        ValueError: If the 2D assumption is unknown.
+    """
     # Define the displacement function space
     if model.assumption.startswith("plane"):
         shape_u = (2,)
@@ -66,6 +95,24 @@ def solve_elastic_problem(
 def compute_external_work(
     domain: Domain, v: dolfinx.fem.Function, bcs: BoundaryConditions
 ) -> ufl.classes.Form:
+    """Computes the external work due to imposed forces and body forces.
+
+    This function calculates the external work on a boundary of the given mesh by integrating the dot product of imposed traction forces and a test function over the relevant boundary entities.
+    It also accounts for body forces applied within the domain.
+
+    Args:
+        domain (Domain):
+            The finite element mesh representing the domain.
+        v (dolfinx.fem.Function):
+            The test function representing the virtual displacement or velocity.
+        bcs (BoundaryConditions):
+            Object containing the boundary conditions, including body forces and force boundary conditions.
+
+    Returns:
+        ufl.classes.Form:
+            A UFL form representing the external work, which can be integrated over the domain or used in variational formulations.
+    """
+
     """
     Compute the external work on the boundary of the domain due to imposed forces.
 
@@ -79,8 +126,8 @@ def compute_external_work(
         bcs: Object containing the boundary conditions.
 
     Returns:
-        ufl.classes.Form: An UFL form representing the external work, which can be integrated
-        over the domain or used in variational formulations.
+        external_work(ufl.classes.Form):
+            An UFL form representing the external work, which can be integrated over the domain or used in variational formulations.
 
     """
     # Get the number of components in u

@@ -1,3 +1,19 @@
+"""
+Module for computing post-processing quantities in finite element simulations of elastic problems.
+
+This module provides functions to compute various post-processing quantities in finite element simulations, including reaction forces, displacements at specific points, elastic energy, and external work.
+
+Functions:
+    compute_measured_forces:
+        Computes the reaction forces on a specified boundary.
+    compute_measured_displacement:
+        Computes the displacement at a specified point.
+    compute_elastic_energy:
+        Computes the elastic energy in the domain.
+    compute_external_work:
+        Computes the external work done on the domain.
+"""
+
 import numpy as np
 
 import ufl

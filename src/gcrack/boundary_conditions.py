@@ -1,3 +1,21 @@
+"""
+Module for defining and processing boundary conditions in finite element simulations.
+
+This module provides data structures and functions to handle boundary conditions,
+including displacement, force, body forces, locked points, and nodal displacements.
+It is designed to work with the `dolfinx` library for finite element analysis.
+
+Classes:
+    DisplacementBC: Represents a displacement boundary condition.
+    ForceBC: Represents a force boundary condition.
+    BodyForce: Represents a body force applied within a domain.
+    NodalDisplacement: Represents a nodal displacement condition.
+    BoundaryConditions: Aggregates all boundary conditions for a simulation.
+
+Functions:
+    get_dirichlet_boundary_conditions: Constructs and returns a list of Dirichlet boundary conditions for a given domain and function space.
+"""
+
 from dataclasses import dataclass
 from typing import List
 from math import isnan
@@ -13,29 +31,71 @@ from gcrack.utils.expression_parsers import parse_expression
 
 @dataclass
 class DisplacementBC:
+    """
+    Represents a displacement boundary condition.
+
+    Attributes:
+        boundary_id (int): Unique identifier for the boundary where the displacement is applied.
+        u_imp (List[float]): Imposed displacement values for the boundary.
+    """
+
     boundary_id: int
     u_imp: List[float]
 
 
 @dataclass
 class ForceBC:
+    """
+    Represents a force boundary condition.
+
+    Attributes:
+        boundary_id (int): Unique identifier for the boundary where the force is applied.
+        f_imp (List[float]): Imposed force values for the boundary.
+    """
+
     boundary_id: int
     f_imp: List[float]
 
 
 @dataclass
 class BodyForce:
+    """
+    Represents a body force applied within a domain.
+
+    Attributes:
+        f_imp (List[float]): Imposed body force values.
+    """
+
     f_imp: List[float]
 
 
 @dataclass
 class NodalDisplacement:
+    """
+    Represents a nodal displacement condition.
+
+    Attributes:
+        x (List[float]): Coordinates of the node.
+        u_imp (List[float]): Imposed displacement values for the node.
+    """
+
     x: List[float]
     u_imp: List[float]
 
 
 @dataclass
 class BoundaryConditions:
+    """
+    Aggregates all boundary conditions for a simulation.
+
+    Attributes:
+        displacement_bcs (List[DisplacementBC]): List of displacement boundary conditions.
+        force_bcs (List[ForceBC]): List of force boundary conditions.
+        body_forces (List[BodyForce]): List of body forces applied within the domain.
+        locked_points (List[List[float]]): List of coordinates for points that are locked (fixed).
+        nodal_displacements (List[NodalDisplacement]): List of nodal displacement conditions.
+    """
+
     displacement_bcs: List[DisplacementBC]
     force_bcs: List[ForceBC]
     body_forces: List[BodyForce]
@@ -43,15 +103,45 @@ class BoundaryConditions:
     nodal_displacements: List[NodalDisplacement]
 
     def is_empty(self) -> bool:
-        """Check if all boundary condition lists are empty."""
-        return not (self.displacement_bcs or self.force_bcs)
+        """
+        Checks if all boundary condition lists are empty.
+
+        Returns:
+            bool: True if all boundary condition lists are empty, False otherwise.
+        """
+        return not (
+            self.displacement_bcs
+            or self.force_bcs
+            or self.body_forces
+            or self.nodal_displacements
+        )
 
 
 def get_dirichlet_boundary_conditions(
     domain: Domain,
     V_u: dolfinx.fem.FunctionSpace,
     bcs: BoundaryConditions,
-):
+) -> List[dolfinx.fem.dirichletbc]:
+    """
+    Constructs and returns a list of Dirichlet boundary conditions for a given domain and function space.
+
+    This function processes displacement boundary conditions, locked points, and nodal displacements to create Dirichlet boundary conditions for use in finite element simulations.
+
+    Args:
+        domain (Domain): The computational domain, including mesh and facet markers.
+        V_u (dolfinx.fem.FunctionSpace): The function space for the displacement field.
+        bcs (BoundaryConditions): An object containing all boundary conditions, including displacement, locked points, and nodal displacements.
+
+    Returns:
+        A list of Dirichlet boundary conditions for the displacement field.
+
+    Notes:
+        - For each displacement boundary condition, the function locates the relevant degrees of freedom (DOFs)
+          and creates a Dirichlet boundary condition for each component.
+        - Locked points are treated as fixed (zero displacement) boundary conditions.
+        - Nodal displacements are imposed at specific nodes, with support for multi-component fields.
+        - The function handles both scalar and vector function spaces.
+    """
     # Get the dimensions
     dim = domain.mesh.geometry.dim
     fdim = dim - 1

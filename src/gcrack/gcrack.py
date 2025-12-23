@@ -1,3 +1,49 @@
+"""
+Main entry point for the GCrack simulation framework.
+
+This module serves as the entry point for simulating crack propagation in elastic materials using the Finite Element Method (FEM).
+It contains the entire simulation workflow, including mesh generation, boundary condition application, solving the elastic problem, computing Stress Intensity Factors (SIFs), and post-processing results.
+
+The simulation is driven by the `GCrackBase` abstract base class, which users must subclass to define problem-specific parameters and behaviors.
+The workflow includes:
+
+- Generating the mesh for the cracked domain.
+- Applying boundary conditions (displacements, forces, body forces, locked points, etc.).
+- Solving the elastic problem for both controlled and prescribed boundary conditions.
+- Computing SIFs using the specified method (e.g., I-integral).
+- Determining the crack propagation angle and load factor.
+- Post-processing results, including computing energies, reaction forces, and displacements.
+- Exporting results to VTK and CSV formats.
+
+Classes:
+    GCrackBase:
+        Abstract base class for defining and running crack propagation simulations.
+        Users must subclass this class and implement abstract methods to define problem-specific parameters and behaviors.
+
+Attributes:
+    None: All attributes and methods are encapsulated within the `GCrackBase` class.
+
+Usage:
+    To run a simulation, users must:
+
+    1. Subclass `GCrackBase` and implement all abstract methods.
+    2. Instantiate the subclass with the required parameters.
+    3. Call the `run()` method to execute the simulation.
+
+Example:
+
+    from gcrack.main import GCrackBase
+    class MySimulation(GCrackBase):
+        def generate_mesh(self, crack_points):
+            # Implement mesh generation logic
+        def locate_measured_displacement(self):
+            # Implement logic to locate measured displacement
+        # Implement other abstract methods
+
+    simulation = MySimulation(E=1e5, nu=0.3, da=0.1, Nt=10, xc0=np.array([0, 0, 0]))
+    simulation.run()
+"""
+
 from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
@@ -94,6 +140,19 @@ class GCrackBase(ABC):
 
     @abstractmethod
     def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
+        """Define the critical energy release rate.
+
+        To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\\varphi$
+
+        Args:
+            phi (np.ndarray): Crack angle.
+
+        Returns:
+            np.ndarray: Value of the critical energy release rate.
+
+        Note:
+            The intput and output should be arrays for practical details in the minimization of the load factor.
+        """
         pass
 
     def define_locked_points(self) -> List[List[float]]:
@@ -170,6 +229,40 @@ class GCrackBase(ABC):
         ...
 
     def run(self):
+        """Executes the crack propagation simulation workflow.
+
+        This method manages the entire simulation process, including:
+
+        - Initializing the GMSH environment and results directory.
+        - Generating the mesh for the cracked domain (unless `no_meshing` is True).
+        - Applying boundary conditions (displacements, forces, body forces, locked points, etc.).
+        - Solving the elastic problem for both controlled and prescribed boundary conditions.
+        - Computing Stress Intensity Factors (SIFs) using the specified method.
+        - Determining the crack propagation angle and load factor.
+        - Post-processing results, including computing energies, reaction forces, and displacements.
+        - Exporting results to VTK and CSV formats.
+
+        The simulation runs for `self.Nt` load steps, updating the crack tip position and
+        boundary conditions at each step. Results are stored in a dictionary and exported
+        to the results directory.
+
+        Steps:
+
+        1. Initialize GMSH and create the results directory.
+        2. For each load step:
+            1. Generate the mesh (if `no_meshing` is False).
+            2. Define and apply boundary conditions.
+            3. Solve the elastic problem for controlled and prescribed boundary conditions.
+            4. Compute SIFs for both controlled and prescribed problems.
+            5. Determine the crack propagation angle and load factor.
+            6. Post-process results (e.g., compute energies, reaction forces, displacements).
+            g. Export results to VTK and CSV files.
+        3. Clean up and finalize the simulation.
+
+        Note:
+            - The `no_meshing` flag can be set to skip mesh generation if a mesh already exists.
+            - The `no_propagation` flag can be set to skip crack propagation and use arbitrary load factor/crack propagation angle.
+        """
         # Initialize GMSH
         gmsh.initialize()
         gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output

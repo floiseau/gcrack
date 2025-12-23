@@ -1,17 +1,36 @@
+"""
+Module for geometric calculations in 2D and 3D spaces.
+
+This module provides utility functions for geometric calculations.
+It include the computation of distances between points and line segments in 2D and 3D spaces.
+It is used to remove the crack from the pacman region in SIF estimation.
+
+Functions:
+    distance_point_to_segment(P, A, B): Computes the distance between points and a line segment.
+"""
+
 import numpy as np
 
 
-def distance_point_to_segment(P, A, B):
-    """
-    Compute the distance between points and a segment in 2D.
+def distance_point_to_segment(
+    P: np.ndarray, A: np.ndarray, B: np.ndarray
+) -> np.ndarray:
+    """Computes the distance between points and a line segment in 2D or 3D space.
 
-    Parameters:
-        P (np.ndarray): An array of shape (n, m) where n is the number of points and m is the number of dimensions (2 or more).
-        A (np.ndarray): A 1D array representing one endpoint of the segment.
-        B (np.ndarray): A 1D array representing the other endpoint of the segment.
+    This function calculates the shortest distance from each point in array P to the line segment defined by endpoints A and B.
+
+    Args:
+        P (np.ndarray):
+            Array of shape (n, m) where n is the number of points and m is the number of dimensions (2 or 3).
+            Each row represents a point.
+        A (np.ndarray):
+            1D array of shape (m,) representing one endpoint of the segment.
+        B (np.ndarray):
+            1D array of shape (m,) representing the other endpoint of the segment.
 
     Returns:
-        np.ndarray: An array of shape (n,) where each element is the distance from the corresponding point in P to the segment AB.
+        distance (np.ndarray):
+            Array of shape (n,) where each element is the distance from the corresponding point in P to the segment AB.
     """
     # Ensure A and B are 2D for broadcasting with P
     A = A[:, np.newaxis] if A.ndim == 1 else A

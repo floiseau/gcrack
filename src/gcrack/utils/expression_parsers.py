@@ -1,3 +1,13 @@
+"""
+Module for parsing mathematical expressions into finite element functions.
+
+This module provides a utility function to parse string expressions or numerical values into finite element functions.
+It supports both symbolic expressions (as strings) and numerical values, converting them into appropriate FEniCSx finite element functions.
+
+Functions:
+    parse_expression(value, space): Parses a value into a finite element function.
+"""
+
 from math import isnan
 import sympy as sp
 
@@ -5,6 +15,37 @@ from dolfinx import fem
 
 
 def parse_expression(value, space):
+    """Parses a value into a finite element function.
+
+    This function converts a string expression or numerical value into a finite element function.
+    If the input is a string, it is parsed as a symbolic expression and interpolated onto the provided function space.
+    If the input is a numerical value, it is used to create a constant finite element function.
+    If the input is NaN, the function returns None.
+
+    Args:
+        value:
+            The value to parse.
+            Can be a string expression (e.g., "x**2 + 1") or a numerical value.
+            If NaN, the function returns None.
+        space (fem.FunctionSpace):
+            The finite element function space onto which the expression or value should be interpolated.
+
+    Returns:
+        func (fem.Function or None):
+            A finite element function representing the parsed expression or value.
+            Returns None if the input value is NaN.
+
+    Example:
+
+        from dolfinx import fem
+        from gcrack.utils.expression_parsers import parse_expression
+        mesh = ...  # Create a mesh
+        V = fem.functionspace(mesh, ("Lagrange", 1))
+        # Parse a string expression
+        f1 = parse_expression("x**2 + 1", V)
+        # Parse a numerical value
+        f2 = parse_expression(5.0, V)
+    """
     # Check if the DOF is imposed
     if isinstance(value, str):
         # Parse the function
@@ -13,7 +54,7 @@ def parse_expression(value, space):
         par_lambda = sp.utilities.lambdify(x, value, "numpy")
         # Create and interpolate the fem function
         func = fem.Function(space)
-        func.interpolate(lambda xx: par_lambda(xx))
+        func.interpolate(lambda xx: par_lambda(xx[:, 0]))
     elif isnan(value):
         return None
     else:

@@ -1,3 +1,13 @@
+"""
+Module for computing stress intensity factor (SIF) influence functions and energy release rates.
+
+This module provides functions to compute the functions F_ij and G_i as described in Amestoy and Leblond (1992).
+These functions are used to calculate the SIFs at the tip of an infinitesimal straight crack extension with a given bifurcation angle.
+
+References:
+    Amestoy, M., & Leblond, J. B. (1992). Crack paths in plane situations—II. Detailed form of the expansion of the stress intensity factors. International Journal of Solids and Structures, 29(4), 465–501. [https://doi.org/10.1016/0020-7683(92)90210-K](https://doi.org/10.1016/0020-7683(92)90210-K)
+"""
+
 from math import pi
 
 import jax.numpy as jnp
@@ -5,7 +15,15 @@ from jax import jit
 
 
 @jit
-def F11(m):
+def F11(m: float) -> float:
+    """Computes F11 function for a given normalized crack angle.
+
+    Args:
+        m (float): Normalized crack angle, defined as (phi - phi0) / pi.
+
+    Returns:
+        float: The value of the F11 for the given normalized crack angle.
+    """
     return (
         1
         - 3 * pi**2 / 8 * m**2
@@ -22,7 +40,15 @@ def F11(m):
 
 
 @jit
-def F12(m):
+def F12(m: float) -> float:
+    """Computes F12 function for a given normalized crack angle.
+
+    Args:
+        m (float): Normalized crack angle, defined as (phi - phi0) / pi.
+
+    Returns:
+        float: The value of the F12 for the given normalized crack angle.
+    """
     return (
         -3 * pi / 2 * m
         + (10 * pi / 3 + pi**3 / 16) * m**3
@@ -38,7 +64,15 @@ def F12(m):
 
 
 @jit
-def F21(m):
+def F21(m: float) -> float:
+    """Computes F21 function for a given normalized crack angle.
+
+    Args:
+        m (float): Normalized crack angle, defined as (phi - phi0) / pi.
+
+    Returns:
+        float: The value of the F21 for the given normalized crack angle.
+    """
     return (
         pi / 2 * m
         - (4 * pi / 3 + pi**3 / 48) * m**3
@@ -54,7 +88,15 @@ def F21(m):
 
 
 @jit
-def F22(m):
+def F22(m: float) -> float:
+    """Computes F22 function for a given normalized crack angle.
+
+    Args:
+        m (float): Normalized crack angle, defined as (phi - phi0) / pi.
+
+    Returns:
+        float: The value of the F22 for the given normalized crack angle.
+    """
     return (
         1
         - (4 + 3 / 8 * pi**2) * m**2
@@ -71,12 +113,28 @@ def F22(m):
 
 
 @jit
-def Fmat(m):
+def Fmat(m: float) -> jnp.ndarray:
+    """Construct the matrix F containing the Fij functions of Amestoy-Leblond.
+
+    Args:
+        m (float): Normalized crack angle, defined as (phi - phi0) / pi.
+
+    Returns:
+        jnp.ndarray: The 2x2 matrix F for the given normalized crack angle.
+    """
     return jnp.array([[F11(m), F12(m)], [F21(m), F22(m)]])
 
 
 @jit
-def G1(m):
+def G1(m: float) -> float:
+    """Computes G1 function for a given normalized crack angle.
+
+    Args:
+        m (float): Normalized crack angle, defined as (phi - phi0) / pi.
+
+    Returns:
+        float: The value of the G1 for the given normalized crack angle.
+    """
     return (
         (2 * pi) ** (3 / 2) * m**2
         - 47.933390 * m**4
@@ -92,7 +150,15 @@ def G1(m):
 
 
 @jit
-def G2(m):
+def G2(m: float) -> float:
+    """Computes G2 function for a given normalized crack angle.
+
+    Args:
+        m (float): Normalized crack angle, defined as (phi - phi0) / pi.
+
+    Returns:
+        float: The value of the G2 for the given normalized crack angle.
+    """
     return (
         -2 * jnp.sqrt(2 * pi) * m
         + 12 * jnp.sqrt(2 * pi) * m**3
@@ -108,17 +174,44 @@ def G2(m):
 
 
 @jit
-def Gvec(m):
+def Gvec(m: float) -> jnp.ndarray:
+    """Construct the vector G containing the Gi functions of Amestoy-Leblond.
+
+    Args:
+        m (float): Normalized crack angle, defined as (phi - phi0) / pi.
+
+    Returns:
+        jnp.ndarray: The vector G for the given normalized crack angle.
+    """
     return jnp.array([G1(m), G2(m)])
 
 
 @jit
-def G_star(phi, phi0, KI, KII, T, Ep, s):
+def G_star(
+    phi: float, phi0: float, KI: float, KII: float, T: float, Ep: float, s: float
+) -> float:
+    """Computes the energy release rate G* after a infinitesimal kink of angle.
+
+    This function computes the energy release rate G* using the Irwin formula.
+    The SIFs are calculated as described in Amestoy and Leblond (1992).
+
+    Args:
+        phi (float): Current crack angle.
+        phi0 (float): Initial crack angle.
+        KI (float): Mode I stress intensity factor.
+        KII (float): Mode II stress intensity factor.
+        T (float): T-stress.
+        Ep (float): Plane strain/stress modulus.
+        s (float): Internal length associated with T-stress.
+
+    Returns:
+        float: The energy release rate G* for the given crack angle and stress intensity factors.
+    """
     # Store the SIFs in an array
     k = jnp.array([KI, KII])
     # Calculate m
     m = (phi - phi0) / pi
-    # Compute the AM functinos
+    # Compute the Amestoy-Leblond functions
     f_mat = Fmat(m)
     g_vec = Gvec(m)
     # Apply Amestoy-Leblond formula
@@ -128,7 +221,37 @@ def G_star(phi, phi0, KI, KII, T, Ep, s):
 
 
 @jit
-def G_star_coupled(phi, phi0, KI1, KII1, T1, KI2, KII2, T2, Ep, s):
+def G_star_coupled(
+    phi: float,
+    phi0: float,
+    KI1: float,
+    KII1: float,
+    T1: float,
+    KI2: float,
+    KII2: float,
+    T2: float,
+    Ep: float,
+    s: float,
+) -> float:
+    """Computes the coupled energy release rate G* for two sets of stress intensity factors.
+
+    It is used to evaluate the energy release rate for two interacting loading conditions.
+
+    Args:
+        phi (float): Current crack angle.
+        phi0 (float): Initial crack angle.
+        KI1 (float): Mode I stress intensity factor for the first load.
+        KII1 (float): Mode II stress intensity factor for the first load.
+        T1 (float): T-stress for the first load.
+        KI2 (float): Mode I stress intensity factor for the second load.
+        KII2 (float): Mode II stress intensity factor for the second load.
+        T2 (float): T-stress for the second load.
+        Ep (float): Plane strain modulus.
+        s (float): Internal length associated with T-stress.
+
+    Returns:
+        float: The coupled energy release rate G* for the given crack angle and stress intensity factors.
+    """
     # Calculate m
     m = (phi - phi0) / pi
     # Compute F^T * F

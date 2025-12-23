@@ -1,3 +1,24 @@
+"""
+Module for computing Stress Intensity Factors (SIFs).
+
+This module provides functions to compute Stress Intensity Factors (SIFs) using different methods, including the I-integral method and Williams series interpolation.
+
+Functions:
+    compute_theta_field:
+        Computes the theta field for contour integrals.
+    compute_auxiliary_displacement_field:
+        Generates auxiliary displacement fields for different fracture modes.
+    compute_I_integral:
+        Calculates the I-integral for interaction energy.
+    compute_SIFs_with_I_integral:
+        Computes SIFs using the I-integral method.
+    compute_SIFs_from_William_series_interpolation:
+        Computes SIFs using Williams series interpolation.
+    compute_SIFs:
+        Dispatches to the appropriate SIF computation method based on the specified method.
+
+"""
+
 import numpy as np
 import ufl
 import dolfinx
@@ -8,7 +29,23 @@ from gcrack.utils.geometry import distance_point_to_segment
 from gcrack.utils.williams_series import Gamma_I, Gamma_II, Gamma_III
 
 
-def compute_theta_field(domain, crack_tip, R_int, R_ext):
+def compute_theta_field(
+    domain: Domain, crack_tip: np.ndarray, R_int: float, R_ext: float
+) -> ufl.core.expr.Expr:
+    """Computes the theta field for contour integrals around a crack tip.
+
+    The theta field is used in the computation of interaction integrals for Stress Intensity Factors (SIFs).
+    It defines a smooth transition between the internal and external radii of the contour.
+
+    Args:
+        domain (Domain): The domain object representing the physical space.
+        crack_tip (np.ndarray): Coordinates of the crack tip.
+        R_int (float): Internal radius of the contour.
+        R_ext (float): External radius of the contour.
+
+    Returns:
+        theta (ufl.core.expr.Expr): The theta field as a UFL expression.
+    """
     # Get the cartesian coordinates
     x = ufl.SpatialCoordinate(domain.mesh)
     # Get the crack tip
@@ -30,7 +67,24 @@ def compute_auxiliary_displacement_field(
     K_II_aux: float = 0,
     K_III_aux: float = 0,
     T_aux: float = 0,
-):
+) -> ufl.core.expr.Expr:
+    """Computes the auxiliary displacement field for the I-integral method.
+
+    This function generates the crack tip displacement field under different loading modes (I, II, III, and T-stress).
+
+    Args:
+        domain (Domain): The domain object representing the physical space.
+        model (ElasticModel): The elastic model defining the material properties.
+        xc (np.ndarray): Coordinates of the crack tip.
+        phi0 (float): Angle defining the crack orientation.
+        K_I_aux (float, optional): Auxiliary stress intensity factor for mode I. Defaults to 0.
+        K_II_aux (float, optional): Auxiliary stress intensity factor for mode II. Defaults to 0.
+        K_III_aux (float, optional): Auxiliary stress intensity factor for mode III. Defaults to 0.
+        T_aux (float, optional): Auxiliary T-stress. Defaults to 0.
+
+    Returns:
+        ufl.core.expr.Expr: The auxiliary displacement field as a UFL expression.
+    """
     # Get the cartesian coordinates
     x_2D = ufl.SpatialCoordinate(domain.mesh)
     x = ufl.as_vector([x_2D[0], x_2D[1], 0])
@@ -88,6 +142,18 @@ def compute_I_integral(
     u_aux: ufl.core.expr.Expr,
     theta: ufl.core.expr.Expr,
 ) -> float:
+    """Computes the I-integral.
+
+    Args:
+        domain (Domain): The domain object representing the physical space.
+        model (ElasticModel): The elastic model defining the material properties.
+        u (fem.Function): The displacement field from the finite element solution.
+        u_aux (ufl.core.expr.Expr): The auxiliary displacement field.
+        theta (ufl.core.expr.Expr): The theta field for the contour integral.
+
+    Returns:
+        float: The value of the I-integral.
+    """
     # Compute the gradients
     grad_u = model.grad_u(u)
     gua_2D = ufl.grad(u_aux)
@@ -135,7 +201,26 @@ def compute_SIFs_with_I_integral(
     phi0: float,
     R_int: float,
     R_ext: float,
-):
+) -> dict:
+    """Computes Stress Intensity Factors (SIFs) using the I-integral method.
+
+    This function calculates the SIFs for modes I, II, III, and T-stress using the I-integral method.
+
+    Note:
+        Line integrals are replaced with domain (surface) integrals.
+
+    Args:
+        domain (Domain): The domain object representing the physical space.
+        model (ElasticModel): The elastic model defining the material properties.
+        u (fem.Function): The displacement field from the finite element solution.
+        xc (np.ndarray): Coordinates of the crack tip.
+        phi0 (float): Angle defining the crack orientation.
+        R_int (float): Inner radius of the theta field transition region.
+        R_ext (float): Outer radius of the theta field transition region.
+
+    Returns:
+        dict: A dictionary containing the computed SIFs (KI, KII, KIII, T).
+    """
     # Get the theta field
     theta_field = compute_theta_field(domain, xc, R_int, R_ext)
     theta = theta_field * ufl.as_vector([ufl.cos(phi0), ufl.sin(phi0)])
@@ -174,7 +259,25 @@ def compute_SIFs_from_William_series_interpolation(
     phi0: float,
     R_int: float,
     R_ext: float,
-):
+) -> dict:
+    """Computes Stress Intensity Factors (SIFs) using Williams series interpolation.
+
+    This function calculates the SIFs by interpolating the displacement field using the Williams series expansion around the crack tip.
+    It extracts the displacement data within a "pacman"-shaped region around the crack tip and performs a least-squares fit to determine the SIFs.
+
+    Args:
+        domain (Domain): The domain object representing the physical space.
+        model (ElasticModel): The elastic model defining the material properties.
+        u (fem.Function): The displacement field from the finite element solution.
+        xc (np.ndarray): Coordinates of the crack tip.
+        phi0 (float): Angle defining the crack orientation.
+        R_int (float): Inner radius of the pacman region.
+        R_ext (float): Outer radius of the pacman region.
+
+    Returns:
+        dict: A dictionary containing the computed SIFs and Williams series coefficients.
+    """
+
     ### Extract x and u in the pacman from the FEM results
     def in_pacman(x):
         xc1 = np.array(xc)
@@ -286,27 +389,30 @@ def compute_SIFs(
     R_int: float,
     R_ext: float,
     method: str,
-):
-    """
-    Computes the Stress Intensity Factors (SIFs) for a given elastic model and
-    displacement field using the specified method.
+) -> dict:
+    """Computes the Stress Intensity Factors (SIFs) for a given elastic model and displacement field.
+
+    This function serves as a dispatcher to compute SIFs using the specified method.
+    Supported methods include the I-integral method and Williams series interpolation.
 
     Args:
-        domain (Domain): The domain object representing the physical space in
-            which the problem is defined.
-        model (ElasticModel): The elastic model defining the material properties
-            and behavior.
-        u (fem.Function): The displacement field function obtained from the
-            finite element method (FEM) analysis.
-        xc (np.ndarray): A 1D array representing the coordinates of the crack tip.
-        phi0 (float): The angle defining the crack orientation.
-        R_int (float): The internal radius for the contour or region of interest.
-        R_ext (float): The external radius for the contour or region of interest.
-        method (str): The method used for calculating the SIFs. Can be either
-            "i-integral" or "williams".
+        domain (Domain): The domain object representing the physical space.
+        model (ElasticModel): The elastic model defining the material properties.
+        u (fem.Function): The displacement field from the finite element solution.
+        xc (np.ndarray): Coordinates of the crack tip.
+        phi0 (float): Angle defining the crack orientation.
+        R_int (float): Internal radius of the pacman region.
+        R_ext (float): External radius of the pacman region.
+        method (str): The method used for calculating the SIFs. Supported methods are:
+
+            - "i-integral": Uses the I-integral method.
+            - "williams": Uses Williams series interpolation.
 
     Returns:
-        dict: A dict containing the calculated Stress Intensity Factors.
+        sif (dict): A dictionary containing the computed Stress Intensity Factors.
+
+    Raises:
+        NotImplementedError: If the specified method is not implemented.
     """
     # Compute the SIFs
     match method.lower():
@@ -337,6 +443,7 @@ def compute_SIFs(
 
     # Display informations
     for name, val in SIFs.items():
+        print(name, val)
         print(f"│  │  {name: <3}: {val:.3g}")
     print("│  │  End of SIF calculations")
     return SIFs
