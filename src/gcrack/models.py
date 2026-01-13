@@ -129,27 +129,34 @@ class ElasticModel:
         # Compute the 2D gradient of the field
         g_u3D = ufl.grad(u3D)
         # Construct the strain tensor
-        if self.assumption.startswith("plane"):
-            eps_zz = (
-                -self.la / (2 * self.mu + self.la) * (g_u3D[0, 0] + g_u3D[1, 1])
-                if self.assumption == "plane_stress"
-                else 0
-            )
-            grad_u3D = ufl.as_tensor(
-                [
-                    [g_u3D[0, 0], g_u3D[0, 1], 0],
-                    [g_u3D[1, 0], g_u3D[1, 1], 0],
-                    [0, 0, eps_zz],
-                ]
-            )
-        elif self.assumption == "anti_plane":
-            grad_u3D = ufl.as_tensor(
-                [
-                    [0, 0, 0],
-                    [0, 0, 0],
-                    [g_u3D[2, 0], g_u3D[2, 1], 0],
-                ]
-            )
+        match self.assumption:
+            case "plane_strain":
+                grad_u3D = ufl.as_tensor(
+                    [
+                        [g_u3D[0, 0], g_u3D[0, 1], 0],
+                        [g_u3D[1, 0], g_u3D[1, 1], 0],
+                        [0, 0, 0],
+                    ]
+                )
+            case "plane_stress":
+                eps_zz = (
+                    -self.la / (2 * self.mu + self.la) * (g_u3D[0, 0] + g_u3D[1, 1])
+                )
+                grad_u3D = ufl.as_tensor(
+                    [
+                        [g_u3D[0, 0], g_u3D[0, 1], 0],
+                        [g_u3D[1, 0], g_u3D[1, 1], 0],
+                        [0, 0, eps_zz],
+                    ]
+                )
+            case "anti_plane":
+                grad_u3D = ufl.as_tensor(
+                    [
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [g_u3D[2, 0], g_u3D[2, 1], 0],
+                    ]
+                )
         # Return the gradient
         return grad_u3D
 
@@ -191,7 +198,7 @@ class ElasticModel:
             ufl.classes.Expr: Elastic energy.
         """
         # Get the integration measure
-        dx = ufl.Measure("dx", domain=domain.mesh, metadata={"quadrature_degree": 12})
+        dx = ufl.Measure("dx", domain=domain.mesh, metadata={"quadrature_degree": 6})
         # Compute the stress
         sig = self.sig(u)
         # Compute the strain
