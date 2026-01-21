@@ -54,7 +54,7 @@ def parse_expression(value, space):
         par_lambda = sp.utilities.lambdify(x, value, "numpy")
         # Create and interpolate the fem function
         func = fem.Function(space)
-        func.interpolate(lambda xx: par_lambda(xx[:, 0]))
+        func.interpolate(lambda xx: par_lambda(xx))
     elif isnan(value):
         return None
     else:
