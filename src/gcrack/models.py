@@ -56,7 +56,7 @@ class ElasticModel:
                     self.ka = 3 - 4 * self.nu
                 case "anti_plane":
                     print(
-                        "For anti-plane, we assume plane strain for SIF calculations."
+                        "│  For anti-plane, we assume plane strain for SIF calculations."
                     )
                     self.Ep = self.E
                     self.ka = (3 - self.nu) / (1 + self.nu)
@@ -139,9 +139,7 @@ class ElasticModel:
                     ]
                 )
             case "plane_stress":
-                eps_zz = (
-                    -self.la / (2 * self.mu + self.la) * (g_u3D[0, 0] + g_u3D[1, 1])
-                )
+                eps_zz = -self.nu / (1 - self.nu) * (g_u3D[0, 0] + g_u3D[1, 1])
                 grad_u3D = ufl.as_tensor(
                     [
                         [g_u3D[0, 0], g_u3D[0, 1], 0],
