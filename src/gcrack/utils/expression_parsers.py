@@ -14,7 +14,7 @@ import sympy as sp
 from dolfinx import fem
 
 
-def parse_expression(value, space):
+def parse_expression(value, space: fem.FunctionSpace, export_func: bool = False):
     """Parses a value into a finite element function.
 
     This function converts a string expression or numerical value into a finite element function.
@@ -29,6 +29,9 @@ def parse_expression(value, space):
             If NaN, the function returns None.
         space (fem.FunctionSpace):
             The finite element function space onto which the expression or value should be interpolated.
+        export_func (bool):
+            Flag indicating if the parameter function must be exported.
+
 
     Returns:
         func (fem.Function or None):
@@ -47,20 +50,31 @@ def parse_expression(value, space):
         f2 = parse_expression(5.0, V)
     """
     # Check if the DOF is imposed
-    if isinstance(value, str):
-        # Parse the function
-        x = sp.Symbol("x")
-        # Parse the expression using sympy
-        par_lambda = sp.utilities.lambdify(x, value, "numpy")
-        # Create and interpolate the fem function
-        func = fem.Function(space)
-        func.interpolate(lambda xx: par_lambda(xx))
-    elif isnan(value):
-        return None
-    else:
+    if isinstance(value, (int, float)):
         # Define an FEM function (to control the BC)
         func = fem.Function(space)
         # Update the load
         with func.x.petsc_vec.localForm() as local_func:
             local_func.set(value)
-    return func
+        # Create the par_func if necessary
+        if export_func:
+
+            def par_func(xx):
+                return value
+    elif isinstance(value, str):
+        # Parse the function
+        x = sp.Symbol("x")
+        # Parse the expression using sympy
+        par_func = sp.utilities.lambdify(x, value, "numpy")
+        # Create and interpolate the fem function
+        func = fem.Function(space)
+        func.interpolate(lambda xx: par_func(xx))
+    elif isnan(value):
+        return None
+    else:
+        raise ValueError("Unknown type passed to a parsed expression.")
+
+    if not export_func:
+        return func
+    else:
+        return func, par_func

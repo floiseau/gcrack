@@ -387,7 +387,7 @@ class GCrackBase(ABC):
 
             print("│  Determination of propagation angle and load factor")
             if not self.no_propagation:
-                load_factor_solver = LoadFactorSolver(model, self.Gc)
+                load_factor_solver = LoadFactorSolver(model, self.Gc, crack_points[-1])
                 opti_res = load_factor_solver.solve(
                     phi0, SIFs_controlled, SIFs_prescribed, self.s
                 )

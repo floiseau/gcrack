@@ -15,6 +15,7 @@ References:
 
 from pathlib import Path
 from collections.abc import Callable
+from typing import List
 
 from math import pi
 
@@ -43,15 +44,18 @@ class LoadFactorSolver:
         hess_pert (Callable): The Hessian of the perturbed objective function.
     """
 
-    def __init__(self, model: ElasticModel, Gc_func: Callable):
+    def __init__(self, model: ElasticModel, Gc_func: Callable, xc: List):
         """Initializes the LoadFactorSolver.
 
         Args:
             model (gcrack.models.ElasticModel): The elastic model used for the simulation.
             Gc_func (Callable): The critical energy release rate function.
+            xc (List): Position of the crack tip.
         """
         # Store the model
         self.model = model
+        # Store the crack tip position
+        self.xc = xc
         # Set the critical energy release rate function
         self.Gc = jit(Gc_func)
         # Automatic differentiation of the objective function
@@ -172,7 +176,7 @@ class LoadFactorSolver:
 
         # Perform the minimization
         kwargs = {
-            "Ep": self.model.Ep,
+            "Ep": self.model.Ep_func(self.xc),
             "s": s,
             "KIc": KIc,
             "KIIc": KIIc,
@@ -239,7 +243,7 @@ class LoadFactorSolver:
         )
         # Construct the kwargs
         kwargs = {
-            "Ep": self.model.Ep,
+            "Ep": self.model.Ep_func(self.xc),
             "s": s,
             "KIc": KIc,
             "KIIc": KIIc,

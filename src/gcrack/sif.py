@@ -244,10 +244,10 @@ def compute_SIFs_with_I_integral(
     I_III = compute_I_integral(domain, model, u, u_III_aux, theta)
     I_T = compute_I_integral(domain, model, u, u_T_aux, theta)
     # Compute the SIF
-    K_I = model.Ep / 2 * I_I
-    K_II = model.Ep / 2 * I_II
-    K_III = model.E / (2 * (1 + model.nu)) * I_III
-    T = model.Ep * I_T
+    K_I = model.Ep_func(xc) / 2 * I_I
+    K_II = model.Ep_func(xc) / 2 * I_II
+    K_III = model.E_func(xc) / (2 * (1 + model.nu_func(xc))) * I_III
+    T = model.Ep_func(xc) * I_T
     # Return SIF array
     return {"KI": K_I, "KII": K_II, "KIII": K_III, "T": T}
 
@@ -331,6 +331,10 @@ def compute_SIFs_from_William_series_interpolation(
     Nn = us.shape[0]  # Number of nodes
     Ndof = us.shape[0] * us.shape[1]  # Number of dof
 
+    # Compute mu and kappa at crack tip (for heterogeneous cases)
+    mu = model.mu_func(xc)
+    ka = model.ka_func(xc)
+
     # Construct the matrix Gamma
     if model.assumption.startswith("plane"):
         xaxis = np.array([2 * n for n in range(Nn)])  # Mask to isolate x axis
@@ -340,8 +344,8 @@ def compute_SIFs_from_William_series_interpolation(
         # Get the Gamma matrix
         Gamma = np.empty((Ndof, 2 * (N_max - N_min + 1)))
         for i, n in enumerate(range(N_min, N_max + 1)):
-            GI = Gamma_I(n, zs, model.mu, model.ka) * np.exp(1j * phi0)
-            GII = Gamma_II(n, zs, model.mu, model.ka) * np.exp(1j * phi0)
+            GI = Gamma_I(n, zs, mu, ka) * np.exp(1j * phi0)
+            GII = Gamma_II(n, zs, mu, ka) * np.exp(1j * phi0)
             Gamma[xaxis, 2 * i] = np.real(GI)
             Gamma[yaxis, 2 * i] = np.imag(GI)
             Gamma[xaxis, 2 * i + 1] = np.real(GII)
@@ -352,7 +356,7 @@ def compute_SIFs_from_William_series_interpolation(
         # Get the Gamma matrix
         Gamma = np.empty((Ndof, N_max - N_min + 1))
         for i, n in enumerate(range(N_min, N_max + 1)):
-            GIII = Gamma_III(n, zs, model.mu, model.ka)
+            GIII = Gamma_III(n, zs, mu, ka)
             Gamma[:, i] = GIII
     # Solve the least square problem
     sol, res, _, _ = np.linalg.lstsq(Gamma, UF)
