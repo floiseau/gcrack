@@ -119,6 +119,7 @@ def compute_auxiliary_displacement_field(
     u_I = K_I_aux * u_fac * ufl.as_vector([fx_I, fy_I, 0])
     # Compute the displacement field for mode II
     u_II = K_II_aux * u_fac * ufl.as_vector([fx_II, fy_II, 0])
+    # Compute the displacement field for mode III
     u_III = K_III_aux * u_fac * ufl.as_vector([0, 0, fz_III])
     # Compute the displacement field for mode T
     ux_T = (
@@ -443,7 +444,6 @@ def compute_SIFs(
 
     # Display informations
     for name, val in SIFs.items():
-        print(name, val)
         print(f"│  │  {name: <3}: {val:.3g}")
     print("│  │  End of SIF calculations")
     return SIFs
