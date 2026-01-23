@@ -156,7 +156,6 @@ class GCrackData(GCrackBase):
             1 + ag * (jnp.sin(phi - theta0) ** 2 - jnp.cos(phi - theta0) ** 2)
         )
         return Gc_expression
-        # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
 
 
 if __name__ == "__main__":

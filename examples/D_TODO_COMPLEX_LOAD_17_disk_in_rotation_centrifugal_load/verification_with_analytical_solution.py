@@ -12,10 +12,10 @@ G = E / (2 * (1 + nu))
 # Load
 wd = 1.0
 
-print("=== Verification of Euler load")
+print("=== Verification of centrifugal load")
 # Read the numerical solution
 sol = np.loadtxt(
-    "results_numeric_euler/results.csv",
+    "results_numeric_centrifugal/results.csv",
     delimiter=",",
     dtype=float,
     skiprows=1,

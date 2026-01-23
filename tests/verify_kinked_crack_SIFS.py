@@ -3,6 +3,7 @@ import itertools
 
 import gmsh
 import numpy as np
+import matplotlib.pyplot as plt
 import dolfinx
 import ufl
 
@@ -21,12 +22,14 @@ from gcrack.lefm import G_star
 
 class GCrackData(GCrackBase):
     def generate_mesh(self, crack_points: List[np.ndarray]) -> gmsh.model:
+        self.R_int = 0.5 * self.da
+        self.R_ext = 1.0 * self.da
         # Clear existing model
         gmsh.clear()
         # Parameters
         L = 1
         h = L / 256
-        h_min = self.R_int / 32
+        h_min = self.R_ext / 128
         # Points
         # Bot
         p1: int = gmsh.model.geo.addPoint(-L / 2, -L / 2, 0, h)
@@ -201,17 +204,18 @@ def run_SIF_computation(data: GCrackData, phi1: float = None):
 def verify_kinked_crack_SIFs():
     # Define user parameters
     pars = {"L": 1.0}
+    da = pars["L"] / 128
     data = GCrackData(
         E=1.0,
         nu=0.0,
-        da=pars["L"] / 256,
+        da=da,
         Nt=1,
         xc0=np.array([0, 0, 0]),
         assumption_2D="plane_strain",
         pars=pars,
         # sif_method="williams",
         sif_method="i-integral",
-        s=0.0,
+        s=da,
     )
     # Intialize GMSH
     gmsh.initialize()
@@ -251,8 +255,15 @@ def verify_kinked_crack_SIFs():
         gs_FEM.append(
             float(1 / model_kink.Ep * (SIF_kinked["KI"] ** 2 + SIF_kinked["KII"] ** 2))
         )
-    print(f"{gs_AM=}")
-    print(f"{gs_FEM=}")
+
+    plt.figure()
+    plt.xlabel(r"Bifurcation angle $\varphi$")
+    plt.ylabel(r"Energy release rate after bifurcation $G^*$")
+    plt.scatter(phi1s, gs_AM, label="Amestoy-Leblond")
+    plt.scatter(phi1s, gs_FEM, label="I-integral")
+    plt.grid()
+    plt.legend()
+    plt.show()
 
     gmsh.finalize()
 

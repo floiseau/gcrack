@@ -4,7 +4,7 @@ import numpy as np
 
 import gmsh
 from gcrack import GCrackBase
-from gcrack.boundary_conditions import DisplacementBC, ForceBC
+from gcrack.boundary_conditions import DisplacementBC, ForceBC, NodalDisplacement
 
 
 class GCrackData(GCrackBase):
@@ -13,7 +13,7 @@ class GCrackData(GCrackBase):
         gmsh.clear()
         # Parameters
         L = self.pars["L"]
-        h = L / 128
+        h = L / 256
         h_min = self.R_int / 32
         # Points
         # Bot
@@ -87,6 +87,10 @@ class GCrackData(GCrackBase):
         top: int = gmsh.model.addPhysicalGroup(1, [l6], tag=self.boundaries["top"])
         gmsh.model.setPhysicalName(1, top, "top")
 
+        # Make the boundary line transfinite to keep a constant number of element.
+        gmsh.model.geo.mesh.setTransfiniteCurve(l1, int(L / h))
+        gmsh.model.geo.mesh.setTransfiniteCurve(l6, int(L / h))
+
         # Element size
         # Refine around the crack line
         field1: int = gmsh.model.mesh.field.add("Distance")
@@ -122,12 +126,14 @@ class GCrackData(GCrackBase):
         return self.boundaries["top"]
 
     def define_controlled_displacements(self) -> List[DisplacementBC]:
-        """Define the imposed displacement boundary conditions.
+        """Define the displacement boundary conditions controlled by the load factor.
 
         Returns:
             List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
         """
-        return [DisplacementBC(self.boundaries["bot"], [float("nan"), 0.0])]
+        return [
+            DisplacementBC(self.boundaries["bot"], [0.0, 0.0]),
+        ]
 
     def define_controlled_forces(self) -> List[ForceBC]:
         """Define the list of imposed forces.
@@ -135,18 +141,36 @@ class GCrackData(GCrackBase):
         Returns:
             List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
         """
-        return [ForceBC(self.boundaries["top"], [0.0, 1.0])]
+        return [
+            ForceBC(self.boundaries["top"], [0.0, 1.0]),
+        ]
 
-    def define_locked_points(self) -> List[List[float]]:
-        """Define the list of locked points.
-
-        Returns:
-            List[List[float]]: A list of points (list) coordinates.
-        """
-        return [[0, 0, 0]]
+    # NOTE: The following contains a "better" set of boundary conditions that do not corresponds to what is done in the reference work (empirical solution).
+    # def define_nodal_displacements(self) -> List[NodalDisplacement]:
+    #     """Define a list of imposed nodal displacements.
+    #
+    #     Returns:
+    #         List[NodalDisplacements]: A list of NodalDisplacement.
+    #     """
+    #     L = self.pars["L"]
+    #     return [
+    #         NodalDisplacement([L / 2, L / 2, 0], [0.0, 0.0, 0.0]),
+    #         NodalDisplacement([L, L / 2, 0], [float("nan"), 0.0, 0.0]),
+    #     ]
+    #
+    # def define_controlled_forces(self) -> List[ForceBC]:
+    #     """Define the list of imposed forces.
+    #
+    #     Returns:
+    #         List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
+    #     """
+    #     return [
+    #         ForceBC(self.boundaries["bot"], [0.0, -1.0]),
+    #         ForceBC(self.boundaries["top"], [0.0, 1.0]),
+    #     ]
 
     def Gc(self, phi):
-        return self.pars["Gc"]
+        return self.pars["Gc"] + 0.0 * phi
 
 
 if __name__ == "__main__":
@@ -159,13 +183,16 @@ if __name__ == "__main__":
     gcrack_data = GCrackData(
         E=1.0,
         nu=0.3,
-        da=pars["L"] / 128,
+        da=pars["L"] / 64,
         Nt=1,
         xc0=[0.5 * pars["L"], pars["L"] / 2, 0],
-        assumption_2D="plane_stress",
+        assumption_2D="plane_strain",
         pars=pars,
         sif_method="williams",
         # sif_method="i-integral",
         s=0.0,
     )
     gcrack_data.run()
+
+    # TODO: Check the KI
+    # TODO: REMOVE NODAL DISP FROM THE PRESCRIBED ??? OR IGNORE THEM WHEN SOLVING THE PRESCRIBED ELASTIC PROBLEM.

@@ -203,6 +203,8 @@ def run_SIF_computation(data: GCrackData, alpha: float):
         displacement_bcs=data.define_controlled_displacements(),
         force_bcs=data.define_controlled_forces(),
         locked_points=data.define_locked_points(),
+        body_forces=[],
+        nodal_displacements=[],
     )
     # Solve the elastic problem
     u = solve_elastic_problem(domain, model, bcs)

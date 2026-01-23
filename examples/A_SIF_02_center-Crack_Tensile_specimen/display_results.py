@@ -19,7 +19,7 @@ B_i = res_i[:, 3]
 
 
 # Compute analytical solution
-alpha_ana = np.linspace(0, 85, 128)
+alpha_ana = np.linspace(0, 90, 128, endpoint=False)
 alp = np.deg2rad(alpha_ana)
 KI_ana = np.cos(alp) ** 2
 KII_ana = np.cos(alp) * np.sin(alp)
