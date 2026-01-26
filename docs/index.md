@@ -27,13 +27,14 @@ To run [`gcrack`](https://github.com/floiseau/gcrack), install the required Pyth
 
 3. **Install gcrack**:
 
-        pip install .
+        pip install .       # If you cloned the repo
+        pip install fragma  # If you want to install from pypi
 
 ---
 
 ## Hands-On: Test with Examples
 
-The [`examples`](https://github.com/floiseau/gcrack/tree/main/examples) directory contains ready-to-run scripts and parameter files.
+The [`examples`](https://github.com/floiseau/gcrack/tree/main/examples) directory contains ready-to-run scripts.
 Just follow these steps:
 
 1. Navigate to the [`examples`](https://github.com/floiseau/gcrack/tree/main/examples) directory.
@@ -58,8 +59,6 @@ Just follow these steps:
 To run a simulation, the only required file is a Python script (named `run.py` in the examples).
 It contains the definition of a class inheriting from `GCrackBase`.
 In this class, the methods to define the mesh (`generate_mesh`), to define the boundary conditions (*e.g.*, `define_controlled_displacements`), and define the critical energy release rate (`Gc`) must be defined.
-
-**TODO: Add the link to the functions in the references!!!!**
 
 ### Running the Solver
 
