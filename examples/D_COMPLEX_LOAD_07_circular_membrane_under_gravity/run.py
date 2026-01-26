@@ -125,6 +125,7 @@ if __name__ == "__main__":
         force_bcs=gcrack_data.define_controlled_forces(),
         body_forces=gcrack_data.define_controlled_body_forces(),
         locked_points=gcrack_data.define_locked_points(),
+        nodal_displacements=gcrack_data.define_nodal_displacements(),
     )
 
     # Get the controlled boundary conditions
@@ -133,6 +134,7 @@ if __name__ == "__main__":
         force_bcs=gcrack_data.define_prescribed_forces(),
         body_forces=gcrack_data.define_prescribed_body_forces(),
         locked_points=gcrack_data.define_locked_points(),
+        nodal_displacements=gcrack_data.define_nodal_displacements(),
     )
 
     # Define the domain
@@ -149,6 +151,7 @@ if __name__ == "__main__":
     print("│  Solve the controlled elastic problem with FEM")
     # Solve the controlled elastic problem
     u = solve_elastic_problem(domain, model, controlled_bcs)
+    u.name = "Displacement"
     print("│  Export the results")
     # Export the elastic solution
     export_function(u, 1, Path("./"))

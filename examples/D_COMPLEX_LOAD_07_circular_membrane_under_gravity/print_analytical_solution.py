@@ -14,3 +14,4 @@ print("uz(r) = 1/4 * rho * g / mu * (r**2 - R**2).")
 print("The maximum deflection is at r=0 for a displacement")
 uz_max = -1 / 4 * rho * g / mu * R**2
 print(f"uz(r=0) = {uz_max}.")
+print("This value is to be compared to the max in the VTK files")
