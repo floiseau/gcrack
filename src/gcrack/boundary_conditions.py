@@ -120,7 +120,10 @@ class BoundaryConditions:
         )
 
     def _is_null_or_nan(self, value):
-        return value == 0 or isnan(value)
+        if isinstance(value, (int, float)):
+            return value == 0 or isnan(value)
+        elif isinstance(value, str):
+            return False
 
     def is_null(self) -> bool:
         """
