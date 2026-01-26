@@ -1,5 +1,11 @@
 # gcrack
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![GitHub](https://img.shields.io/badge/GitHub-gcrack-blue)](https://github.com/floiseau/gcrack)
+[![PyPI](https://img.shields.io/badge/PyPI-gcrack-green)](https://pypi.org/project/gcrack/)
+[![Documentation](https://img.shields.io/badge/Docs-gcrack-blueviolet)](https://floiseau.github.io/gcrack)
+[![Zenodo](https://zenodo.org/badge/doi/10.5281/zenodo.18247511.svg)](https://doi.org/10.5281/zenodo.18247511)
+
 **gcrack** is a simulation tool designed to model crack propagation in anisotropic media.
 It is based on linear elastic fracture mechanics, specifically the GMERR (Generalized Maximum Energy Release Rate) criterion, to simulate incremental crack propagation with remeshing.
 
