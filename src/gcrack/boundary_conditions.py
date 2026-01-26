@@ -119,17 +119,36 @@ class BoundaryConditions:
             )
         )
 
+    def _is_null_or_nan(value):
+        return value == 0 or isnan(value)
+
     def is_null(self) -> bool:
-        """Check if all boundary conditions and forces are zero or if all lists are empty.
+        """
+        Check if all boundary conditions and forces are zero, NaN, or if all lists are empty.
 
         Returns:
-            bool: True if all lists are empty or all their values are zero, False otherwise.
+            bool: True if all lists are empty or all their values are zero or NaN, False otherwise.
         """
+
         conditions = [
-            all(bc.u_imp == 0 for bc in self.displacement_bcs),
-            all(bc.f_imp == 0 for bc in self.force_bcs),
-            all(bc.f_imp == 0 for bc in self.body_forces),
-            all(bc.u_imp == 0 for bc in self.nodal_displacements),
+            all(
+                self._is_null_or_nan(comp)
+                for bc in self.displacement_bcs
+                for comp in bc.u_imp
+            ),
+            all(
+                self._is_null_or_nan(comp) for bc in self.force_bcs for comp in bc.f_imp
+            ),
+            all(
+                self._is_null_or_nan(comp)
+                for bc in self.body_forces
+                for comp in bc.f_imp
+            ),
+            all(
+                self._is_null_or_nan(comp)
+                for bc in self.nodal_displacements
+                for comp in bc.u_imp
+            ),
         ]
         return all(conditions)
 
