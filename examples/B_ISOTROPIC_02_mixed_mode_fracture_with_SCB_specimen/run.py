@@ -21,8 +21,8 @@ class GCrackData(GCrackBase):
         # Parameters
         R = self.pars["R"]
         S = R * 0.43
-        h = R / 64
-        h_min = self.R_int / 8
+        h = R / 128
+        h_min = self.R_int / 16
         czw = 1e-3  # contact zone width
         cz_angle = czw / R  # angle to obtain an contact zone of cwm
         # Points (left)
@@ -93,12 +93,13 @@ class GCrackData(GCrackBase):
         cl2: int = gmsh.model.geo.addCurveLoop(
             [lr1, lr2, lr3, lr4, lr5] + crack_lines_right + [lr6]
         )
-        # cl2: int = gmsh.model.geo.addCurveLoop(
-        #     [-lr6]
-        #     + [-l for l in reversed(crack_lines_right)]
-        #     + [-lr5, -lr4, -lr3, -lr2, -lr1]
-        # )
         s2: int = gmsh.model.geo.addPlaneSurface([cl2])
+
+        # Add transfinite lines on boundarise
+        gmsh.model.geo.mesh.setTransfiniteCurve(ll2, 16 * int(czw / h))
+        gmsh.model.geo.mesh.setTransfiniteCurve(lr2, 16 * int(czw / h))
+        gmsh.model.geo.mesh.setTransfiniteCurve(ll5, 16 * int(czw / h))
+        gmsh.model.geo.mesh.setTransfiniteCurve(lr5, 16 * int(czw / h))
 
         # Define the boundaries
         self.boundaries = {
@@ -213,7 +214,7 @@ class GCrackData(GCrackBase):
         return [0, self.pars["R"]]
 
     def Gc(self, phi):
-        return self.pars["Gc"]
+        return self.pars["Gc"] + 0 * phi
 
 
 if __name__ == "__main__":
@@ -230,11 +231,13 @@ if __name__ == "__main__":
     gcrack_data = GCrackData(
         E=3e9,
         nu=0.4,
-        da=pars["R"] / 256,
-        Nt=90 if SET != 3 else 80,
+        da=pars["R"] / 128,
+        Nt=80,
         xc0=xc0,
+        phi0=angle_rad,
+        sif_method="williams",
         assumption_2D="plane_stress",
         pars=pars,
-        phi0=angle_rad,
+        name=f"set_{SET}",
     )
     gcrack_data.run()
