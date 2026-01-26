@@ -119,7 +119,7 @@ class BoundaryConditions:
             )
         )
 
-    def _is_null_or_nan(value):
+    def _is_null_or_nan(self, value):
         return value == 0 or isnan(value)
 
     def is_null(self) -> bool:
