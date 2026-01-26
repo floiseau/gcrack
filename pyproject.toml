@@ -4,7 +4,7 @@ version = "2026.01.13"
 authors = [
   { name="Flavien Loiseau", email="flavien.loiseau@ensta.fr" },
 ]
-description = "A package to simulate crack propagation in anisotropic media"
+description = "Solver for Linear Elastic Fracture Mechanics problems "
 readme = "README.md"
 license = { file="LICENSE" }
 requires-python = ">=3.10.0"
