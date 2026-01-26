@@ -26,7 +26,8 @@ To install gcrack, follow these steps:
 
 3. **Install gcrack**:
     ```shell
-    pip install .
+    pip install .       # If you cloned the repo
+    pip install gcrack  # If you want to install from pypi
     ```
 
 ## How to Use

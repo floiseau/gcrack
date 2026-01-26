@@ -28,7 +28,7 @@ To run [`gcrack`](https://github.com/floiseau/gcrack), install the required Pyth
 3. **Install gcrack**:
 
         pip install .       # If you cloned the repo
-        pip install fragma  # If you want to install from pypi
+        pip install gcrack  # If you want to install from pypi
 
 ---
 
