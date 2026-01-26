@@ -27,8 +27,8 @@ class GCrackData(GCrackBase):
         Ro = Do / 2
         theta = np.arctan2(nw, Di)
         # Numerical parameters
-        h = Di / 64
-        h_min = self.R_int / 8
+        h = Di / 128
+        h_min = self.R_int / 32
 
         # Points (centers)
         pc: int = gmsh.model.geo.addPoint(0, 0, 0, h)
@@ -145,6 +145,10 @@ class GCrackData(GCrackBase):
         clha: int = gmsh.model.geo.addCurveLoop([lha1, lha2])
         st: int = gmsh.model.geo.addPlaneSurface([clt, clha])
 
+        # Make the boundary line transfinite to keep a constant number of element.
+        gmsh.model.geo.mesh.setTransfiniteCurve(lhb2, 256)
+        gmsh.model.geo.mesh.setTransfiniteCurve(lha2, 256)
+
         # Define the boundaries
         self.boundaries = {
             "top": 11,
@@ -245,5 +249,6 @@ if __name__ == "__main__":
         assumption_2D="plane_stress",
         pars=pars,
         phi0=0,
+        name=f"alpha_{ALPHA}",
     )
     gcrack_data.run()

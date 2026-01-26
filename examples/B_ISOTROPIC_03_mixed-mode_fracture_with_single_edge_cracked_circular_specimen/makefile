@@ -1,4 +1,4 @@
-.PHONY: clean simulation_alpha_15 simulation_alpha_30 simulation_alpha_45 simulation_alpha_60 simulation_alpha_75 display_comparison_60 display_comparison_all
+.PHONY: clean simulations simulation_alpha_15 simulation_alpha_30 simulation_alpha_45 simulation_alpha_60 simulation_alpha_75 display_comparison_60 display_comparison_all
 
 clean:
 	rm -r results*
@@ -17,6 +17,8 @@ simulation_alpha_60: run.py
 
 simulation_alpha_75: run.py
 	OMP_NUM_THREADS=1 python run.py 75
+
+simulations: simulation_alpha_15 simulation_alpha_30 simulation_alpha_45 simulation_alpha_60 simulation_alpha_75
 
 display_comparison_60: display_comparison_60.py
 	python display_comparison_60.py

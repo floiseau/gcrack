@@ -1,6 +1,0 @@
-
-- [x] Add the angle as a argument (except the angle 0)
-- [x] Run the simulation for each angles (15, 30, 45, 60, 75)
-- [] Extract the experimental results (Fig. 13)
-- [] Compare the numerical crack path to the numerical one
-
