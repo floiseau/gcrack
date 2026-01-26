@@ -50,7 +50,9 @@ def parse_expression(value, space: fem.FunctionSpace, export_func: bool = False)
         f2 = parse_expression(5.0, V)
     """
     # Check if the DOF is imposed
-    if isinstance(value, (int, float)):
+    if isnan(value):
+        return None
+    elif isinstance(value, (int, float)):
         # Define an FEM function (to control the BC)
         func = fem.Function(space)
         # Update the load
@@ -69,8 +71,6 @@ def parse_expression(value, space: fem.FunctionSpace, export_func: bool = False)
         # Create and interpolate the fem function
         func = fem.Function(space)
         func.interpolate(lambda xx: par_func(xx))
-    elif isnan(value):
-        return None
     else:
         raise ValueError("Unknown type passed to a parsed expression.")
 
