@@ -104,17 +104,34 @@ class BoundaryConditions:
 
     def is_empty(self) -> bool:
         """
-        Checks if all boundary condition lists are empty.
+        Checks if all boundary condition lists are empty or None.
 
         Returns:
-            bool: True if all boundary condition lists are empty, False otherwise.
+            bool: True if all boundary condition lists are empty or None, False otherwise.
         """
-        return not (
-            self.displacement_bcs
-            or self.force_bcs
-            or self.body_forces
-            or self.nodal_displacements
+        return all(
+            not lst
+            for lst in (
+                self.displacement_bcs,
+                self.force_bcs,
+                self.body_forces,
+                self.nodal_displacements,
+            )
         )
+
+    def is_null(self) -> bool:
+        """Check if all boundary conditions and forces are zero or if all lists are empty.
+
+        Returns:
+            bool: True if all lists are empty or all their values are zero, False otherwise.
+        """
+        conditions = [
+            all(bc.u_imp == 0 for bc in self.displacement_bcs),
+            all(bc.f_imp == 0 for bc in self.force_bcs),
+            all(bc.f_imp == 0 for bc in self.body_forces),
+            all(bc.u_imp == 0 for bc in self.nodal_displacements),
+        ]
+        return all(conditions)
 
 
 def get_dirichlet_boundary_conditions(

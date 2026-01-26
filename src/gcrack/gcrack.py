@@ -360,7 +360,7 @@ class GCrackBase(ABC):
             )
 
             # Tackle the prescribed problem
-            if not prescribed_bcs.is_empty():
+            if not prescribed_bcs.is_null():
                 print("│  Solve the prescribed elastic problem with FEM")
                 # Solve the prescribed elastic problem
                 u_prescribed = solve_elastic_problem(self.domain, model, prescribed_bcs)
@@ -384,7 +384,6 @@ class GCrackBase(ABC):
                 print("│  No prescribed BCs")
 
             # Compute the load factor and crack angle.
-
             print("│  Determination of propagation angle and load factor")
             if not self.no_propagation:
                 load_factor_solver = LoadFactorSolver(model, self.Gc, crack_points[-1])
