@@ -211,7 +211,7 @@ if __name__ == "__main__":
     shape = sig_ufl.ufl_shape
     V_sig = fem.functionspace(domain.mesh, ("DG", 0, shape))
     # Convert the stress into an expression
-    sig_expr = fem.Expression(sig_ufl, V_sig.element.interpolation_points())
+    sig_expr = fem.Expression(sig_ufl, V_sig.element.interpolation_points)
     # Set the stress function
     sig = fem.Function(V_sig, name="Stress")
     sig.interpolate(sig_expr)
