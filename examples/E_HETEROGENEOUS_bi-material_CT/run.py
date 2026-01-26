@@ -1,11 +1,11 @@
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import jax.numpy as jnp
 
 import gmsh
 from gcrack import GCrackBase
-from gcrack.boundary_conditions import DisplacementBC
+from gcrack.boundary_conditions import NodalDisplacement, ForceBC
 
 
 class GCrackData(GCrackBase):
@@ -32,6 +32,9 @@ class GCrackData(GCrackBase):
         # Numerical parameters
         h = L / 128
         h_min = self.R_int / 16
+
+        # Store the crack tip to impose nodal displacements
+        self.crack_tip = crack_points[-1]
 
         ### Points
         # Bot
@@ -112,8 +115,8 @@ class GCrackData(GCrackBase):
         l43: int = gmsh.model.geo.addCircleArc(p44, p42, p41)
 
         # Make the boundary line transfinite to keep a constant number of element.
-        gmsh.model.geo.mesh.setTransfiniteCurve(l31, 128)
-        gmsh.model.geo.mesh.setTransfiniteCurve(l41, 128)
+        gmsh.model.geo.mesh.setTransfiniteCurve(l31, 256)
+        gmsh.model.geo.mesh.setTransfiniteCurve(l41, 256)
 
         ### Surfaces
         # Bot
@@ -198,16 +201,27 @@ class GCrackData(GCrackBase):
         """
         return self.boundaries["top"]
 
-    def define_controlled_displacements(self) -> List[DisplacementBC]:
-        """Define the imposed displacement boundary conditions.
+    def define_nodal_displacements(self) -> List[NodalDisplacement]:
+        """Define a list of imposed nodal displacements.
 
         Returns:
-            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).
+            List[NodalDisplacements]: A list of NodalDisplacement.
+        """
+        L = self.pars["L"]
+        return [
+            NodalDisplacement(self.crack_tip, [0.0, 0.0, 0.0]),
+            NodalDisplacement([L / 2, 0.0, 0.0], [float("nan"), 0.0, 0.0]),
+        ]
+
+    def define_controlled_forces(self) -> List[ForceBC]:
+        """Define the list of imposed forces.
+
+        Returns:
+            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.
         """
         return [
-            DisplacementBC(self.boundaries["bot"], [0, 0]),
-            DisplacementBC(self.boundaries["top"], [0, 1]),
-            # DisplacementBC(self.boundaries["top"], [0, 1]),
+            ForceBC(self.boundaries["bot"], [0.0, -1.0]),
+            ForceBC(self.boundaries["top"], [0.0, 1.0]),
         ]
 
     def Gc(self, phi):
@@ -231,13 +245,16 @@ if __name__ == "__main__":
     #       2. equal to the elastic properties at crack tip.
     # This works well for small gradient, or when heterogeneities are outside of the pacman.
     # In other cases, this is false.
-    pars["E"] = f"1e9 * x[1]/48e-3 + 1e9"
-
-    # TODO : with heaviside
+    # NOTE: Heterogeneous
+    #       E = 1e9 when y <= H/4
+    #       E = 2e9 when y >  H/4
+    pars["E"] = f"1e9 * heaviside(x[1]-{pars['H'] / 4}, 0) + 1e9"
+    # NOTE: Homogeneous
+    # pars["E"] = 2e9
     pars["nu"] = 0.3
     pars["G0"] = 4.5e3
     # Load
-    pars["angular_region"] = 50
+    pars["angular_region"] = 90
     # Probes
     pars["yp"] = pars["H"] / 100
     # Material
