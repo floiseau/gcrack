@@ -11,7 +11,7 @@ Functions:
 from math import isnan
 import sympy as sp
 
-from dolfinx import fem
+from dolfinx import fem, io
 
 
 def parse_expression(value, space: fem.FunctionSpace, export_func: bool = False):
@@ -71,6 +71,14 @@ def parse_expression(value, space: fem.FunctionSpace, export_func: bool = False)
         # Create and interpolate the fem function
         func = fem.Function(space)
         func.interpolate(lambda xx: par_func(xx))
+
+        # Export the function
+        # NOTE: THIS SHOULD BE IMPROVED WHEN THERE ARE MULITPLE PARAEMTERS
+        file_name = "heterogeneous_parameter.pvd"
+        vtk_file = io.VTKFile(space.mesh.comm, file_name, "w")
+        vtk_file.write_function(func, 0)
+        vtk_file.close()
+
     else:
         raise ValueError("Unknown type passed to a parsed expression.")
 
