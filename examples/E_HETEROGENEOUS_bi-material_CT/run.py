@@ -209,8 +209,8 @@ class GCrackData(GCrackBase):
         """
         L = self.pars["L"]
         return [
-            NodalDisplacement(self.crack_tip, [0.0, 0.0, 0.0]),
-            NodalDisplacement([L / 2, 0.0, 0.0], [float("nan"), 0.0, 0.0]),
+            NodalDisplacement([L / 2, -L / 2, 0.0], [0.0, 0.0, 0.0]),
+            NodalDisplacement([L / 2, L / 2, 0.0], [0.0, float("nan"), 0.0]),
         ]
 
     def define_controlled_forces(self) -> List[ForceBC]:
