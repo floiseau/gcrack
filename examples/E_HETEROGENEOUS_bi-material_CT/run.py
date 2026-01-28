@@ -208,9 +208,10 @@ class GCrackData(GCrackBase):
             List[NodalDisplacements]: A list of NodalDisplacement.
         """
         L = self.pars["L"]
+        H = self.pars["H"]
         return [
-            NodalDisplacement([L / 2, -L / 2, 0.0], [0.0, 0.0, 0.0]),
-            NodalDisplacement([L / 2, L / 2, 0.0], [0.0, float("nan"), 0.0]),
+            NodalDisplacement([L / 2, -H / 2, 0.0], [0.0, 0.0, 0.0]),
+            NodalDisplacement([L / 2, H / 2, 0.0], [0.0, float("nan"), 0.0]),
         ]
 
     def define_controlled_forces(self) -> List[ForceBC]:
