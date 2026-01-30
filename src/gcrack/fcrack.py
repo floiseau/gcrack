@@ -18,6 +18,7 @@ from gcrack.boundary_conditions import (
 )
 from gcrack.solvers import solve_elastic_problem
 from gcrack.sif import compute_SIFs
+from gcrack.optimization_solvers import LoadFactorSolver
 from gcrack.postprocess import (
     compute_measured_forces,
     compute_measured_displacement,
@@ -43,8 +44,6 @@ class FCrackBase(ABC):
     """m (float): Exponent parameter in Paris law."""
     dG: float
     """dG (float): Threshold in Paris law."""
-    dN: float
-    """dN (float): Cycle increment."""
     Nt: int
     """Nt (int): Number of crack increment."""
     xc0: np.array
@@ -56,8 +55,14 @@ class FCrackBase(ABC):
     R_int: float
     """R_int (float): Raduis for the determination of SIFs (pacman inner raduis)."""
     lmax: float
-    """lmax (float): Maximal load factor, defaults to 0.0."""
+    """lmax (float): Maximal load factor."""
     lmin: Optional[float] = 0.0
+    """lmin (float): Minimal load factor, defaults to 0.0."""
+    dN: Optional[int] = None
+    """dN (float): Cycle increment, defaults to None."""
+    da: Optional[float] = None
+    """da (float): Crack lenght increment, defaults to None."""
+    pars: Optional[dict] = {}
     """pars (dict): User-defined parameters passed to user-defined functions."""
     phi0: Optional[float] = 0.0
     """phi0 (Optional[float]): Initial crack propagation angle, defaults to 0.0."""
@@ -167,6 +172,7 @@ class FCrackBase(ABC):
         # Initialize results storage
         res = {
             "t": 0,
+            "N": 0,
             "a": 0,
             "da": 0,
             "phi": self.phi0,
@@ -184,6 +190,13 @@ class FCrackBase(ABC):
             "fracture_dissipation": 0.0,
             "external_work": 0.0,
         }
+
+        # Select the type of control
+        if self.dN is not None and self.da is not None:
+            raise ValueError("Both da and dN are imposed! Please specify only one.")
+        elif self.dN is None and self.da is None:
+            raise ValueError("Either dN or da must be specified.")
+        self.control_type = "da" if self.dN is None else "dN"
 
         for t in range(1, self.Nt + 1):
             print(f"\nLOAD STEP {t}")
@@ -233,27 +246,42 @@ class FCrackBase(ABC):
                 self.sif_method,
             )
 
-            # Compute the load factor and crack angle.
-            print("│  Determination of crack increment (Paris law)")
-            # Compute the crack increment (foward euler scheme
-            G_bar = 1 / model.Ep * (SIFs["KI"] ** 2 + SIFs["KII"] ** 2) + SIFs[
-                "KIII"
-            ] ** 2 / (2 * model.mu)
-            da = (
-                self.C
-                * max((self.lmax**2 - self.lmin**2) * G_bar - self.dG, 0) ** self.m
-                * self.dN
+            # Compute the crack growth direction
+            load_factor_solver = LoadFactorSolver(
+                model, lambda phi: 1 + 0 * phi, crack_points[-1]
             )
-            print(da)
+            null_SIFs = {"KI": 0, "KII": 0, "T": 0}
+            opti_res = load_factor_solver.solve(phi0, SIFs, null_SIFs, self.s)
+            # Get the results
+            phi_ = opti_res[0]
+            # NOTE: lambda_ = sqrt(G^*/Gc) avec Gc=1 --> G^* = lambda_^2
+            lambda_ = opti_res[1]
+            G_star_bar = lambda_**2
+
+            # Compute the crack growth rate
+            da_dN = (
+                self.C
+                * max((self.lmax**2 - self.lmin**2) * G_star_bar - self.dG, 0) ** self.m
+            )
+            if self.control == "da":
+                print("│  Determination of crack increment (Paris law)")
+                da = self.da
+                dN = da / da_dN
+            elif self.control == "dN":
+                print("│  Determination of cycle number increment (Paris law)")
+                dN = self.dN
+                da = da_dN * dN
+
             # Add a new crack point
-            da_vec = da * np.array([np.cos(phi0), np.sin(phi0), 0])
+            da_vec = da * np.array([np.cos(phi_), np.sin(phi_), 0])
             crack_points.append(crack_points[-1] + da_vec)
 
             print("│  Results of the step")
             print(
-                f"│  │  Crack propagation angle : {phi0:.3f} rad / {phi0 * 180 / np.pi:.3f}°"
+                f"│  │  Crack propagation angle : {phi_:.3f} rad / {phi_ * 180 / np.pi:.3f}°"
             )
             print(f"│  │  Crack increment         : {da:.3g}")
+            print(f"│  │  Number of cycles        : {dN:.3g}")
             print(f"│  │  New crack tip position  : {crack_points[-1]}")
 
             print("│  Postprocess")
@@ -281,9 +309,10 @@ class FCrackBase(ABC):
                 export_function(u_min, t, dir_name)
             # Store the results
             res["t"] = t
+            res["N"] += dN
             res["a"] += da
             res["da"] = da
-            res["phi"] = phi0
+            res["phi"] = phi_
             res["xc_1"] = crack_points[-1][0]
             res["xc_2"] = crack_points[-1][1]
             res["xc_3"] = crack_points[-1][2]
