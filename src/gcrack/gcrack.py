@@ -71,7 +71,12 @@ from gcrack.postprocess import (
     compute_elastic_energy,
     compute_external_work,
 )
-from gcrack.exporters import export_function, export_res_to_csv, clean_vtk_files
+from gcrack.exporters import (
+    export_function,
+    export_heterogeneous_parameters,
+    export_res_to_csv,
+    clean_vtk_files,
+)
 
 
 @dataclass
@@ -341,6 +346,8 @@ class GCrackBase(ABC):
 
             # Define an elastic model
             model = ElasticModel(ela_pars, self.domain)
+            if t == 1:
+                export_heterogeneous_parameters(model, ela_pars, dir_name)
 
             print("│  Solve the controlled elastic problem with FEM")
             # Solve the controlled elastic problem
@@ -436,6 +443,7 @@ class GCrackBase(ABC):
             print("│  Export the results")
             # Export the elastic solution
             export_function(u_scaled, t, dir_name)
+
             # Store the results
             res["t"] = t
             res["a"] += self.da

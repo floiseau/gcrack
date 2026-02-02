@@ -54,6 +54,30 @@ def export_function(u: fem.Function, t: int, dir_path: Path):
     vtkfile.close()
 
 
+def export_heterogeneous_parameters(model, ela_pars: dict, dir_path: Path):
+    """
+    Export the heterogeneous parameters into a VTK file.
+
+    Args:
+        model (gcrack.ElasticModel): ElasticModel in gcrack.
+        ela_pars (dict): Input (raw) parameters of the elastic model.
+        dir_path (Path): The path to the directory where the VTK file will be saved.
+    """
+    # At first load step, also export the heterogeneous parameters
+    if isinstance(ela_pars["E"], str):
+        V = model.E.function_space
+        model.E.name = "Young Modulus"
+        vtkfile = io.VTKFile(V.mesh.comm, dir_path / "YoungModulus.pvd", "w")
+        vtkfile.write_function(model.E, 0)
+        vtkfile.close()
+    if isinstance(ela_pars["nu"], str):
+        V = model.nu.function_space
+        model.nu.name = "Poisson Ratio"
+        vtkfile = io.VTKFile(V.mesh.comm, dir_path / "PoissonRatio.pvd", "w")
+        vtkfile.write_function(model.nu, 0)
+        vtkfile.close()
+
+
 def clean_vtk_files(res_dir: Path):
     """
     Clean the specified directory by removing existing .pvd files and create a new .pvd file listing all .pvtu files.
