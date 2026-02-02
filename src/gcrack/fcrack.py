@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import gmsh
 import numpy as np
@@ -50,8 +50,6 @@ class FCrackBase(ABC):
     """xc0 (np.array): Initial crack tip coordinates."""
     assumption_2D: str
     """assumption_2D (str): Assumption for 2D elasticity (e.g., 'plane stress', 'plane strain')."""
-    pars: dict
-    """pars (dict): User-defined parameters passed to user-defined functions."""
     R_int: float
     """R_int (float): Raduis for the determination of SIFs (pacman inner raduis)."""
     lmax: float
@@ -62,7 +60,7 @@ class FCrackBase(ABC):
     """dN (float): Cycle increment, defaults to None."""
     da: Optional[float] = None
     """da (float): Crack lenght increment, defaults to None."""
-    pars: Optional[dict] = {}
+    pars: Optional[dict] = field(default_factory=dict)
     """pars (dict): User-defined parameters passed to user-defined functions."""
     phi0: Optional[float] = 0.0
     """phi0 (Optional[float]): Initial crack propagation angle, defaults to 0.0."""
