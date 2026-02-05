@@ -199,7 +199,7 @@ class GCrackData(GCrackBase):
             List: Coordinate of the point where the displacement is measured
         """
         # Set one of the point of the top boundary where the displacement is imposed
-        psi = pars["angular_region"]
+        psi = jnp.deg2rad(pars["angular_region"])
         x = -pars["L"] / 2 + pars["xh"] + pars["rh"] * jnp.sin(psi / 2)
         y = pars["H"] / 2 - pars["yh"] + pars["rh"] * jnp.cos(psi / 2)
         return [x, y, 0]
