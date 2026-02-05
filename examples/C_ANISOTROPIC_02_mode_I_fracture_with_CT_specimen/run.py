@@ -263,8 +263,6 @@ if __name__ == "__main__":
     pars["angular_region"] = 90
     # Probes
     pars["yp"] = pars["H"] / 100
-    # Material
-    pars["nu"] = 0.34
     # Numerical
     pars["da"] = pars["L"] / 256
     # Initialize the simulation
