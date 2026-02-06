@@ -329,11 +329,14 @@ def gradient_descent_with_line_search(
             diff = jnp.array([gra([phi_test], **kwargs)[0] for phi_test in phis_test])
             # Create an array with the slope "in the direction of minimization"
             slope = jnp.sign(direction) * diff
-            if all(slope < 0):  # If the slope is always negative, take the largest step
+            if jnp.all(slope < 0):
+                # If the slope is always negative, take the largest step
                 idx = -1
-            elif all(slope > 0):  # If the slope is always positive, take no step
+            elif jnp.all(slope > 0):
+                # If the slope is always positive, take no step
                 idx = 0
-            else:  # If the slope increases after a decrease, then local minimum
+            else:
+                # If the slope increases after a decrease, then local minimum
                 idx = jnp.where(slope > 0)[0][0] - 1
                 # If the first grad is positive, we are at the solution
                 # This case only occurs when the grad is discontinuous (cups)

@@ -50,8 +50,6 @@ class FCrackBase(ABC):
     """xc0 (np.array): Initial crack tip coordinates."""
     assumption_2D: str
     """assumption_2D (str): Assumption for 2D elasticity (e.g., 'plane stress', 'plane strain')."""
-    R_int: float
-    """R_int (float): Raduis for the determination of SIFs (pacman inner raduis)."""
     lmax: float
     """lmax (float): Maximal load factor."""
     lmin: Optional[float] = 0.0
@@ -64,6 +62,8 @@ class FCrackBase(ABC):
     """pars (dict): User-defined parameters passed to user-defined functions."""
     phi0: Optional[float] = 0.0
     """phi0 (Optional[float]): Initial crack propagation angle, defaults to 0.0."""
+    s: Optional[float] = 0
+    """s (Optional[float]): Internal length associated with T-stress, defaults to 0."""
     sif_method: Optional[str] = "Williams"
     """sif_method (Optional[str]): Method for computing Stress Intensity Factors (SIFs), defaults to "Williams"."""
     # criterion: Optional[str] = "gmerr"
@@ -75,7 +75,8 @@ class FCrackBase(ABC):
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
-        self.R_ext = 2 * self.R_int
+        self.R_int = 1 / 8 * self.da
+        self.R_ext = 1 / 4 * self.da
 
     @abstractmethod
     def generate_mesh(self, crack_points) -> gmsh.model:
@@ -147,6 +148,24 @@ class FCrackBase(ABC):
         This function is called at the very beginning of the load step.
         """
         ...
+
+    def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
+        """Define the critical energy release rate.
+
+        To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\\varphi$.
+        Note that this function is only used to estimated the crack path.
+
+
+        Args:
+            phi (np.ndarray): Crack angle.
+
+        Returns:
+            np.ndarray: Value of the critical energy release rate.
+
+        Note:
+            The intput and output should be arrays for practical details in the minimization of the load factor.
+        """
+        return 1.0 + 0.0 * phi
 
     def run(self):
         # Initialize GMSH
@@ -243,29 +262,30 @@ class FCrackBase(ABC):
                 self.R_ext,
                 self.sif_method,
             )
-
-            # Compute the crack growth direction
-            load_factor_solver = LoadFactorSolver(
-                model, lambda phi: 1 + 0 * phi, crack_points[-1]
-            )
+            load_factor_solver = LoadFactorSolver(model, self.Gc, crack_points[-1])
             null_SIFs = {"KI": 0, "KII": 0, "T": 0}
             opti_res = load_factor_solver.solve(phi0, SIFs, null_SIFs, self.s)
             # Get the results
             phi_ = opti_res[0]
-            # NOTE: lambda_ = sqrt(G^*/Gc) avec Gc=1 --> G^* = lambda_^2
+            # NOTE: lambda_ = sqrt(G^*/Gc) --> G^* = lambda_^2 / Gc, avec Gc=1 --> G^* = lambda_^2
             lambda_ = opti_res[1]
-            G_star_bar = lambda_**2
+            G_star_bar = lambda_**2 / self.Gc(phi_)
 
             # Compute the crack growth rate
+            Ep = model.Ep_func(crack_points[-1])
             da_dN = (
                 self.C
-                * max((self.lmax**2 - self.lmin**2) * G_star_bar - self.dG, 0) ** self.m
+                * max(
+                    (self.lmax - self.lmin) * np.sqrt(Ep * G_star_bar) - self.dG,
+                    0,
+                )
+                ** self.m
             )
-            if self.control == "da":
+            if self.control_type == "da":
                 print("│  Determination of crack increment (Paris law)")
                 da = self.da
                 dN = da / da_dN
-            elif self.control == "dN":
+            elif self.control_type == "dN":
                 print("│  Determination of cycle number increment (Paris law)")
                 dN = self.dN
                 da = da_dN * dN
