@@ -1,0 +1,4188 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://floiseau.github.io/gcrack/API/gcrack/">
+      
+      
+        <link rel="prev" href="../exporters/">
+      
+      
+        <link rel="next" href="../models/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Gcrack - gcrack : Linear Elastic Fracture Mechanic solver</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#gcrack.gcrack" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="gcrack : Linear Elastic Fracture Mechanic solver" class="md-header__button md-logo" aria-label="gcrack : Linear Elastic Fracture Mechanic solver" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            gcrack : Linear Elastic Fracture Mechanic solver
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Gcrack
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/floiseau/gcrack" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    floiseau/gcrack
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="gcrack : Linear Elastic Fracture Mechanic solver" class="md-nav__button md-logo" aria-label="gcrack : Linear Elastic Fracture Mechanic solver" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    gcrack : Linear Elastic Fracture Mechanic solver
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/floiseau/gcrack" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    floiseau/gcrack
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../LEFM/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LEFM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SIF/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SIF
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../boundary_conditions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Boundary conditions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exporters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exporters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gcrack
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gcrack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#gcrack.gcrack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gcrack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GCrackBase
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GCrackBase">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.E" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.Nt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.assumption_2D" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        assumption_2D
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.criterion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        criterion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.da" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        da
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.l0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        l0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.no_meshing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        no_meshing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.no_propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        no_propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.nu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        nu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.pars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pars
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.phi0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        phi0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        s
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.sif_method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sif_method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.xc0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        xc0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.Gc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gc
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_controlled_body_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_controlled_body_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_controlled_displacements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_controlled_displacements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_controlled_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_controlled_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_locked_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_locked_points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_nodal_displacements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_nodal_displacements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_prescribed_body_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_prescribed_body_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_prescribed_displacements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_prescribed_displacements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_prescribed_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_prescribed_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.locate_measured_displacement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        locate_measured_displacement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.locate_measured_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        locate_measured_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.user_load_step_initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        user_load_step_initialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization_solvers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization solvers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../postprocess/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Postprocess
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solvers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solvers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_11" id="__nav_2_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Utils
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/expression_parsers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Expression parsers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/williams_series/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Williams series
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#gcrack.gcrack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gcrack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GCrackBase
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GCrackBase">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.E" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.Nt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.assumption_2D" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        assumption_2D
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.criterion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        criterion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.da" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        da
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.l0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        l0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.no_meshing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        no_meshing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.no_propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        no_propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.nu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        nu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.pars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pars
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.phi0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        phi0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        s
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.sif_method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sif_method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.xc0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        xc0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.Gc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gc
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_controlled_body_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_controlled_body_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_controlled_displacements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_controlled_displacements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_controlled_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_controlled_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_locked_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_locked_points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_nodal_displacements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_nodal_displacements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_prescribed_body_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_prescribed_body_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_prescribed_displacements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_prescribed_displacements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.define_prescribed_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        define_prescribed_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.locate_measured_displacement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        locate_measured_displacement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.locate_measured_forces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        locate_measured_forces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcrack.gcrack.GCrackBase.user_load_step_initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        user_load_step_initialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Gcrack</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="gcrack.gcrack"></a>
+    <div class="doc doc-contents first">
+
+        <p>Main entry point for the GCrack simulation framework.</p>
+<p>This module serves as the entry point for simulating crack propagation in elastic materials using the Finite Element Method (FEM).
+It contains the entire simulation workflow, including mesh generation, boundary condition application, solving the elastic problem, computing Stress Intensity Factors (SIFs), and post-processing results.</p>
+<p>The simulation is driven by the <code>GCrackBase</code> abstract base class, which users must subclass to define problem-specific parameters and behaviors.
+The workflow includes:</p>
+<ul>
+<li>Generating the mesh for the cracked domain.</li>
+<li>Applying boundary conditions (displacements, forces, body forces, locked points, etc.).</li>
+<li>Solving the elastic problem for both controlled and prescribed boundary conditions.</li>
+<li>Computing SIFs using the specified method (e.g., I-integral).</li>
+<li>Determining the crack propagation angle and load factor.</li>
+<li>Post-processing results, including computing energies, reaction forces, and displacements.</li>
+<li>Exporting results to VTK and CSV formats.</li>
+</ul>
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="GCrackBase
+
+
+  
+      dataclass
+   (gcrack.gcrack.GCrackBase)" href="#gcrack.gcrack.GCrackBase">GCrackBase</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>Abstract base class for defining and running crack propagation simulations.
+Users must subclass this class and implement abstract methods to define problem-specific parameters and behaviors.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="gcrack.gcrack.None">None</span></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>All attributes and methods are encapsulated within the <code>GCrackBase</code> class.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <p>To run a simulation, users must:</p>
+<ol>
+<li>Subclass <code>GCrackBase</code> and implement all abstract methods.</li>
+<li>Instantiate the subclass with the required parameters.</li>
+<li>Call the <code>run()</code> method to execute the simulation.</li>
+</ol>
+</details>        <p>Example:</p>
+<pre><code>from gcrack.main import GCrackBase
+class MySimulation(GCrackBase):
+    def generate_mesh(self, crack_points):
+        # Implement mesh generation logic
+    def locate_measured_displacement(self):
+        # Implement logic to locate measured displacement
+    # Implement other abstract methods
+
+simulation = MySimulation(E=1e5, nu=0.3, da=0.1, Nt=10, xc0=np.array([0, 0, 0]))
+simulation.run()
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="gcrack.gcrack.GCrackBase" class="doc doc-heading">
+            <code>GCrackBase</code>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
+
+
+        <p>GCrackBase is an abstract base class for simulating crack propagation in elastic materials using the Finite Element Method (FEM).</p>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span>
+<span class="normal">444</span>
+<span class="normal">445</span>
+<span class="normal">446</span>
+<span class="normal">447</span>
+<span class="normal">448</span>
+<span class="normal">449</span>
+<span class="normal">450</span>
+<span class="normal">451</span>
+<span class="normal">452</span>
+<span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GCrackBase</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    GCrackBase is an abstract base class for simulating crack propagation in elastic materials using the Finite Element Method (FEM).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">E</span><span class="p">:</span> <span class="nb">float</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;E (float): Young&#39;s modulus of the material.&quot;&quot;&quot;</span>
+    <span class="n">nu</span><span class="p">:</span> <span class="nb">float</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;nu (float): Poisson&#39;s ratio of the material.&quot;&quot;&quot;</span>
+    <span class="n">da</span><span class="p">:</span> <span class="nb">float</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;da (float): Crack increment length.&quot;&quot;&quot;</span>
+    <span class="n">Nt</span><span class="p">:</span> <span class="nb">int</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Nt (int): Number of crack increment.&quot;&quot;&quot;</span>
+    <span class="n">xc0</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;xc0 (np.array): Initial crack tip coordinates.&quot;&quot;&quot;</span>
+    <span class="n">assumption_2D</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;assumption_2D (str): Assumption for 2D elasticity (e.g., &#39;plane stress&#39;, &#39;plane strain&#39;).&quot;&quot;&quot;</span>
+    <span class="n">pars</span><span class="p">:</span> <span class="nb">dict</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;pars (dict): User-defined parameters passed to user-defined functions.&quot;&quot;&quot;</span>
+    <span class="n">l0</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;l0 (Optional[float]): Initial load factor, defaults to 0.0.&quot;&quot;&quot;</span>
+    <span class="n">phi0</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;phi0 (Optional[float]): Initial crack propagation angle, defaults to 0.0.&quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;s (Optional[float]): Internal length associated with T-stress, defaults to 0.&quot;&quot;&quot;</span>
+    <span class="n">sif_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;I-integral&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;sif_method (Optional[str]): Method for computing Stress Intensity Factors (SIFs), defaults to &quot;I-integral&quot;.&quot;&quot;&quot;</span>
+    <span class="n">criterion</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;gmerr&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;criterion (Optional[str]): Criterion for crack propagation, defaults to &quot;gmerr&quot;.&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;name (Optional[str]): Name of the simulation used to name the results directory.&quot;&quot;&quot;</span>
+    <span class="n">no_propagation</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;no_propagation (Optional[bool]): Flag to only run skip the crack propagation phase.&quot;&quot;&quot;</span>
+    <span class="n">no_meshing</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;no_meshing (Optional[bool]): Flag to skip mesh generation when a mesh has already been created.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Compute the radii for the SIF evaluation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">R_int</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">8</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">da</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">R_ext</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">da</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crack_points</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">gmsh</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">locate_measured_displacement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the point where the displacement is measured.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List: Coordinate of the point where the displacement is measured</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">locate_measured_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the boundary where the reaction force are measured.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Identifier (id) of the boundary in GMSH.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">Gc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phi</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the critical energy release rate.</span>
+
+<span class="sd">        To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\\varphi$</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            phi (np.ndarray): Crack angle.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: Value of the critical energy release rate.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            The intput and output should be arrays for practical details in the minimization of the load factor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_locked_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the list of locked points.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[List[float]]: A list of points (list) coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_nodal_displacements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">NodalDisplacement</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define a list of imposed nodal displacements.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[NodalDisplacements]: A list of NodalDisplacement.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_controlled_displacements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DisplacementBC</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the displacement boundary conditions controlled by the load factor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_controlled_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ForceBC</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the force boundary conditions controlled by the load factor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_controlled_body_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">BodyForce</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the controlled body forces that are affected by the load factor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_prescribed_displacements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DisplacementBC</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the prescribed displacement boundary conditions that are not affected by the load factor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_prescribed_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ForceBC</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the prescribed force boundary conditions that are not affected by the load factor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_prescribed_body_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">BodyForce</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define the prescribed body forces that are not affected by the load factor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">user_load_step_initialization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">res</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;User-defined load step initialization.</span>
+
+<span class="sd">        Customize load step initialization using results from the previous step.</span>
+<span class="sd">        This can include creating custom variables for boundary conditions.</span>
+<span class="sd">        This function is called at the very beginning of the load step.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executes the crack propagation simulation workflow.</span>
+
+<span class="sd">        This method manages the entire simulation process, including:</span>
+
+<span class="sd">        - Initializing the GMSH environment and results directory.</span>
+<span class="sd">        - Generating the mesh for the cracked domain (unless `no_meshing` is True).</span>
+<span class="sd">        - Applying boundary conditions (displacements, forces, body forces, locked points, etc.).</span>
+<span class="sd">        - Solving the elastic problem for both controlled and prescribed boundary conditions.</span>
+<span class="sd">        - Computing Stress Intensity Factors (SIFs) using the specified method.</span>
+<span class="sd">        - Determining the crack propagation angle and load factor.</span>
+<span class="sd">        - Post-processing results, including computing energies, reaction forces, and displacements.</span>
+<span class="sd">        - Exporting results to VTK and CSV formats.</span>
+
+<span class="sd">        The simulation runs for `self.Nt` load steps, updating the crack tip position and</span>
+<span class="sd">        boundary conditions at each step. Results are stored in a dictionary and exported</span>
+<span class="sd">        to the results directory.</span>
+
+<span class="sd">        Steps:</span>
+
+<span class="sd">        1. Initialize GMSH and create the results directory.</span>
+<span class="sd">        2. For each load step:</span>
+<span class="sd">            1. Generate the mesh (if `no_meshing` is False).</span>
+<span class="sd">            2. Define and apply boundary conditions.</span>
+<span class="sd">            3. Solve the elastic problem for controlled and prescribed boundary conditions.</span>
+<span class="sd">            4. Compute SIFs for both controlled and prescribed problems.</span>
+<span class="sd">            5. Determine the crack propagation angle and load factor.</span>
+<span class="sd">            6. Post-process results (e.g., compute energies, reaction forces, displacements).</span>
+<span class="sd">            g. Export results to VTK and CSV files.</span>
+<span class="sd">        3. Clean up and finalize the simulation.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            - The `no_meshing` flag can be set to skip mesh generation if a mesh already exists.</span>
+<span class="sd">            - The `no_propagation` flag can be set to skip crack propagation and use arbitrary load factor/crack propagation angle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Initialize GMSH</span>
+        <span class="n">gmsh</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+        <span class="n">gmsh</span><span class="o">.</span><span class="n">option</span><span class="o">.</span><span class="n">setNumber</span><span class="p">(</span><span class="s2">&quot;General.Terminal&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Disable terminal output</span>
+        <span class="n">gmsh</span><span class="o">.</span><span class="n">option</span><span class="o">.</span><span class="n">setNumber</span><span class="p">(</span><span class="s2">&quot;Mesh.Algorithm&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="c1"># 1: meshadapt; 5: delaunay, 6: frontal-delaunay</span>
+
+        <span class="c1"># Initialize export directory</span>
+        <span class="n">dir_name</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;results_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">dir_name</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Get the elastic parameters</span>
+        <span class="n">ela_pars</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">E</span><span class="p">,</span>
+            <span class="s2">&quot;nu&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu</span><span class="p">,</span>
+            <span class="s2">&quot;2D_assumption&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">assumption_2D</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="c1"># Initialize the crack points</span>
+        <span class="n">crack_points</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">xc0</span><span class="p">]</span>
+        <span class="c1"># Initialize results storage</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;phi&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi0</span><span class="p">,</span>
+            <span class="s2">&quot;lambda&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">l0</span><span class="p">,</span>
+            <span class="s2">&quot;xc_1&quot;</span><span class="p">:</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+            <span class="s2">&quot;xc_2&quot;</span><span class="p">:</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+            <span class="s2">&quot;xc_3&quot;</span><span class="p">:</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+            <span class="s2">&quot;uimp_1&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;uimp_2&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;fimp_1&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;fimp_2&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;KI&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;KII&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;T&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;elastic_energy&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;fracture_dissipation&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;external_work&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">LOAD STEP </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Get current crack properties</span>
+            <span class="n">phi0</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;phi&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Run the user defined load step initialization</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">user_load_step_initialization</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+            <span class="c1"># Generate the mesh</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_meshing</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Meshing the cracked domain&quot;</span><span class="p">)</span>
+                <span class="n">gmsh_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_mesh</span><span class="p">(</span><span class="n">crack_points</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Skip meshing (no_meshing = True)&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Get the controlled boundary conditions</span>
+            <span class="n">controlled_bcs</span> <span class="o">=</span> <span class="n">BoundaryConditions</span><span class="p">(</span>
+                <span class="n">displacement_bcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_controlled_displacements</span><span class="p">(),</span>
+                <span class="n">force_bcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_controlled_forces</span><span class="p">(),</span>
+                <span class="n">body_forces</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_controlled_body_forces</span><span class="p">(),</span>
+                <span class="n">locked_points</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_locked_points</span><span class="p">(),</span>
+                <span class="n">nodal_displacements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_nodal_displacements</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Get the controlled boundary conditions</span>
+            <span class="n">prescribed_bcs</span> <span class="o">=</span> <span class="n">BoundaryConditions</span><span class="p">(</span>
+                <span class="n">displacement_bcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_prescribed_displacements</span><span class="p">(),</span>
+                <span class="n">force_bcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_prescribed_forces</span><span class="p">(),</span>
+                <span class="n">body_forces</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_prescribed_body_forces</span><span class="p">(),</span>
+                <span class="n">locked_points</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_locked_points</span><span class="p">(),</span>
+                <span class="n">nodal_displacements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_nodal_displacements</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Define the domain</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_meshing</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">domain</span> <span class="o">=</span> <span class="n">Domain</span><span class="p">(</span><span class="n">gmsh_model</span><span class="p">)</span>
+
+            <span class="c1"># Define an elastic model</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">ElasticModel</span><span class="p">(</span><span class="n">ela_pars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">export_heterogeneous_parameters</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ela_pars</span><span class="p">,</span> <span class="n">dir_name</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Solve the controlled elastic problem with FEM&quot;</span><span class="p">)</span>
+            <span class="c1"># Solve the controlled elastic problem</span>
+            <span class="n">u_controlled</span> <span class="o">=</span> <span class="n">solve_elastic_problem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">controlled_bcs</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;│  Compute the SIFs for the controlled problem (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sif_method</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+            <span class="c1"># Compute the SIFs for the controlled problem</span>
+            <span class="n">SIFs_controlled</span> <span class="o">=</span> <span class="n">compute_SIFs</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                <span class="n">model</span><span class="p">,</span>
+                <span class="n">u_controlled</span><span class="p">,</span>
+                <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="n">phi0</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">R_int</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">R_ext</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sif_method</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Tackle the prescribed problem</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">prescribed_bcs</span><span class="o">.</span><span class="n">is_null</span><span class="p">():</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Solve the prescribed elastic problem with FEM&quot;</span><span class="p">)</span>
+                <span class="c1"># Solve the prescribed elastic problem</span>
+                <span class="n">u_prescribed</span> <span class="o">=</span> <span class="n">solve_elastic_problem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">prescribed_bcs</span><span class="p">)</span>
+                <span class="c1"># Compute the SIFs for the prescribed problem</span>
+                <span class="n">SIFs_prescribed</span> <span class="o">=</span> <span class="n">compute_SIFs</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                    <span class="n">model</span><span class="p">,</span>
+                    <span class="n">u_prescribed</span><span class="p">,</span>
+                    <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">phi0</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">R_int</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">R_ext</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sif_method</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Set the prescribed displacement to 0</span>
+                <span class="n">u_prescribed</span> <span class="o">=</span> <span class="n">u_controlled</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">u_prescribed</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">array</span><span class="p">[:]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="c1"># Set the SIFs to 0</span>
+                <span class="n">SIFs_prescribed</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">SIFs_controlled</span><span class="p">}</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  No prescribed BCs&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Compute the load factor and crack angle.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Determination of propagation angle and load factor&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_propagation</span><span class="p">:</span>
+                <span class="n">load_factor_solver</span> <span class="o">=</span> <span class="n">LoadFactorSolver</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Gc</span><span class="p">,</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">opti_res</span> <span class="o">=</span> <span class="n">load_factor_solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+                    <span class="n">phi0</span><span class="p">,</span> <span class="n">SIFs_controlled</span><span class="p">,</span> <span class="n">SIFs_prescribed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span>
+                <span class="p">)</span>
+                <span class="c1"># Get the results</span>
+                <span class="n">phi_</span> <span class="o">=</span> <span class="n">opti_res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">lambda_</span> <span class="o">=</span> <span class="n">opti_res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="c1"># NOTE: DEBUG</span>
+                <span class="n">load_factor_solver</span><span class="o">.</span><span class="n">export_minimization_plots</span><span class="p">(</span>
+                    <span class="n">phi_</span><span class="p">,</span>
+                    <span class="n">lambda_</span><span class="p">,</span>
+                    <span class="n">phi0</span><span class="p">,</span>
+                    <span class="n">SIFs_controlled</span><span class="p">,</span>
+                    <span class="n">SIFs_prescribed</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+                    <span class="n">t</span><span class="p">,</span>
+                    <span class="n">dir_name</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="c1"># Add a new crack point</span>
+                <span class="n">da_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">da</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi_</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi_</span><span class="p">),</span> <span class="mi">0</span><span class="p">])</span>
+                <span class="n">crack_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">da_vec</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Display a warning message</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Running in no propagation mode (set arbitrary results).&quot;</span><span class="p">)</span>
+                <span class="c1"># Set arbitrary results</span>
+                <span class="n">phi_</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">lambda_</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Results of the step&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;│  │  Crack propagation angle : </span><span class="si">{</span><span class="n">phi_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> rad / </span><span class="si">{</span><span class="n">phi_</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">180</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">°&quot;</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;│  │  Load factor             : </span><span class="si">{</span><span class="n">lambda_</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;│  │  New crack tip position  : </span><span class="si">{</span><span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Postprocess&quot;</span><span class="p">)</span>
+            <span class="c1"># Scale the displacement field</span>
+            <span class="n">u_scaled</span> <span class="o">=</span> <span class="n">u_controlled</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">u_scaled</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">array</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">lambda_</span> <span class="o">*</span> <span class="n">u_controlled</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">array</span> <span class="o">+</span> <span class="n">u_prescribed</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">array</span>
+            <span class="n">u_scaled</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Displacement&quot;</span>
+            <span class="c1"># Compute the reaction force</span>
+            <span class="n">fimp</span> <span class="o">=</span> <span class="n">compute_measured_forces</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">u_scaled</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="n">uimp</span> <span class="o">=</span> <span class="n">compute_measured_displacement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">u_scaled</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="c1"># COmpute energies</span>
+            <span class="n">elastic_energy</span> <span class="o">=</span> <span class="n">compute_elastic_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">u_scaled</span><span class="p">)</span>
+            <span class="n">external_work</span> <span class="o">=</span> <span class="n">compute_external_work</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">u_scaled</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Export the results&quot;</span><span class="p">)</span>
+            <span class="c1"># Export the elastic solution</span>
+            <span class="n">export_function</span><span class="p">(</span><span class="n">u_scaled</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">dir_name</span><span class="p">)</span>
+
+            <span class="c1"># Store the results</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">da</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;phi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">phi_</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lambda_</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;xc_1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;xc_2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;xc_3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">comp</span><span class="p">,</span> <span class="n">uimp_comp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">uimp</span><span class="p">):</span>
+                <span class="n">res</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;uimp_</span><span class="si">{</span><span class="n">comp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">uimp</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">comp</span><span class="p">,</span> <span class="n">fimp_comp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fimp</span><span class="p">):</span>
+                <span class="n">res</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;fimp_</span><span class="si">{</span><span class="n">comp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fimp</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">sif_name</span> <span class="ow">in</span> <span class="n">SIFs_controlled</span><span class="p">:</span>
+                <span class="n">res</span><span class="p">[</span><span class="n">sif_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">lambda_</span> <span class="o">*</span> <span class="n">SIFs_controlled</span><span class="p">[</span><span class="n">sif_name</span><span class="p">]</span> <span class="o">+</span> <span class="n">SIFs_prescribed</span><span class="p">[</span><span class="n">sif_name</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;elastic_energy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elastic_energy</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;fracture_dissipation&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">da</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">Gc</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">phi_</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;external_work&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">external_work</span>
+            <span class="c1"># At first load step, also export the initial state</span>
+            <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">res_init</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">res_init</span><span class="p">:</span>
+                    <span class="n">res_init</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="n">export_res_to_csv</span><span class="p">(</span><span class="n">res_init</span><span class="p">,</span> <span class="n">dir_name</span> <span class="o">/</span> <span class="s2">&quot;results.csv&quot;</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">res_init</span>
+            <span class="c1"># Export the current results to csv</span>
+            <span class="n">export_res_to_csv</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">dir_name</span> <span class="o">/</span> <span class="s2">&quot;results.csv&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Finalize exports&quot;</span><span class="p">)</span>
+        <span class="c1"># Group clean the results directory</span>
+        <span class="n">clean_vtk_files</span><span class="p">(</span><span class="n">dir_name</span><span class="p">)</span>
+        <span class="c1"># Clean up</span>
+        <span class="n">gmsh</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.E" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">E</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>E (float): Young's modulus of the material.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.Nt" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">Nt</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Nt (int): Number of crack increment.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.assumption_2D" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">assumption_2D</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>assumption_2D (str): Assumption for 2D elasticity (e.g., 'plane stress', 'plane strain').</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.criterion" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">criterion</span> <span class="o">=</span> <span class="s1">&#39;gmerr&#39;</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>criterion (Optional[str]): Criterion for crack propagation, defaults to "gmerr".</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.da" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">da</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>da (float): Crack increment length.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.l0" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">l0</span> <span class="o">=</span> <span class="mf">0.0</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>l0 (Optional[float]): Initial load factor, defaults to 0.0.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.name" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">name</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">_%H-%M-%S&#39;</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>name (Optional[str]): Name of the simulation used to name the results directory.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.no_meshing" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">no_meshing</span> <span class="o">=</span> <span class="kc">False</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>no_meshing (Optional[bool]): Flag to skip mesh generation when a mesh has already been created.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.no_propagation" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">no_propagation</span> <span class="o">=</span> <span class="kc">False</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>no_propagation (Optional[bool]): Flag to only run skip the crack propagation phase.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.nu" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">nu</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>nu (float): Poisson's ratio of the material.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.pars" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">pars</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>pars (dict): User-defined parameters passed to user-defined functions.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.phi0" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">phi0</span> <span class="o">=</span> <span class="mf">0.0</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>phi0 (Optional[float]): Initial crack propagation angle, defaults to 0.0.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.s" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">s</span> <span class="o">=</span> <span class="mi">0</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>s (Optional[float]): Internal length associated with T-stress, defaults to 0.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.sif_method" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">sif_method</span> <span class="o">=</span> <span class="s1">&#39;I-integral&#39;</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>sif_method (Optional[str]): Method for computing Stress Intensity Factors (SIFs), defaults to "I-integral".</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="gcrack.gcrack.GCrackBase.xc0" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">xc0</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>xc0 (np.array): Initial crack tip coordinates.</p>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.Gc" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">Gc</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the critical energy release rate.</p>
+<p>To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\varphi$</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>phi</code>
+            </td>
+            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Crack angle.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="float">float</span> | <span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>np.ndarray: Value of the critical energy release rate.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>The intput and output should be arrays for practical details in the minimization of the load factor.</p>
+</details>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Gc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phi</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the critical energy release rate.</span>
+
+<span class="sd">    To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\\varphi$</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        phi (np.ndarray): Crack angle.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        np.ndarray: Value of the critical energy release rate.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The intput and output should be arrays for practical details in the minimization of the load factor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.define_controlled_body_forces" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">define_controlled_body_forces</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the controlled body forces that are affected by the load factor.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="BodyForce
+
+
+  
+      dataclass
+   (gcrack.boundary_conditions.BodyForce)" href="../boundary_conditions/#gcrack.boundary_conditions.BodyForce">BodyForce</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">define_controlled_body_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">BodyForce</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the controlled body forces that are affected by the load factor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.define_controlled_displacements" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">define_controlled_displacements</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the displacement boundary conditions controlled by the load factor.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="DisplacementBC
+
+
+  
+      dataclass
+   (gcrack.boundary_conditions.DisplacementBC)" href="../boundary_conditions/#gcrack.boundary_conditions.DisplacementBC">DisplacementBC</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">define_controlled_displacements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DisplacementBC</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the displacement boundary conditions controlled by the load factor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.define_controlled_forces" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">define_controlled_forces</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the force boundary conditions controlled by the load factor.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="ForceBC
+
+
+  
+      dataclass
+   (gcrack.boundary_conditions.ForceBC)" href="../boundary_conditions/#gcrack.boundary_conditions.ForceBC">ForceBC</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">define_controlled_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ForceBC</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the force boundary conditions controlled by the load factor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.define_locked_points" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">define_locked_points</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the list of locked points.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.List">List</span>[<span title="typing.List">List</span>[<span title="float">float</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List[List[float]]: A list of points (list) coordinates.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">define_locked_points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the list of locked points.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[List[float]]: A list of points (list) coordinates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.define_nodal_displacements" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">define_nodal_displacements</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define a list of imposed nodal displacements.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="NodalDisplacement
+
+
+  
+      dataclass
+   (gcrack.boundary_conditions.NodalDisplacement)" href="../boundary_conditions/#gcrack.boundary_conditions.NodalDisplacement">NodalDisplacement</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List[NodalDisplacements]: A list of NodalDisplacement.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">define_nodal_displacements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">NodalDisplacement</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define a list of imposed nodal displacements.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[NodalDisplacements]: A list of NodalDisplacement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.define_prescribed_body_forces" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">define_prescribed_body_forces</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the prescribed body forces that are not affected by the load factor.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="BodyForce
+
+
+  
+      dataclass
+   (gcrack.boundary_conditions.BodyForce)" href="../boundary_conditions/#gcrack.boundary_conditions.BodyForce">BodyForce</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">define_prescribed_body_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">BodyForce</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the prescribed body forces that are not affected by the load factor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.define_prescribed_displacements" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">define_prescribed_displacements</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the prescribed displacement boundary conditions that are not affected by the load factor.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="DisplacementBC
+
+
+  
+      dataclass
+   (gcrack.boundary_conditions.DisplacementBC)" href="../boundary_conditions/#gcrack.boundary_conditions.DisplacementBC">DisplacementBC</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">define_prescribed_displacements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DisplacementBC</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the prescribed displacement boundary conditions that are not affected by the load factor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[DisplacementBC]: List of DisplacementBC(boundary_id, u_imp) where boundary_id is the boundary id (int number) in GMSH, and u_imp is the displacement vector (componements can be nan to let it free).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.define_prescribed_forces" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">define_prescribed_forces</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the prescribed force boundary conditions that are not affected by the load factor.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="ForceBC
+
+
+  
+      dataclass
+   (gcrack.boundary_conditions.ForceBC)" href="../boundary_conditions/#gcrack.boundary_conditions.ForceBC">ForceBC</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">define_prescribed_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ForceBC</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the prescribed force boundary conditions that are not affected by the load factor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[ForceBC]: List of ForceBC(boundary_id, f_imp) where boundary_id is the boundary id (int number) in GMSH, and f_imp is the force vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.locate_measured_displacement" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">locate_measured_displacement</span><span class="p">()</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the point where the displacement is measured.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>List</code></td>            <td>
+                  <code><span title="typing.List">List</span>[<span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Coordinate of the point where the displacement is measured</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locate_measured_displacement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the point where the displacement is measured.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List: Coordinate of the point where the displacement is measured</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.locate_measured_forces" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">locate_measured_forces</span><span class="p">()</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Define the boundary where the reaction force are measured.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>int</code></td>            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Identifier (id) of the boundary in GMSH.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locate_measured_forces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the boundary where the reaction force are measured.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int: Identifier (id) of the boundary in GMSH.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.run" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">run</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Executes the crack propagation simulation workflow.</p>
+<p>This method manages the entire simulation process, including:</p>
+<ul>
+<li>Initializing the GMSH environment and results directory.</li>
+<li>Generating the mesh for the cracked domain (unless <code>no_meshing</code> is True).</li>
+<li>Applying boundary conditions (displacements, forces, body forces, locked points, etc.).</li>
+<li>Solving the elastic problem for both controlled and prescribed boundary conditions.</li>
+<li>Computing Stress Intensity Factors (SIFs) using the specified method.</li>
+<li>Determining the crack propagation angle and load factor.</li>
+<li>Post-processing results, including computing energies, reaction forces, and displacements.</li>
+<li>Exporting results to VTK and CSV formats.</li>
+</ul>
+<p>The simulation runs for <code>self.Nt</code> load steps, updating the crack tip position and
+boundary conditions at each step. Results are stored in a dictionary and exported
+to the results directory.</p>
+<p>Steps:</p>
+<ol>
+<li>Initialize GMSH and create the results directory.</li>
+<li>For each load step:<ol>
+<li>Generate the mesh (if <code>no_meshing</code> is False).</li>
+<li>Define and apply boundary conditions.</li>
+<li>Solve the elastic problem for controlled and prescribed boundary conditions.</li>
+<li>Compute SIFs for both controlled and prescribed problems.</li>
+<li>Determine the crack propagation angle and load factor.</li>
+<li>Post-process results (e.g., compute energies, reaction forces, displacements).
+g. Export results to VTK and CSV files.</li>
+</ol>
+</li>
+<li>Clean up and finalize the simulation.</li>
+</ol>
+
+
+<details class="note" open>
+  <summary>Note</summary>
+  <ul>
+<li>The <code>no_meshing</code> flag can be set to skip mesh generation if a mesh already exists.</li>
+<li>The <code>no_propagation</code> flag can be set to skip crack propagation and use arbitrary load factor/crack propagation angle.</li>
+</ul>
+</details>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span>
+<span class="normal">444</span>
+<span class="normal">445</span>
+<span class="normal">446</span>
+<span class="normal">447</span>
+<span class="normal">448</span>
+<span class="normal">449</span>
+<span class="normal">450</span>
+<span class="normal">451</span>
+<span class="normal">452</span>
+<span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Executes the crack propagation simulation workflow.</span>
+
+<span class="sd">    This method manages the entire simulation process, including:</span>
+
+<span class="sd">    - Initializing the GMSH environment and results directory.</span>
+<span class="sd">    - Generating the mesh for the cracked domain (unless `no_meshing` is True).</span>
+<span class="sd">    - Applying boundary conditions (displacements, forces, body forces, locked points, etc.).</span>
+<span class="sd">    - Solving the elastic problem for both controlled and prescribed boundary conditions.</span>
+<span class="sd">    - Computing Stress Intensity Factors (SIFs) using the specified method.</span>
+<span class="sd">    - Determining the crack propagation angle and load factor.</span>
+<span class="sd">    - Post-processing results, including computing energies, reaction forces, and displacements.</span>
+<span class="sd">    - Exporting results to VTK and CSV formats.</span>
+
+<span class="sd">    The simulation runs for `self.Nt` load steps, updating the crack tip position and</span>
+<span class="sd">    boundary conditions at each step. Results are stored in a dictionary and exported</span>
+<span class="sd">    to the results directory.</span>
+
+<span class="sd">    Steps:</span>
+
+<span class="sd">    1. Initialize GMSH and create the results directory.</span>
+<span class="sd">    2. For each load step:</span>
+<span class="sd">        1. Generate the mesh (if `no_meshing` is False).</span>
+<span class="sd">        2. Define and apply boundary conditions.</span>
+<span class="sd">        3. Solve the elastic problem for controlled and prescribed boundary conditions.</span>
+<span class="sd">        4. Compute SIFs for both controlled and prescribed problems.</span>
+<span class="sd">        5. Determine the crack propagation angle and load factor.</span>
+<span class="sd">        6. Post-process results (e.g., compute energies, reaction forces, displacements).</span>
+<span class="sd">        g. Export results to VTK and CSV files.</span>
+<span class="sd">    3. Clean up and finalize the simulation.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        - The `no_meshing` flag can be set to skip mesh generation if a mesh already exists.</span>
+<span class="sd">        - The `no_propagation` flag can be set to skip crack propagation and use arbitrary load factor/crack propagation angle.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Initialize GMSH</span>
+    <span class="n">gmsh</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+    <span class="n">gmsh</span><span class="o">.</span><span class="n">option</span><span class="o">.</span><span class="n">setNumber</span><span class="p">(</span><span class="s2">&quot;General.Terminal&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Disable terminal output</span>
+    <span class="n">gmsh</span><span class="o">.</span><span class="n">option</span><span class="o">.</span><span class="n">setNumber</span><span class="p">(</span><span class="s2">&quot;Mesh.Algorithm&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="c1"># 1: meshadapt; 5: delaunay, 6: frontal-delaunay</span>
+
+    <span class="c1"># Initialize export directory</span>
+    <span class="n">dir_name</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;results_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">dir_name</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Get the elastic parameters</span>
+    <span class="n">ela_pars</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">E</span><span class="p">,</span>
+        <span class="s2">&quot;nu&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu</span><span class="p">,</span>
+        <span class="s2">&quot;2D_assumption&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">assumption_2D</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="c1"># Initialize the crack points</span>
+    <span class="n">crack_points</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">xc0</span><span class="p">]</span>
+    <span class="c1"># Initialize results storage</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;phi&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi0</span><span class="p">,</span>
+        <span class="s2">&quot;lambda&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">l0</span><span class="p">,</span>
+        <span class="s2">&quot;xc_1&quot;</span><span class="p">:</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+        <span class="s2">&quot;xc_2&quot;</span><span class="p">:</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+        <span class="s2">&quot;xc_3&quot;</span><span class="p">:</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+        <span class="s2">&quot;uimp_1&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;uimp_2&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;fimp_1&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;fimp_2&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;KI&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;KII&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;T&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;elastic_energy&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;fracture_dissipation&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;external_work&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">LOAD STEP </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># Get current crack properties</span>
+        <span class="n">phi0</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;phi&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Run the user defined load step initialization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user_load_step_initialization</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+        <span class="c1"># Generate the mesh</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_meshing</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Meshing the cracked domain&quot;</span><span class="p">)</span>
+            <span class="n">gmsh_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_mesh</span><span class="p">(</span><span class="n">crack_points</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Skip meshing (no_meshing = True)&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Get the controlled boundary conditions</span>
+        <span class="n">controlled_bcs</span> <span class="o">=</span> <span class="n">BoundaryConditions</span><span class="p">(</span>
+            <span class="n">displacement_bcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_controlled_displacements</span><span class="p">(),</span>
+            <span class="n">force_bcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_controlled_forces</span><span class="p">(),</span>
+            <span class="n">body_forces</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_controlled_body_forces</span><span class="p">(),</span>
+            <span class="n">locked_points</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_locked_points</span><span class="p">(),</span>
+            <span class="n">nodal_displacements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_nodal_displacements</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Get the controlled boundary conditions</span>
+        <span class="n">prescribed_bcs</span> <span class="o">=</span> <span class="n">BoundaryConditions</span><span class="p">(</span>
+            <span class="n">displacement_bcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_prescribed_displacements</span><span class="p">(),</span>
+            <span class="n">force_bcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_prescribed_forces</span><span class="p">(),</span>
+            <span class="n">body_forces</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_prescribed_body_forces</span><span class="p">(),</span>
+            <span class="n">locked_points</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_locked_points</span><span class="p">(),</span>
+            <span class="n">nodal_displacements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">define_nodal_displacements</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Define the domain</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_meshing</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">domain</span> <span class="o">=</span> <span class="n">Domain</span><span class="p">(</span><span class="n">gmsh_model</span><span class="p">)</span>
+
+        <span class="c1"># Define an elastic model</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">ElasticModel</span><span class="p">(</span><span class="n">ela_pars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">export_heterogeneous_parameters</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ela_pars</span><span class="p">,</span> <span class="n">dir_name</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Solve the controlled elastic problem with FEM&quot;</span><span class="p">)</span>
+        <span class="c1"># Solve the controlled elastic problem</span>
+        <span class="n">u_controlled</span> <span class="o">=</span> <span class="n">solve_elastic_problem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">controlled_bcs</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;│  Compute the SIFs for the controlled problem (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sif_method</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="c1"># Compute the SIFs for the controlled problem</span>
+        <span class="n">SIFs_controlled</span> <span class="o">=</span> <span class="n">compute_SIFs</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+            <span class="n">model</span><span class="p">,</span>
+            <span class="n">u_controlled</span><span class="p">,</span>
+            <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">phi0</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">R_int</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">R_ext</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sif_method</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Tackle the prescribed problem</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">prescribed_bcs</span><span class="o">.</span><span class="n">is_null</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Solve the prescribed elastic problem with FEM&quot;</span><span class="p">)</span>
+            <span class="c1"># Solve the prescribed elastic problem</span>
+            <span class="n">u_prescribed</span> <span class="o">=</span> <span class="n">solve_elastic_problem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">prescribed_bcs</span><span class="p">)</span>
+            <span class="c1"># Compute the SIFs for the prescribed problem</span>
+            <span class="n">SIFs_prescribed</span> <span class="o">=</span> <span class="n">compute_SIFs</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                <span class="n">model</span><span class="p">,</span>
+                <span class="n">u_prescribed</span><span class="p">,</span>
+                <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="n">phi0</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">R_int</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">R_ext</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sif_method</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Set the prescribed displacement to 0</span>
+            <span class="n">u_prescribed</span> <span class="o">=</span> <span class="n">u_controlled</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">u_prescribed</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">array</span><span class="p">[:]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="c1"># Set the SIFs to 0</span>
+            <span class="n">SIFs_prescribed</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">SIFs_controlled</span><span class="p">}</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  No prescribed BCs&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Compute the load factor and crack angle.</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Determination of propagation angle and load factor&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_propagation</span><span class="p">:</span>
+            <span class="n">load_factor_solver</span> <span class="o">=</span> <span class="n">LoadFactorSolver</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Gc</span><span class="p">,</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">opti_res</span> <span class="o">=</span> <span class="n">load_factor_solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+                <span class="n">phi0</span><span class="p">,</span> <span class="n">SIFs_controlled</span><span class="p">,</span> <span class="n">SIFs_prescribed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span>
+            <span class="p">)</span>
+            <span class="c1"># Get the results</span>
+            <span class="n">phi_</span> <span class="o">=</span> <span class="n">opti_res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">lambda_</span> <span class="o">=</span> <span class="n">opti_res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="c1"># NOTE: DEBUG</span>
+            <span class="n">load_factor_solver</span><span class="o">.</span><span class="n">export_minimization_plots</span><span class="p">(</span>
+                <span class="n">phi_</span><span class="p">,</span>
+                <span class="n">lambda_</span><span class="p">,</span>
+                <span class="n">phi0</span><span class="p">,</span>
+                <span class="n">SIFs_controlled</span><span class="p">,</span>
+                <span class="n">SIFs_prescribed</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+                <span class="n">t</span><span class="p">,</span>
+                <span class="n">dir_name</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Add a new crack point</span>
+            <span class="n">da_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">da</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi_</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi_</span><span class="p">),</span> <span class="mi">0</span><span class="p">])</span>
+            <span class="n">crack_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">da_vec</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Display a warning message</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Running in no propagation mode (set arbitrary results).&quot;</span><span class="p">)</span>
+            <span class="c1"># Set arbitrary results</span>
+            <span class="n">phi_</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">lambda_</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Results of the step&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;│  │  Crack propagation angle : </span><span class="si">{</span><span class="n">phi_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> rad / </span><span class="si">{</span><span class="n">phi_</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">180</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">°&quot;</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;│  │  Load factor             : </span><span class="si">{</span><span class="n">lambda_</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;│  │  New crack tip position  : </span><span class="si">{</span><span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Postprocess&quot;</span><span class="p">)</span>
+        <span class="c1"># Scale the displacement field</span>
+        <span class="n">u_scaled</span> <span class="o">=</span> <span class="n">u_controlled</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">u_scaled</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">array</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">lambda_</span> <span class="o">*</span> <span class="n">u_controlled</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">array</span> <span class="o">+</span> <span class="n">u_prescribed</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">array</span>
+        <span class="n">u_scaled</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Displacement&quot;</span>
+        <span class="c1"># Compute the reaction force</span>
+        <span class="n">fimp</span> <span class="o">=</span> <span class="n">compute_measured_forces</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">u_scaled</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="n">uimp</span> <span class="o">=</span> <span class="n">compute_measured_displacement</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">u_scaled</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="c1"># COmpute energies</span>
+        <span class="n">elastic_energy</span> <span class="o">=</span> <span class="n">compute_elastic_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">u_scaled</span><span class="p">)</span>
+        <span class="n">external_work</span> <span class="o">=</span> <span class="n">compute_external_work</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">u_scaled</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;│  Export the results&quot;</span><span class="p">)</span>
+        <span class="c1"># Export the elastic solution</span>
+        <span class="n">export_function</span><span class="p">(</span><span class="n">u_scaled</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">dir_name</span><span class="p">)</span>
+
+        <span class="c1"># Store the results</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">da</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;phi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">phi_</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lambda_</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;xc_1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;xc_2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;xc_3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crack_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">comp</span><span class="p">,</span> <span class="n">uimp_comp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">uimp</span><span class="p">):</span>
+            <span class="n">res</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;uimp_</span><span class="si">{</span><span class="n">comp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">uimp</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">comp</span><span class="p">,</span> <span class="n">fimp_comp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fimp</span><span class="p">):</span>
+            <span class="n">res</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;fimp_</span><span class="si">{</span><span class="n">comp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fimp</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">sif_name</span> <span class="ow">in</span> <span class="n">SIFs_controlled</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">sif_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">lambda_</span> <span class="o">*</span> <span class="n">SIFs_controlled</span><span class="p">[</span><span class="n">sif_name</span><span class="p">]</span> <span class="o">+</span> <span class="n">SIFs_prescribed</span><span class="p">[</span><span class="n">sif_name</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;elastic_energy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elastic_energy</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;fracture_dissipation&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">da</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">Gc</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">phi_</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;external_work&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">external_work</span>
+        <span class="c1"># At first load step, also export the initial state</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">res_init</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">res_init</span><span class="p">:</span>
+                <span class="n">res_init</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">export_res_to_csv</span><span class="p">(</span><span class="n">res_init</span><span class="p">,</span> <span class="n">dir_name</span> <span class="o">/</span> <span class="s2">&quot;results.csv&quot;</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">res_init</span>
+        <span class="c1"># Export the current results to csv</span>
+        <span class="n">export_res_to_csv</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">dir_name</span> <span class="o">/</span> <span class="s2">&quot;results.csv&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Finalize exports&quot;</span><span class="p">)</span>
+    <span class="c1"># Group clean the results directory</span>
+    <span class="n">clean_vtk_files</span><span class="p">(</span><span class="n">dir_name</span><span class="p">)</span>
+    <span class="c1"># Clean up</span>
+    <span class="n">gmsh</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="gcrack.gcrack.GCrackBase.user_load_step_initialization" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">user_load_step_initialization</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>User-defined load step initialization.</p>
+<p>Customize load step initialization using results from the previous step.
+This can include creating custom variables for boundary conditions.
+This function is called at the very beginning of the load step.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/gcrack/gcrack.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">user_load_step_initialization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">res</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;User-defined load step initialization.</span>
+
+<span class="sd">    Customize load step initialization using results from the previous step.</span>
+<span class="sd">    This can include creating custom variables for boundary conditions.</span>
+<span class="sd">    This function is called at the very beginning of the load step.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
