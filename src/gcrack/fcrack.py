@@ -192,6 +192,7 @@ class FCrackBase(ABC):
             "N": 0,
             "a": 0,
             "da": 0,
+            "dN": 0,
             "phi": self.phi0,
             "xc_1": crack_points[-1][0],
             "xc_2": crack_points[-1][1],
@@ -267,13 +268,13 @@ class FCrackBase(ABC):
             opti_res = load_factor_solver.solve(phi0, SIFs, null_SIFs, self.s)
             # Get the results
             phi_ = opti_res[0]
-            # NOTE: lambda_ = sqrt(G^*/Gc) --> G^* = lambda_^2 / Gc, avec Gc=1 --> G^* = lambda_^2
+            # NOTE: lambda_^2 G^*= Gc --> G^* = Gc/lambda_^2
             lambda_ = opti_res[1]
-            G_star_bar = lambda_**2 / self.Gc(phi_)
+            G_star_bar = self.Gc(phi_) / lambda_**2
 
             # Compute the crack growth rate
             Ep = model.Ep_func(crack_points[-1])
-            da_dN = (
+            dadN = (
                 self.C
                 * max(
                     (self.lmax - self.lmin) * np.sqrt(Ep * G_star_bar) - self.dG,
@@ -284,11 +285,11 @@ class FCrackBase(ABC):
             if self.control_type == "da":
                 print("│  Determination of crack increment (Paris law)")
                 da = self.da
-                dN = da / da_dN
+                dN = da / dadN
             elif self.control_type == "dN":
                 print("│  Determination of cycle number increment (Paris law)")
                 dN = self.dN
-                da = da_dN * dN
+                da = dN * dadN
 
             # Add a new crack point
             da_vec = da * np.array([np.cos(phi_), np.sin(phi_), 0])
@@ -330,6 +331,7 @@ class FCrackBase(ABC):
             res["N"] += dN
             res["a"] += da
             res["da"] = da
+            res["dN"] = dN
             res["phi"] = phi_
             res["xc_1"] = crack_points[-1][0]
             res["xc_2"] = crack_points[-1][1]
