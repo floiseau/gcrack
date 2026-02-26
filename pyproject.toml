@@ -8,16 +8,29 @@ description = "Solver for Linear Elastic Fracture Mechanics problems "
 readme = "README.md"
 license = { file="LICENSE" }
 requires-python = ">=3.10.0"
-# dependencies = [
-#   "numpy",
-#   "jax",
-#   "sympy",
-#   "pyvista",
-#   "gmsh",
-#   "fenics-dolfinx",
-#   "fenics-ufl",
-# ]
+dependencies = [
+  "numpy",
+  "sympy",
+  "jax",
+  "jaxlib",
+  "gmsh",
+  "mpi4py",
+  "matplotlib",
+  "fenics-dolfinx",
+  "fenics-ufl",
+]
+
+[project.optional-dependencies]
+viz = [
+  "pyvista",
+]
 
 [build-system]
 requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

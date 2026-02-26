@@ -25,16 +25,23 @@ To install gcrack, follow these steps:
     conda activate gcrack
     ```
 
-2. **Install the required dependencies**:
-    ```shell
-    conda install -c conda-forge numpy sympy mpich python-gmsh fenics-dolfinx pyvista jax jaxlib=*=*cpu*
-    ```
-
-3. **Install gcrack**:
+2. **Install gcrack**:
     ```shell
     pip install .       # If you cloned the repo
-    pip install gcrack  # If you want to install from pypi
+    pip install gcrack  # If you want to install from PyPI
     ```
+
+3. **Alternative (fully conda-managed stack)**:
+    ```shell
+    conda install -c conda-forge numpy sympy mpich python-gmsh fenics-dolfinx fenics-ufl jax jaxlib=*=*cpu* matplotlib
+    ```
+
+When testing a locally built conda artifact, do not install the `.conda` file path directly.
+Use a local channel path and package name so dependencies are solved:
+
+```shell
+conda install -c file:///ABSOLUTE/PATH/TO/gcrack/packaging/conda/build-artifacts -c conda-forge gcrack
+```
 
 ## How to Use
 

@@ -1,0 +1,121 @@
+name: Build and Publish Conda package
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Upload built artifacts to Anaconda channel"
+        type: boolean
+        required: false
+        default: false
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build conda package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.allow_failure }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            allow_failure: false
+          - os: macos-15
+            allow_failure: false
+          - os: windows-latest
+            allow_failure: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          channels: conda-forge
+          channel-priority: strict
+          conda-remove-defaults: true
+
+      - name: Install build tooling
+        shell: bash -l {0}
+        run: |
+          conda install -y conda-build conda-index anaconda-client
+
+      - name: Build package
+        shell: bash -l {0}
+        run: |
+          bash packaging/conda/build_local.sh
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: conda-build-${{ matrix.os }}
+          path: |
+            packaging/conda/build-artifacts/**/*.conda
+            packaging/conda/build-artifacts/**/repodata.json
+            packaging/conda/build-artifacts/**/current_repodata.json
+          if-no-files-found: error
+
+  publish:
+    name: Publish to Anaconda channel
+    needs: build
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish)
+
+    steps:
+      - name: Download all conda artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: conda-artifacts
+          pattern: conda-build-*
+          merge-multiple: true
+
+      - name: List downloaded artifacts
+        shell: bash
+        run: |
+          find conda-artifacts -type f -name '*.conda' -print
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          channels: conda-forge
+          channel-priority: strict
+          conda-remove-defaults: true
+
+      - name: Install upload tooling
+        shell: bash -l {0}
+        run: |
+          conda install -y anaconda-client
+
+      - name: Upload to Anaconda
+        shell: bash -l {0}
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+          ANACONDA_CHANNEL: ${{ secrets.ANACONDA_CHANNEL }}
+        run: |
+          if [[ -z "${ANACONDA_API_TOKEN:-}" ]]; then
+            echo "ANACONDA_API_TOKEN secret is not set" >&2
+            exit 1
+          fi
+          if [[ -z "${ANACONDA_CHANNEL:-}" ]]; then
+            echo "ANACONDA_CHANNEL secret is not set" >&2
+            exit 1
+          fi
+
+          mapfile -t files < <(find conda-artifacts -type f -name '*.conda' | sort)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No .conda artifacts found to upload" >&2
+            exit 1
+          fi
+
+          anaconda -t "${ANACONDA_API_TOKEN}" upload \
+            --user "${ANACONDA_CHANNEL}" \
+            --label main \
+            "${files[@]}"
