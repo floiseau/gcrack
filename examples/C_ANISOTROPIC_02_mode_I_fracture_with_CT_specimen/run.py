@@ -32,9 +32,6 @@ class GCrackData(GCrackBase):
         h = L / 128
         h_min = self.R_int / 16
 
-        # Store the crack tip to impose nodal displacements
-        self.crack_tip = crack_points[-1]
-
         ### Points
         # Bot
         p11: int = gmsh.model.geo.addPoint(-L / 2, 0, 0, h)
@@ -219,9 +216,10 @@ class GCrackData(GCrackBase):
             List[NodalDisplacements]: A list of NodalDisplacement.
         """
         L = self.pars["L"]
+        H = self.pars["H"]
         return [
-            NodalDisplacement(self.crack_tip, [0.0, 0.0, 0.0]),
-            NodalDisplacement([L / 2, 0.0, 0.0], [float("nan"), 0.0, 0.0]),
+            NodalDisplacement([L / 2, -H / 2, 0.0], [0.0, 0.0, 0.0]),
+            NodalDisplacement([L / 2, H / 2, 0.0], [0.0, float("nan"), 0.0]),
         ]
 
     def define_controlled_forces(self) -> List[ForceBC]:
