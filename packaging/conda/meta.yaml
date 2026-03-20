@@ -1,0 +1,50 @@
+package:
+  name: gcrack
+  version: 2026.01.26
+
+source:
+  path: ../..
+
+build:
+  number: 0
+  skip: true  # [py<310]
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python >=3.10
+    - pip
+    - setuptools >=77
+  run:
+    - python >=3.10
+    - numpy
+    - sympy
+    - jax
+    - jaxlib
+    - python-gmsh
+    - gmsh
+    - fenics-dolfinx
+    - fenics-ufl
+    - mpi4py
+    - matplotlib-base
+
+test:
+  requires:
+    - pip
+  imports:
+    - gcrack
+  commands:
+    - python -m pip check
+    - python -c "import gcrack; print('gcrack import ok')"
+
+about:
+  home: https://github.com/floiseau/gcrack
+  summary: Solver for Linear Elastic Fracture Mechanics problems
+  license: Apache-2.0
+  license_file: LICENSE
+  doc_url: https://floiseau.github.io/gcrack
+  dev_url: https://github.com/floiseau/gcrack
+
+extra:
+  recipe-maintainers:
+    - floiseau
