@@ -6,8 +6,6 @@ It supports both homogeneous and heterogeneous material properties, as well as d
 The class also provides methods for computing displacement gradients, strain tensors, stress tensors, and elastic energy.
 """
 
-import sympy as sp
-
 from dolfinx import fem
 import ufl
 
@@ -43,7 +41,10 @@ class ElasticModel:
         # Display warnings if necessary
         self.displays_warnings(pars)
         # Define a function space for parameter parsing
-        V_par = fem.functionspace(domain.mesh, ("DG", 0))
+        if domain is not None:
+            V_par = fem.functionspace(domain.mesh, ("DG", 0))
+        else:
+            V_par = None
         # Get elastic parameters
         self.E, self.E_func = parse_expression(pars["E"], V_par, export_func=True)
         self.nu, self.nu_func = parse_expression(pars["nu"], V_par, export_func=True)
@@ -52,31 +53,26 @@ class ElasticModel:
         self.mu = self.E / (2 * (1 + self.nu))
         self.mu_func = lambda xx: self.E_func(xx) / (2 * (1 + self.nu_func(xx)))
         # Check the 2D assumption
-        if domain is not None and domain.dim == 2:
-            self.assumption = pars["2D_assumption"]
-            match self.assumption:
-                case "plane_stress" | "anti_plane":
-                    self.Ep = self.E
-                    self.Ep_func = lambda xx: self.E_func(xx)
-                    self.ka = (3 - self.nu) / (1 + self.nu)
-                    self.ka_func = lambda xx: (3 - self.nu_func(xx)) / (
-                        1 + self.nu_func(xx)
+        self.assumption = pars["2D_assumption"]
+        match self.assumption:
+            case "plane_stress" | "anti_plane":
+                self.Ep = self.E
+                self.Ep_func = lambda xx: self.E_func(xx)
+                self.ka = (3 - self.nu) / (1 + self.nu)
+                self.ka_func = lambda xx: (
+                    (3 - self.nu_func(xx)) / (1 + self.nu_func(xx))
+                )
+                if self.assumption == "anti_plane":
+                    print(
+                        "│  For anti-plane, we assume plane stress for SIF calculations."
                     )
-                    if self.assumption == "anti_plane":
-                        print(
-                            "│  For anti-plane, we assume plane stress for SIF calculations."
-                        )
-                case "plane_strain":
-                    self.Ep = self.E / (1 - self.nu**2)
-                    self.Ep_func = lambda xx: self.E_func(xx) / (
-                        1 - self.nu_func(xx) ** 2
-                    )
-                    self.ka = 3 - 4 * self.nu
-                    self.ka_func = lambda xx: 3 - 4 * self.nu_func(xx)
-                case _:
-                    raise ValueError(
-                        f'The 2D assumption "{self.assumption}" is unknown.'
-                    )
+            case "plane_strain":
+                self.Ep = self.E / (1 - self.nu**2)
+                self.Ep_func = lambda xx: self.E_func(xx) / (1 - self.nu_func(xx) ** 2)
+                self.ka = 3 - 4 * self.nu
+                self.ka_func = lambda xx: 3 - 4 * self.nu_func(xx)
+            case _:
+                raise ValueError(f'The 2D assumption "{self.assumption}" is unknown.')
 
     def displays_warnings(self, pars: dict):
         """Check the parameters and display warnings if necessary.

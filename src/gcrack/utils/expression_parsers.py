@@ -14,7 +14,7 @@ import sympy as sp
 from dolfinx import fem
 
 
-def parse_expression(value, space: fem.FunctionSpace, export_func: bool = False):
+def parse_expression(value, space: fem.FunctionSpace = None, export_func: bool = False):
     """Parses a value into a finite element function.
 
     This function converts a string expression or numerical value into a finite element function.
@@ -54,10 +54,13 @@ def parse_expression(value, space: fem.FunctionSpace, export_func: bool = False)
         if isnan(value):
             return None
         # Define an FEM function (to control the BC)
-        func = fem.Function(space)
-        # Update the load
-        with func.x.petsc_vec.localForm() as local_func:
-            local_func.set(value)
+        if space is None:
+            func = value
+        else:
+            func = fem.Function(space)
+            # Update the load
+            with func.x.petsc_vec.localForm() as local_func:
+                local_func.set(value)
         # Create the par_func if necessary
         if export_func:
 
