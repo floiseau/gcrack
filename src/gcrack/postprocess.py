@@ -85,22 +85,31 @@ def compute_measured_displacement(
     # Get the mesh
     mesh = domain.mesh
     # Get the position of the measurement
-    x = gcrack_data.locate_measured_displacement()
-    if len(x) == 2:
-        x.append(0)
-    # Store x in an array
-    xs = np.array([x])
-    # Generate the bounding box tree
-    tree = geometry.bb_tree(mesh, mesh.topology.dim)
-    # Find cells whose bounding-box collide with the points
-    cell_candidates = geometry.compute_collisions_points(tree, xs)
-    # For each points, choose one of the cells that contains the point
-    colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, xs)
-    cell = colliding_cells.array[0]
-    # Compute the measured displacement
-    u_meas = uh.eval(xs, cell)
-    # Initialize the probes values
-    return u_meas
+    probes = gcrack_data.locate_measured_displacement()
+    # Convert the probes to a list if necessary
+    if not isinstance(probes[0], list):
+        probes = [probes]
+    # Initialize the list of displacements
+    u_probes = []
+    for probe in probes:
+        # Add the z-component to the point if necessary
+        if len(probe) == 2:
+            probe.append(0)
+        # Store x in an array
+        xs = np.array([probe])
+        # Generate the bounding box tree
+        tree = geometry.bb_tree(mesh, mesh.topology.dim)
+        # Find cells whose bounding-box collide with the points
+        cell_candidates = geometry.compute_collisions_points(tree, xs)
+        # For each points, choose one of the cells that contains the point
+        colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, xs)
+        cell = colliding_cells.array[0]
+        # Compute the measured displacement
+        u_probe = uh.eval(xs, cell)
+        # Add the measured displacement to the list of measured displacements
+        u_probes.append(u_probe)
+    # Return probes values
+    return u_probes
 
 
 def compute_elastic_energy(

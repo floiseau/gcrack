@@ -126,11 +126,11 @@ class GCrackBase(ABC):
         pass
 
     @abstractmethod
-    def locate_measured_displacement(self) -> List[float]:
+    def locate_measured_displacement(self) -> List[float] | List[List[float]]:
         """Define the point where the displacement is measured.
 
         Returns:
-            List: Coordinate of the point where the displacement is measured
+            List: Coordinate or list of coordinate of point where the displacement is measured
         """
         pass
 
@@ -295,10 +295,9 @@ class GCrackBase(ABC):
             "xc_1": crack_points[-1][0],
             "xc_2": crack_points[-1][1],
             "xc_3": crack_points[-1][2],
-            "uimp_1": 0.0,
-            "uimp_2": 0.0,
             "fimp_1": 0.0,
             "fimp_2": 0.0,
+            "fimp_3": 0.0,
             "KI": 0.0,
             "KII": 0.0,
             "T": 0.0,
@@ -435,7 +434,7 @@ class GCrackBase(ABC):
             u_scaled.name = "Displacement"
             # Compute the reaction force
             fimp = compute_measured_forces(self.domain, model, u_scaled, self)
-            uimp = compute_measured_displacement(self.domain, u_scaled, self)
+            uimps = compute_measured_displacement(self.domain, u_scaled, self)
             # COmpute energies
             elastic_energy = compute_elastic_energy(self.domain, model, u_scaled)
             external_work = compute_external_work(self.domain, model, u_scaled)
@@ -452,8 +451,9 @@ class GCrackBase(ABC):
             res["xc_1"] = crack_points[-1][0]
             res["xc_2"] = crack_points[-1][1]
             res["xc_3"] = crack_points[-1][2]
-            for comp, uimp_comp in enumerate(uimp):
-                res[f"uimp_{comp + 1}"] = uimp[comp]
+            for point, uimp in enumerate(uimps):
+                for comp, uimp_comp in enumerate(uimp):
+                    res[f"uimp_p{point + 1}_{comp + 1}"] = uimp[comp]
             for comp, fimp_comp in enumerate(fimp):
                 res[f"fimp_{comp + 1}"] = fimp[comp]
             for sif_name in SIFs_controlled:
