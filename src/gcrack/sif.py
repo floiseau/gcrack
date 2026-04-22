@@ -105,13 +105,13 @@ def compute_auxiliary_displacement_field(
     theta = ufl.atan2(r_vec[1], r_vec[0])
     # Get the elastic parameters
     mu = model.mu
-    # Get kappa
-    ka = model.ka
+    # Get the Kolosov constant
+    ko = model.ko
     # Compute the functions f
-    fx_I = ufl.cos(theta / 2) * (ka - 1 + 2 * ufl.sin(theta / 2) ** 2)
-    fy_I = ufl.sin(theta / 2) * (ka + 1 - 2 * ufl.cos(theta / 2) ** 2)
-    fx_II = ufl.sin(theta / 2) * (ka + 1 + 2 * ufl.cos(theta / 2) ** 2)
-    fy_II = -ufl.cos(theta / 2) * (ka - 1 - 2 * ufl.sin(theta / 2) ** 2)
+    fx_I = ufl.cos(theta / 2) * (ko - 1 + 2 * ufl.sin(theta / 2) ** 2)
+    fy_I = ufl.sin(theta / 2) * (ko + 1 - 2 * ufl.cos(theta / 2) ** 2)
+    fx_II = ufl.sin(theta / 2) * (ko + 1 + 2 * ufl.cos(theta / 2) ** 2)
+    fy_II = -ufl.cos(theta / 2) * (ko - 1 - 2 * ufl.sin(theta / 2) ** 2)
     fz_III = 4 * ufl.sin(theta / 2)
     # Introduce the factor u_fac
     u_fac = ufl.sqrt(r / (2 * np.pi)) / (2 * mu)
@@ -123,10 +123,10 @@ def compute_auxiliary_displacement_field(
     u_III = K_III_aux * u_fac * ufl.as_vector([0, 0, fz_III])
     # Compute the displacement field for mode T
     ux_T = (
-        -1 / np.pi * (ka + 1) / (8 * mu) * ufl.ln(r)
+        -1 / np.pi * (ko + 1) / (8 * mu) * ufl.ln(r)
         - 1 / np.pi * 1 / (4 * mu) * ufl.sin(theta) ** 2
     )
-    uy_T = -1 / np.pi * (ka - 1) / (8 * mu) * theta + 1 / np.pi * 1 / (
+    uy_T = -1 / np.pi * (ko - 1) / (8 * mu) * theta + 1 / np.pi * 1 / (
         4 * mu
     ) * ufl.sin(theta) * ufl.cos(theta)
     u_T = T_aux * ufl.as_vector([ux_T, uy_T, 0])
@@ -331,9 +331,9 @@ def compute_SIFs_from_William_series_interpolation(
     Nn = us.shape[0]  # Number of nodes
     Ndof = us.shape[0] * us.shape[1]  # Number of dof
 
-    # Compute mu and kappa at crack tip (for heterogeneous cases)
+    # Compute mu and the Kolosov constant at crack tip (for heterogeneous cases)
     mu = model.mu_func(xc)
-    ka = model.ka_func(xc)
+    ko = model.ko_func(xc)
 
     # Construct the matrix Gamma
     if model.assumption.startswith("plane"):
@@ -344,8 +344,8 @@ def compute_SIFs_from_William_series_interpolation(
         # Get the Gamma matrix
         Gamma = np.empty((Ndof, 2 * (N_max - N_min + 1)))
         for i, n in enumerate(range(N_min, N_max + 1)):
-            GI = Gamma_I(n, zs, mu, ka) * np.exp(1j * phi0)
-            GII = Gamma_II(n, zs, mu, ka) * np.exp(1j * phi0)
+            GI = Gamma_I(n, zs, mu, ko) * np.exp(1j * phi0)
+            GII = Gamma_II(n, zs, mu, ko) * np.exp(1j * phi0)
             Gamma[xaxis, 2 * i] = np.real(GI)
             Gamma[yaxis, 2 * i] = np.imag(GI)
             Gamma[xaxis, 2 * i + 1] = np.real(GII)
@@ -356,7 +356,7 @@ def compute_SIFs_from_William_series_interpolation(
         # Get the Gamma matrix
         Gamma = np.empty((Ndof, N_max - N_min + 1))
         for i, n in enumerate(range(N_min, N_max + 1)):
-            GIII = Gamma_III(n, zs, mu, ka)
+            GIII = Gamma_III(n, zs, mu, ko)
             Gamma[:, i] = GIII
     # Solve the least square problem
     sol, res, _, _ = np.linalg.lstsq(Gamma, UF)

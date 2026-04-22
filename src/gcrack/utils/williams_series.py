@@ -18,7 +18,7 @@ import jax.numpy as jnp
 
 
 @jax.jit
-def Gamma_I(n: int, z: complex, mu: float, ka: float):
+def Gamma_I(n: int, z: complex, mu: float, ko: float):
     """Computes the Williams series function for mode I crack tip displacement fields.
 
     This function calculates the function for the mode I (opening mode) term in the Williams series expansion of the displacement field around a crack tip.
@@ -28,7 +28,7 @@ def Gamma_I(n: int, z: complex, mu: float, ka: float):
         n (int): The order of the term in the Williams series expansion.
         z (complex): Complex coordinate relative to the crack tip.
         mu (float): Shear modulus of the material.
-        ka (float): Kolosov constant, which depends on the material properties and the 2D assumption.
+        ko (float): Kolosov constant, which depends on the material properties and the 2D assumption.
 
     Returns:
         complex: The Williams series function for mode I at the given point.
@@ -46,7 +46,7 @@ def Gamma_I(n: int, z: complex, mu: float, ka: float):
         r ** (n / 2)
         / (2 * mu * jnp.sqrt(2 * jnp.pi))
         * (
-            ka * jnp.exp(1j * theta * n / 2)
+            ko * jnp.exp(1j * theta * n / 2)
             - n / 2 * jnp.exp(1j * theta * (4 - n) / 2)
             + (n / 2 + (-1) ** n) * jnp.exp(-1j * n * theta / 2)
         )
@@ -54,7 +54,7 @@ def Gamma_I(n: int, z: complex, mu: float, ka: float):
 
 
 @jax.jit
-def Gamma_II(n: int, z: complex, mu: float, ka: float):
+def Gamma_II(n: int, z: complex, mu: float, ko: float):
     """Computes the Williams series function for mode II crack tip displacement fields.
 
     This function calculates the function for the mode II (opening mode) term in the Williams series expansion of the displacement field around a crack tip.
@@ -64,7 +64,7 @@ def Gamma_II(n: int, z: complex, mu: float, ka: float):
         n (int): The order of the term in the Williams series expansion.
         z (complex): Complex coordinate relative to the crack tip.
         mu (float): Shear modulus of the material.
-        ka (float): Kolosov constant, which depends on the material properties and the 2D assumption.
+        ko (float): Kolosov constant, which depends on the material properties and the 2D assumption.
 
     Returns:
         complex: The Williams series function for mode II at the given point.
@@ -85,7 +85,7 @@ def Gamma_II(n: int, z: complex, mu: float, ka: float):
         * r ** (n / 2)
         / (2 * mu * jnp.sqrt(2 * jnp.pi))
         * (
-            ka * jnp.exp(1j * theta * n / 2)
+            ko * jnp.exp(1j * theta * n / 2)
             + n / 2 * jnp.exp(1j * theta * (4 - n) / 2)
             - (n / 2 - (-1) ** n) * jnp.exp(-1j * n * theta / 2)
         )
@@ -93,7 +93,7 @@ def Gamma_II(n: int, z: complex, mu: float, ka: float):
 
 
 @jax.jit
-def Gamma_III(n: int, z: complex, mu: float, ka: float):
+def Gamma_III(n: int, z: complex, mu: float, ko: float):
     """Computes the Williams series function for mode III crack tip displacement fields.
 
     This function calculates the function for the mode III (opening mode) term in the Williams series expansion of the displacement field around a crack tip.
@@ -103,7 +103,7 @@ def Gamma_III(n: int, z: complex, mu: float, ka: float):
         n (int): The order of the term in the Williams series expansion.
         z (complex): Complex coordinate relative to the crack tip.
         mu (float): Shear modulus of the material.
-        ka (float): Kolosov constant, which depends on the material properties and the 2D assumption.
+        ko (float): Kolosov constant, which depends on the material properties and the 2D assumption.
 
     Returns:
         complex: The Williams series function for mode III at the given point.
@@ -112,7 +112,7 @@ def Gamma_III(n: int, z: complex, mu: float, ka: float):
         - The function uses polar coordinates derived from the complex coordinate z.
         - The result is a complex number representing the function in the series expansion.
         - The function is JIT-compiled using JAX for efficient execution.
-        - The ka parameter is included for consistency with the other modes but is not used in the calculation.
+        - The ko parameter is included for consistency with the other modes but is not used in the calculation.
     """
     # Compute the polar coordinates
     r = jnp.abs(z)

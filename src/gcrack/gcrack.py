@@ -48,7 +48,7 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import gmsh
 import numpy as np
@@ -85,10 +85,6 @@ class GCrackBase(ABC):
     GCrackBase is an abstract base class for simulating crack propagation in elastic materials using the Finite Element Method (FEM).
     """
 
-    E: float
-    """E (float): Young's modulus of the material."""
-    nu: float
-    """nu (float): Poisson's ratio of the material."""
     da: float
     """da (float): Crack increment length."""
     Nt: int
@@ -115,6 +111,12 @@ class GCrackBase(ABC):
     """no_propagation (Optional[bool]): Flag to only run skip the crack propagation phase."""
     no_meshing: Optional[bool] = False
     """no_meshing (Optional[bool]): Flag to skip mesh generation when a mesh has already been created."""
+    elastic_pars: dict = field(default_factory=lambda: {})
+    """elastic_pars (dict): Elasticity model."""
+    E: Optional[float] = None
+    """E (float): Young's modulus of the material."""
+    nu: Optional[float] = None
+    """nu (float): Poisson's ratio of the material."""
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -284,6 +286,8 @@ class GCrackBase(ABC):
             "nu": self.nu,
             "2D_assumption": self.assumption_2D,
         }
+        ela_pars.update(self.elastic_pars)
+
         # Initialize the crack points
         crack_points = [self.xc0]
         # Initialize results storage
