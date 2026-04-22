@@ -153,3 +153,31 @@ def compute_external_work(
     ew_ufl = ufl.dot(ufl.dot(model.sig(uh), n), uh3D) * ds
     # Compute the elastic energy
     return fem.assemble_scalar(fem.form(ew_ufl))
+
+
+def compute_stress(domain: Domain, model: ElasticModel, uh: fem.Function):
+    # Compute the stress from ufl
+    sig_ufl = model.sig(uh)
+    # Generate FEM space for stress
+    shape = sig_ufl.ufl_shape
+    V_sig = fem.functionspace(domain.mesh, ("DG", 0, shape))
+    # Convert the stress into an expression
+    sig_expr = fem.Expression(sig_ufl, V_sig.element.interpolation_points)
+    # Set the stress function
+    sig_func = fem.Function(V_sig, name="Stress")
+    sig_func.interpolate(sig_expr)
+    return sig_func
+
+
+def compute_strain(domain: Domain, model: ElasticModel, uh: fem.Function):
+    # Compute the strain from ufl
+    eps_ufl = model.eps(uh)
+    # Generate FEM space for strain
+    shape = eps_ufl.ufl_shape
+    V_eps = fem.functionspace(domain.mesh, ("DG", 0, shape))
+    # Convert the strain into an expression
+    eps_expr = fem.Expression(eps_ufl, V_eps.element.interpolation_points)
+    # Set the strain function
+    eps_func = fem.Function(V_eps, name="Strain")
+    eps_func.interpolate(eps_expr)
+    return eps_func

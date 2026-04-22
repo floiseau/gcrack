@@ -70,6 +70,8 @@ from gcrack.postprocess import (
     compute_measured_displacement,
     compute_elastic_energy,
     compute_external_work,
+    compute_stress,
+    compute_strain,
 )
 from gcrack.exporters import (
     export_function,
@@ -115,6 +117,10 @@ class GCrackBase(ABC):
     """no_propagation (Optional[bool]): Flag to only run skip the crack propagation phase."""
     no_meshing: Optional[bool] = False
     """no_meshing (Optional[bool]): Flag to skip mesh generation when a mesh has already been created."""
+    export_strain: Optional[bool] = False
+    """export_strain (Optional[bool]): Flag to enable strain export in VTK files."""
+    export_stress: Optional[bool] = False
+    """export_stress (Optional[bool]): Flag to enable stress export in VTK files."""
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -442,6 +448,13 @@ class GCrackBase(ABC):
             print("│  Export the results")
             # Export the elastic solution
             export_function(u_scaled, t, dir_name)
+            # Export the stress field
+            if self.export_stress:
+                stress = compute_stress(self.domain, model, u_scaled)
+                export_function(stress, t, dir_name)
+            if self.export_strain:
+                strain = compute_strain(self.domain, model, u_scaled)
+                export_function(strain, t, dir_name)
 
             # Store the results
             res["t"] = t
