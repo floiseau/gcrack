@@ -117,7 +117,7 @@ class GCrackBase(ABC):
     """no_propagation (Optional[bool]): Flag to only run skip the crack propagation phase."""
     no_meshing: Optional[bool] = False
     """no_meshing (Optional[bool]): Flag to skip mesh generation when a mesh has already been created."""
-    no_VTK_export: Optional[bool] = False
+    no_vtk_export: Optional[bool] = False
     """no_export (Optional[bool]): Flag to skip VTK exports."""
     export_strain: Optional[bool] = False
     """export_strain (Optional[bool]): Flag to enable strain export in VTK files."""
@@ -449,15 +449,16 @@ class GCrackBase(ABC):
 
             print("│  Export the results")
             # Export the elastic solution
-            if self.no_VTK_export:
+            if not self.no_vtk_export:
+                # Export the displacement field
                 export_function(u_scaled, t, dir_name)
-            # Export the stress field
-            if self.export_stress:
-                stress = compute_stress(self.domain, model, u_scaled)
-                export_function(stress, t, dir_name)
-            if self.export_strain:
-                strain = compute_strain(self.domain, model, u_scaled)
-                export_function(strain, t, dir_name)
+                # Export the stress field
+                if self.export_stress:
+                    stress = compute_stress(self.domain, model, u_scaled)
+                    export_function(stress, t, dir_name)
+                if self.export_strain:
+                    strain = compute_strain(self.domain, model, u_scaled)
+                    export_function(strain, t, dir_name)
 
             # Store the results
             res["t"] = t
@@ -490,6 +491,7 @@ class GCrackBase(ABC):
             export_res_to_csv(res, dir_name / "results.csv")
         print("\nFinalize exports")
         # Group clean the results directory
-        clean_vtk_files(dir_name)
+        if not self.no_vtk_export:
+            clean_vtk_files(dir_name)
         # Clean up
         gmsh.finalize()
