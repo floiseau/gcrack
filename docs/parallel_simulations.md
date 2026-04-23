@@ -111,6 +111,7 @@ if __name__ == "__main__":
         assumption_2D="plane_stress",
         pars=pars,
         sif_method="williams",
+        name=f"L_{pars["L"]}_H_{pars["H"]}", # Add the name of the simulation
     )
     # Run the simulation
     gcrack_data.run()
@@ -129,6 +130,12 @@ Here, `L` is set to `10`, while `H` retains its default value of `1`.
     ```shell
     OMP_NUM_THREADS=1 python run.py -L 10
     ```
+
+!!! note
+
+    As the name of the simulation is specified, the results are stored in the directory `results_<name>`.
+    Before re-running a simulation with the same name, the previous results should be renamed or deleted.
+    If not, the new VTK files progressively overwrite the old ones, and the new entries in `results.csv` are appended at the end of the previous file.
 
 ## Calling `run.py` in parallel
 
