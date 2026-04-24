@@ -492,6 +492,6 @@ class GCrackBase(ABC):
         print("\nFinalize exports")
         # Group clean the results directory
         if not self.no_vtk_export:
-            clean_vtk_files(dir_name)
+            clean_vtk_files(dir_name, self.export_strain, self.export_stress)
         # Clean up
         gmsh.finalize()

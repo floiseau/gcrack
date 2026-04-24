@@ -78,7 +78,9 @@ def export_heterogeneous_parameters(model, ela_pars: dict, dir_path: Path):
         vtkfile.close()
 
 
-def clean_vtk_files(res_dir: Path):
+def clean_vtk_files(
+    res_dir: Path, export_strain: bool = False, export_stress: bool = False
+):
     """
     Clean the specified directory by removing existing .pvd files and create a new .pvd file listing all .pvtu files.
 
@@ -87,30 +89,40 @@ def clean_vtk_files(res_dir: Path):
 
     Args:
         res_dir (Path): The path to the directory containing .pvtu and .vtu files.
+        export_strain (Optional[bool]): Flag to enable strain export in VTK files.
+        export_stress (Optional[bool]): Flag to enable stress export in VTK files.
     """
+    # Set the exported field
+    exported_fields = ["Displacement"]
+    if export_strain:
+        exported_fields += ["Strain"]
+    if export_stress:
+        exported_fields += ["Stress"]
 
-    # Remove existing .pvd files
-    for pvd_file in res_dir.glob("*.pvd"):
-        pvd_file.unlink()
+    # Clean of the field types
+    for field in exported_fields:
+        # Remove existing .pvd files
+        for pvd_file in res_dir.glob(f"{field}_*.pvd"):
+            pvd_file.unlink()
 
-    # Collect all .pvtu files and sort them
-    pvtu_files = sorted(res_dir.glob("*.pvtu"))
+        # Collect all .pvtu files and sort them
+        pvtu_files = sorted(res_dir.glob(f"{field}_*.pvtu"))
 
-    # Create a new .pvd file content
-    pvd_content = (
-        '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">\n'
-    )
-    pvd_content += "  <Collection>\n"
+        # Create a new .pvd file content
+        pvd_content = (
+            '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">\n'
+        )
+        pvd_content += "  <Collection>\n"
 
-    for timestep, pvtu_file in enumerate(pvtu_files):
-        pvd_content += f'    <DataSet timestep="{timestep}" group="" part="0" file="{pvtu_file.name}"/>\n'
+        for timestep, pvtu_file in enumerate(pvtu_files):
+            pvd_content += f'    <DataSet timestep="{timestep}" group="" part="0" file="{pvtu_file.name}"/>\n'
 
-    pvd_content += "  </Collection>\n"
-    pvd_content += "</VTKFile>"
+        pvd_content += "  </Collection>\n"
+        pvd_content += "</VTKFile>"
 
-    # Write the new .pvd file
-    combined_pvd_path = res_dir / "displacement.pvd"
-    with combined_pvd_path.open("w") as file:
-        file.write(pvd_content)
+        # Write the new .pvd file
+        combined_pvd_path = res_dir / f"{field}.pvd"
+        with combined_pvd_path.open("w") as file:
+            file.write(pvd_content)
 
-    print(f"Created displacement.pvd with {len(pvtu_files)} timesteps.")
+        print(f"Created {field}.pvd with {len(pvtu_files)} timesteps.")
