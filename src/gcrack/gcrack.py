@@ -241,6 +241,17 @@ class GCrackBase(ABC):
         """
         ...
 
+    def end_simulation(self, crack_points: List[List[float]]) -> bool:
+        """User-defined function to end the simulation when a condition is met.
+
+        Args:
+            crack_points (List[List[float]]): List of the crack points.
+
+        Returns:
+            bool: True if the simulation must be ended, else False.
+        """
+        return False
+
     def run(self):
         """Executes the crack propagation simulation workflow.
 
@@ -489,6 +500,9 @@ class GCrackBase(ABC):
                 del res_init
             # Export the current results to csv
             export_res_to_csv(res, dir_name / "results.csv")
+            # Check if the simulation must be stopped
+            if self.end_simulation(crack_points):
+                break
         print("\nFinalize exports")
         # Group clean the results directory
         if not self.no_vtk_export:
