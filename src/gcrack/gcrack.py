@@ -324,8 +324,12 @@ class GCrackBase(ABC):
             "fracture_dissipation": 0.0,
             "external_work": 0.0,
         }
-
-        for t in range(1, self.Nt + 1):
+        # Initialize the load step
+        t = 0
+        # Iterate through the load step
+        while t <= self.Nt and not self.end_simulation(crack_points):
+            # Increment the load step
+            t += 1
             print(f"\nLOAD STEP {t}")
             # Get current crack properties
             phi0 = res["phi"]
@@ -500,9 +504,6 @@ class GCrackBase(ABC):
                 del res_init
             # Export the current results to csv
             export_res_to_csv(res, dir_name / "results.csv")
-            # Check if the simulation must be stopped
-            if self.end_simulation(crack_points):
-                break
         print("\nFinalize exports")
         # Group clean the results directory
         if not self.no_vtk_export:
