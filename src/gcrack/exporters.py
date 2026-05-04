@@ -128,20 +128,6 @@ def clean_vtk_files(
         with combined_pvd_path.open("w") as file:
             file.write(pvd_content)
 
-        # gc_pvtu_files = sorted(res_dir.glob("Gc_*.pvtu"))
-
-        # gc_pvd_content = (
-        #     '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">\n'
-        # )
-        # gc_pvd_content += "  <Collection>\n"
-        # for timestep, gc_pvtu_file in enumerate(gc_pvtu_files):
-        #     gc_pvd_content += f'    <DataSet timestep="{timestep}" group="" part="0" file="{gc_pvtu_file.name}"/>\n'
-        # gc_pvd_content += "  </Collection>\n"
-        # gc_pvd_content += "</VTKFile>"
-        # combined_gc_pvd_path = res_dir / "Gc.pvd"
-        # with combined_gc_pvd_path.open("w") as file:
-        #     file.write(gc_pvd_content)
-
         print(f"Created {field}.pvd with {len(pvtu_files)} timesteps.")
 
 
