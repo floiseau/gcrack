@@ -307,16 +307,16 @@ class GCrackBase(ABC):
             "2D_assumption": self.assumption_2D,
         }
         # Initialize the crack points
-        crack_points = [self.xc0]
+        self.crack_points = [self.xc0]
         # Initialize results storage
         res = {
             "t": 0,
             "a": 0,
             "phi": self.phi0,
             "lambda": self.l0,
-            "xc_1": crack_points[-1][0],
-            "xc_2": crack_points[-1][1],
-            "xc_3": crack_points[-1][2],
+            "xc_1": self.crack_points[-1][0],
+            "xc_2": self.crack_points[-1][1],
+            "xc_3": self.crack_points[-1][2],
             "fimp_1": 0.0,
             "fimp_2": 0.0,
             "fimp_3": 0.0,
@@ -330,7 +330,7 @@ class GCrackBase(ABC):
         # Initialize the load step
         t = 0
         # Iterate through the load step
-        while t <= self.Nt and not self.end_simulation(crack_points):
+        while t <= self.Nt and not self.end_simulation(self.crack_points):
             # Increment the load step
             t += 1
             print(f"\nLOAD STEP {t}")
@@ -343,7 +343,7 @@ class GCrackBase(ABC):
             # Generate the mesh
             if not self.no_meshing:
                 print("│  Meshing the cracked domain")
-                gmsh_model = self.generate_mesh(crack_points)
+                gmsh_model = self.generate_mesh(self.crack_points)
             else:
                 print("│  Skip meshing (no_meshing = True)")
 
@@ -384,7 +384,7 @@ class GCrackBase(ABC):
                 self.domain,
                 model,
                 u_controlled,
-                crack_points[-1],
+                self.crack_points[-1],
                 phi0,
                 self.R_int,
                 self.R_ext,
@@ -401,7 +401,7 @@ class GCrackBase(ABC):
                     self.domain,
                     model,
                     u_prescribed,
-                    crack_points[-1],
+                    self.crack_points[-1],
                     phi0,
                     self.R_int,
                     self.R_ext,
@@ -418,7 +418,7 @@ class GCrackBase(ABC):
             # Compute the load factor and crack angle.
             print("│  Determination of propagation angle and load factor")
             if not self.no_propagation:
-                load_factor_solver = LoadFactorSolver(model, self.Gc, crack_points[-1])
+                load_factor_solver = LoadFactorSolver(model, self.Gc, self.crack_points[-1])
                 opti_res = load_factor_solver.solve(
                     phi0, SIFs_controlled, SIFs_prescribed, self.s
                 )
@@ -427,7 +427,7 @@ class GCrackBase(ABC):
                 lambda_ = opti_res[1]
                 # Add a new crack point
                 da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
-                crack_points.append(crack_points[-1] + da_vec)
+                self.crack_points.append(self.crack_points[-1] + da_vec)
             else:
                 # Display a warning message
                 print("│  Running in no propagation mode (set arbitrary results).")
@@ -440,7 +440,7 @@ class GCrackBase(ABC):
                 f"│  │  Crack propagation angle : {phi_:.3f} rad / {phi_ * 180 / np.pi:.3f}°"
             )
             print(f"│  │  Load factor             : {lambda_:.3g}")
-            print(f"│  │  New crack tip position  : {crack_points[-1]}")
+            print(f"│  │  New crack tip position  : {self.crack_points[-1]}")
 
             print("│  Postprocess")
             # Scale the displacement field
@@ -466,15 +466,27 @@ class GCrackBase(ABC):
                 if self.export_strain:
                     strain = compute_strain(self.domain, model, u_scaled)
                     export_function(strain, t, dir_name)
+            #  V_scalar = functionspace(self.domain.mesh, ("CG", 1))
+            #  Gc_field = Function(V_scalar)
+            #  Gc_field.name = "Gc"
+            # coords = V_scalar.tabulate_dof_coordinates()
+            # xc = np.array(self.crack_points[-1])
+            # for i, x in enumerate(coords):
+            #     dx = x[0] - xc[0]
+            #     dy = x[1] - xc[1]
+            #     phi_node = np.arctan2(dy, dx)
+            #     Gc_field.x.array[i] = float(self.Gc(np.array([phi_node]))[0])
+            #
+            # export_function(Gc_field, t, dir_name)
 
             # Store the results
             res["t"] = t
             res["a"] += self.da
             res["phi"] = phi_
             res["lambda"] = lambda_
-            res["xc_1"] = crack_points[-1][0]
-            res["xc_2"] = crack_points[-1][1]
-            res["xc_3"] = crack_points[-1][2]
+            res["xc_1"] = self.crack_points[-1][0]
+            res["xc_2"] = self.crack_points[-1][1]
+            res["xc_3"] = self.crack_points[-1][2]
             for point, uimp in enumerate(uimps):
                 for comp, uimp_comp in enumerate(uimp):
                     res[f"uimp_p{point + 1}_{comp + 1}"] = uimp[comp]
