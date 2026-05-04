@@ -50,6 +50,8 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from dolfinx.fem import Function, functionspace
+
 import gmsh
 import numpy as np
 
@@ -70,14 +72,13 @@ from gcrack.postprocess import (
     compute_measured_displacement,
     compute_elastic_energy,
     compute_external_work,
-    compute_stress,
-    compute_strain,
 )
 from gcrack.exporters import (
     export_function,
     export_heterogeneous_parameters,
     export_res_to_csv,
     clean_vtk_files,
+    export_G_star_vs_phi,
 )
 
 
@@ -117,12 +118,8 @@ class GCrackBase(ABC):
     """no_propagation (Optional[bool]): Flag to only run skip the crack propagation phase."""
     no_meshing: Optional[bool] = False
     """no_meshing (Optional[bool]): Flag to skip mesh generation when a mesh has already been created."""
-    no_vtk_export: Optional[bool] = False
-    """no_export (Optional[bool]): Flag to skip VTK exports."""
-    export_strain: Optional[bool] = False
-    """export_strain (Optional[bool]): Flag to enable strain export in VTK files."""
-    export_stress: Optional[bool] = False
-    """export_stress (Optional[bool]): Flag to enable stress export in VTK files."""
+    export_wulff_diagram: Optional[bool] = True
+    """export_wulff_diagram (Optional[bool]): Flag to export data for Wulff diagram into a csv file."""
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -241,17 +238,6 @@ class GCrackBase(ABC):
         """
         ...
 
-    def end_simulation(self, crack_points: List[List[float]]) -> bool:
-        """User-defined function to end the simulation when a condition is met.
-
-        Args:
-            crack_points (List[List[float]]): List of the crack points.
-
-        Returns:
-            bool: True if the simulation must be ended, else False.
-        """
-        return False
-
     def run(self):
         """Executes the crack propagation simulation workflow.
 
@@ -304,16 +290,16 @@ class GCrackBase(ABC):
             "2D_assumption": self.assumption_2D,
         }
         # Initialize the crack points
-        crack_points = [self.xc0]
+        self.crack_points = [self.xc0]
         # Initialize results storage
         res = {
             "t": 0,
             "a": 0,
             "phi": self.phi0,
             "lambda": self.l0,
-            "xc_1": crack_points[-1][0],
-            "xc_2": crack_points[-1][1],
-            "xc_3": crack_points[-1][2],
+            "xc_1": self.crack_points[-1][0],
+            "xc_2": self.crack_points[-1][1],
+            "xc_3": self.crack_points[-1][2],
             "fimp_1": 0.0,
             "fimp_2": 0.0,
             "fimp_3": 0.0,
@@ -324,12 +310,8 @@ class GCrackBase(ABC):
             "fracture_dissipation": 0.0,
             "external_work": 0.0,
         }
-        # Initialize the load step
-        t = 0
-        # Iterate through the load step
-        while t <= self.Nt and not self.end_simulation(crack_points):
-            # Increment the load step
-            t += 1
+
+        for t in range(1, self.Nt + 1):
             print(f"\nLOAD STEP {t}")
             # Get current crack properties
             phi0 = res["phi"]
@@ -340,7 +322,7 @@ class GCrackBase(ABC):
             # Generate the mesh
             if not self.no_meshing:
                 print("│  Meshing the cracked domain")
-                gmsh_model = self.generate_mesh(crack_points)
+                gmsh_model = self.generate_mesh(self.crack_points)
             else:
                 print("│  Skip meshing (no_meshing = True)")
 
@@ -381,7 +363,7 @@ class GCrackBase(ABC):
                 self.domain,
                 model,
                 u_controlled,
-                crack_points[-1],
+                self.crack_points[-1],
                 phi0,
                 self.R_int,
                 self.R_ext,
@@ -398,7 +380,7 @@ class GCrackBase(ABC):
                     self.domain,
                     model,
                     u_prescribed,
-                    crack_points[-1],
+                    self.crack_points[-1],
                     phi0,
                     self.R_int,
                     self.R_ext,
@@ -415,27 +397,18 @@ class GCrackBase(ABC):
             # Compute the load factor and crack angle.
             print("│  Determination of propagation angle and load factor")
             if not self.no_propagation:
-                load_factor_solver = LoadFactorSolver(model, self.Gc, crack_points[-1])
+                load_factor_solver = LoadFactorSolver(
+                    model, self.Gc, self.crack_points[-1]
+                )
                 opti_res = load_factor_solver.solve(
                     phi0, SIFs_controlled, SIFs_prescribed, self.s
                 )
                 # Get the results
                 phi_ = opti_res[0]
                 lambda_ = opti_res[1]
-                # NOTE: DEBUG
-                load_factor_solver.export_minimization_plots(
-                    phi_,
-                    lambda_,
-                    phi0,
-                    SIFs_controlled,
-                    SIFs_prescribed,
-                    self.s,
-                    t,
-                    dir_name,
-                )
                 # Add a new crack point
                 da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
-                crack_points.append(crack_points[-1] + da_vec)
+                self.crack_points.append(self.crack_points[-1] + da_vec)
             else:
                 # Display a warning message
                 print("│  Running in no propagation mode (set arbitrary results).")
@@ -448,7 +421,7 @@ class GCrackBase(ABC):
                 f"│  │  Crack propagation angle : {phi_:.3f} rad / {phi_ * 180 / np.pi:.3f}°"
             )
             print(f"│  │  Load factor             : {lambda_:.3g}")
-            print(f"│  │  New crack tip position  : {crack_points[-1]}")
+            print(f"│  │  New crack tip position  : {self.crack_points[-1]}")
 
             print("│  Postprocess")
             # Scale the displacement field
@@ -464,25 +437,16 @@ class GCrackBase(ABC):
 
             print("│  Export the results")
             # Export the elastic solution
-            if not self.no_vtk_export:
-                # Export the displacement field
-                export_function(u_scaled, t, dir_name)
-                # Export the stress field
-                if self.export_stress:
-                    stress = compute_stress(self.domain, model, u_scaled)
-                    export_function(stress, t, dir_name)
-                if self.export_strain:
-                    strain = compute_strain(self.domain, model, u_scaled)
-                    export_function(strain, t, dir_name)
+            export_function(u_scaled, t, dir_name)
 
             # Store the results
             res["t"] = t
             res["a"] += self.da
             res["phi"] = phi_
             res["lambda"] = lambda_
-            res["xc_1"] = crack_points[-1][0]
-            res["xc_2"] = crack_points[-1][1]
-            res["xc_3"] = crack_points[-1][2]
+            res["xc_1"] = self.crack_points[-1][0]
+            res["xc_2"] = self.crack_points[-1][1]
+            res["xc_3"] = self.crack_points[-1][2]
             for point, uimp in enumerate(uimps):
                 for comp, uimp_comp in enumerate(uimp):
                     res[f"uimp_p{point + 1}_{comp + 1}"] = uimp[comp]
@@ -504,9 +468,22 @@ class GCrackBase(ABC):
                 del res_init
             # Export the current results to csv
             export_res_to_csv(res, dir_name / "results.csv")
+            # Export data for Wulff diagram
+            if self.export_wulff_diagram:
+                export_G_star_vs_phi(
+                    phi_,
+                    lambda_,
+                    phi0,
+                    SIFs_controlled,
+                    SIFs_prescribed,
+                    self.s,
+                    t,
+                    dir_name,
+                    self.Gc,
+                    self.E,
+                )
         print("\nFinalize exports")
         # Group clean the results directory
-        if not self.no_vtk_export:
-            clean_vtk_files(dir_name, self.export_strain, self.export_stress)
+        clean_vtk_files(dir_name)
         # Clean up
         gmsh.finalize()

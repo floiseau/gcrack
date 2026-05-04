@@ -13,6 +13,9 @@ from pathlib import Path
 import csv
 
 from dolfinx import io, fem
+import jax.numpy as jnp
+
+from gcrack.lefm import G_star, G_star_coupled
 
 
 def export_res_to_csv(res: dict, filename: str):
@@ -78,9 +81,7 @@ def export_heterogeneous_parameters(model, ela_pars: dict, dir_path: Path):
         vtkfile.close()
 
 
-def clean_vtk_files(
-    res_dir: Path, export_strain: bool = False, export_stress: bool = False
-):
+def clean_vtk_files(res_dir: Path):
     """
     Clean the specified directory by removing existing .pvd files and create a new .pvd file listing all .pvtu files.
 
@@ -89,40 +90,88 @@ def clean_vtk_files(
 
     Args:
         res_dir (Path): The path to the directory containing .pvtu and .vtu files.
-        export_strain (Optional[bool]): Flag to enable strain export in VTK files.
-        export_stress (Optional[bool]): Flag to enable stress export in VTK files.
     """
-    # Set the exported field
-    exported_fields = ["Displacement"]
-    if export_strain:
-        exported_fields += ["Strain"]
-    if export_stress:
-        exported_fields += ["Stress"]
 
-    # Clean of the field types
-    for field in exported_fields:
-        # Remove existing .pvd files
-        for pvd_file in res_dir.glob(f"{field}_*.pvd"):
-            pvd_file.unlink()
+    # Remove existing .pvd files
+    for pvd_file in res_dir.glob("*.pvd"):
+        pvd_file.unlink()
 
-        # Collect all .pvtu files and sort them
-        pvtu_files = sorted(res_dir.glob(f"{field}_*.pvtu"))
+    # Collect all .pvtu files and sort them
+    pvtu_files = sorted(res_dir.glob("Displacement*.pvtu"))
 
-        # Create a new .pvd file content
-        pvd_content = (
-            '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">\n'
-        )
-        pvd_content += "  <Collection>\n"
+    # Create a new .pvd file content
+    pvd_content = (
+        '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">\n'
+    )
+    pvd_content += "  <Collection>\n"
 
-        for timestep, pvtu_file in enumerate(pvtu_files):
-            pvd_content += f'    <DataSet timestep="{timestep}" group="" part="0" file="{pvtu_file.name}"/>\n'
+    for timestep, pvtu_file in enumerate(pvtu_files):
+        pvd_content += f'    <DataSet timestep="{timestep}" group="" part="0" file="{pvtu_file.name}"/>\n'
 
-        pvd_content += "  </Collection>\n"
-        pvd_content += "</VTKFile>"
+    pvd_content += "  </Collection>\n"
+    pvd_content += "</VTKFile>"
 
-        # Write the new .pvd file
-        combined_pvd_path = res_dir / f"{field}.pvd"
-        with combined_pvd_path.open("w") as file:
-            file.write(pvd_content)
+    # Write the new .pvd file
+    combined_pvd_path = res_dir / "displacement.pvd"
+    with combined_pvd_path.open("w") as file:
+        file.write(pvd_content)
+    print(f"Created displacement.pvd with {len(pvtu_files)} timesteps.")
 
-        print(f"Created {field}.pvd with {len(pvtu_files)} timesteps.")
+
+
+def export_G_star_vs_phi(
+        phi: float,
+        load_factor: float,
+        phi0: float,
+        SIFs_controlled: dict,
+        SIFs_prescribed: dict,
+        s: float,
+        t: int,
+        dir_name: Path,
+        Gc: callable,
+        Ep: float,
+        ):
+
+    KIc, KIIc, Tc = (
+        SIFs_controlled["KI"],
+        SIFs_controlled["KII"],
+        SIFs_controlled["T"],
+    )
+    KIp, KIIp, Tp = (
+        SIFs_prescribed["KI"],
+        SIFs_prescribed["KII"],
+        SIFs_prescribed["T"],
+    )
+
+    phi_vals = jnp.linspace(phi0 - jnp.pi, phi0 + jnp.pi, 361)
+    lam = load_factor
+
+    G_total_vals, Gs_cc_vals, Gs_cp_vals, Gs_pp_vals, gc_vals = [], [], [], [], []
+
+    for phi in phi_vals:
+        Gs_cc = float(G_star(phi, phi0, KIc, KIIc, Tc, Ep, s))
+        Gs_cp = float(G_star_coupled(phi, phi0, KIc, KIIc, Tc, KIp, KIIp, Tp, Ep, s))
+        Gs_pp = float(G_star(phi, phi0, KIp, KIIp, Tp, Ep, s))
+        gc    = float(Gc(jnp.array([phi]))[0])
+
+        G_total_vals.append(Gs_pp + 2 * lam * Gs_cp + lam**2 * Gs_cc)
+        Gs_cc_vals.append(Gs_cc)
+        Gs_cp_vals.append(Gs_cp)
+        Gs_pp_vals.append(Gs_pp)
+        gc_vals.append(gc)
+
+    out_path = dir_name / f"wulff_diagram_{t:08d}.csv"
+    fieldnames = ["phi", "G_star", "G_c", "G_star_cc", "G_star_cp", "G_star_pp"]
+
+    with open(out_path, mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for i, phi in enumerate(phi_vals):
+            writer.writerow({
+                "phi":       phi,
+                "G_star":    G_total_vals[i],
+                "G_c":       gc_vals[i],
+                "G_star_cc": Gs_cc_vals[i],
+                "G_star_cp": Gs_cp_vals[i],
+                "G_star_pp": Gs_pp_vals[i],
+            })
