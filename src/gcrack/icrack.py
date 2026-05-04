@@ -189,17 +189,6 @@ class ICrackBase(ABC):
                     phi_nm1, SIFs, SIFs_prescribed, self.s
                 )
 
-                # NOTE: DEBUG
-                load_factor_solver.export_minimization_plots(
-                    opti_res[0],
-                    opti_res[1],
-                    phi_nm1,
-                    SIFs,
-                    SIFs_prescribed,
-                    self.s,
-                    t,
-                    dir_name,
-                )
                 # Get the results
                 phi_ = opti_res[0]
                 crack_propagates = opti_res[1] <= 1

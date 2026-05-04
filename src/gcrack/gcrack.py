@@ -78,6 +78,7 @@ from gcrack.exporters import (
     export_heterogeneous_parameters,
     export_res_to_csv,
     clean_vtk_files,
+    export_G_star_vs_phi,
 )
 
 
@@ -123,6 +124,8 @@ class GCrackBase(ABC):
     """export_strain (Optional[bool]): Flag to enable strain export in VTK files."""
     export_stress: Optional[bool] = False
     """export_stress (Optional[bool]): Flag to enable stress export in VTK files."""
+    export_wulff_diagram: Optional[bool] = True
+    """export_wulff_diagram (Optional[bool]): Flag to export data for Wulff diagram into a csv file."""
 
     def __post_init__(self):
         # Compute the radii for the SIF evaluation
@@ -422,17 +425,6 @@ class GCrackBase(ABC):
                 # Get the results
                 phi_ = opti_res[0]
                 lambda_ = opti_res[1]
-                # NOTE: DEBUG
-                load_factor_solver.export_minimization_plots(
-                    phi_,
-                    lambda_,
-                    phi0,
-                    SIFs_controlled,
-                    SIFs_prescribed,
-                    self.s,
-                    t,
-                    dir_name,
-                )
                 # Add a new crack point
                 da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
                 crack_points.append(crack_points[-1] + da_vec)
@@ -504,6 +496,20 @@ class GCrackBase(ABC):
                 del res_init
             # Export the current results to csv
             export_res_to_csv(res, dir_name / "results.csv")
+            # Export data for Wulff diagram
+            if self.export_wulff_diagram:
+                export_G_star_vs_phi(
+                    phi_,
+                    lambda_,
+                    phi0,
+                    SIFs_controlled,
+                    SIFs_prescribed,
+                    self.s,
+                    t,
+                    dir_name,
+                    self.Gc,
+                    self.E,
+                )
         print("\nFinalize exports")
         # Group clean the results directory
         if not self.no_vtk_export:
