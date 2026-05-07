@@ -1,16 +1,59 @@
+"""
+This script visualizes the Wulff diagram from a `gcrack` simulation and saves them as a series of images.
+
+### Usage
+
+To generate the Wulff diagram from a `gcrack` simulation (with `export_wulff_diagram=True`), run the following command in the `results_<name>` directory:
+
+```sh
+gcrack_wulff_plotter
+```
+
+This command generates one image file per load step.
+
+### Arguments
+
+You can pass different arguments to the script. For detailed information on available options, use:
+
+```sh
+gcrack_wulff_plotter --help
+```
+
+### Creating a Video Animation
+
+#### Vectorial Images (SVG, EPS)
+The generated images can be used to create a video animation of the simulation.
+Here’s an example using `magick`:
+
+```sh
+magickt -delay 5 -loop 0 wulff_diagram_00000???.svg wulff_diagram.gif
+```
+
+#### Raster Images (PNG, JPG)
+The generated images can be used to create a video animation of the simulation.
+Here’s an example using `ffmpeg`:
+
+```sh
+ffmpeg -framerate 25 -pattern_type glob -i 'wulff_diagram_*.png' wulff_diagram.mp4
+```
+"""
+
 import argparse
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
-
-# NOTE:
-# convert -delay 5 -loop 0 wulff_diagram_00000???.svg wulff_diagram.gif
 
 # Parameters
 fontsize = 18
 
 
 def export_wulff_diagram(csv_file: Path, extension: str):
+    """Export the Wulff diagram for the given csv file.
+
+    Attributes:
+        csv_file (Path): Path to the csv file containing the Wullf diagram data.
+        extension (str): Extension of the image file (e.g., `"svg"`, `"png", etc.`).
+    """
 
     # Read the csv file using numpy
     data = np.genfromtxt(csv_file, delimiter=",", skip_header=1)
@@ -71,6 +114,7 @@ def export_wulff_diagram(csv_file: Path, extension: str):
 
 
 def main():
+    """Entry point of `gcrack_wulff_plotter`."""
     # Create the parser
     parser = argparse.ArgumentParser(
         prog="gcrack_wulff_plotter",

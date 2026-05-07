@@ -1,10 +1,51 @@
+"""
+This script visualizes displacement fields from a `gcrack` simulation and saves them as a series of images.
+
+### Description
+
+The script reads displacement data, applies potential transformations (warping), and saves the resulting image at each load step.
+
+### Usage
+
+To visualize the displacement fields, run the following command in the `results_<name>` directory:
+
+```sh
+gcrack_displacement_plotter
+```
+
+This command generates one image file per load step.
+
+### Arguments
+
+You can pass different arguments to the script. For detailed information on available options, use:
+
+```sh
+gcrack_displacement_plotter --help
+```
+
+### Creating a Video Animation
+
+The generated images can be used to create a video animation of the simulation. Here's an example using `ffmpeg`:
+
+```sh
+ffmpeg -framerate 25 -pattern_type glob -i 'Displacement*.png' Displacement.mp4
+```
+"""
+
 import argparse
 
 from pathlib import Path
 import pyvista as pv
 
 
-def export_displacement_figures(args):
+def export_displacement_figures(factor: float, extension: str):
+    """Export the displacement fields into image files.
+
+    Attributes:
+        factor (float): Amplitude of the displacement warping.
+        extension (str): Extension of the image file (e.g., `"jpg"`, `"png"`).
+    """
+
     # Find the pvtu files
     pvtu_files = list(sorted(Path(".").glob("Displacement*.pvtu")))
 
@@ -16,7 +57,7 @@ def export_displacement_figures(args):
         # Read the file
         data = pv.read(pvtu_file)
         # Warp by displacement
-        data = data.warp_by_vector("Displacement", factor=args.factor)
+        data = data.warp_by_vector("Displacement", factor=factor)
         # Display the results
         pl.add_mesh(data, scalars="Displacement")
         pl.view_xy()
@@ -26,7 +67,7 @@ def export_displacement_figures(args):
 
         pl.camera_position = cpos
         # Add frame to the gif
-        pl.show(screenshot=f"Displacement_{t:04d}.{args.extension}", auto_close=False)
+        pl.show(screenshot=f"Displacement_{t:04d}.{extension}", auto_close=False)
         # Clear the plot
         pl.clear()
     # Close the plotter
@@ -34,10 +75,11 @@ def export_displacement_figures(args):
 
 
 def main():
+    """Entry point of `gcrack_displacement_plotter`."""
     # Create the parser
     parser = argparse.ArgumentParser(
-        prog="gcrack_wulff_plotter",
-        description="Generate the Wulff plot from a gcrack simulation",
+        prog="gcrack_displacement_plotter",
+        description="Generate the displacement field images from a gcrack simulation",
     )
     parser.add_argument(
         "-e",
@@ -53,15 +95,14 @@ def main():
         default=0.0,
         type=float,
     )
+
+    # Parse and extract the arguments
     args = parser.parse_args()
+    factor = args.factor
+    extension = args.extension
 
     # Generate the figures
-    export_displacement_figures(args)
-
-    print("Generate an mp4 video from the png files using :")
-    print(
-        "ffmpeg -framerate 25 -pattern_type glob -i 'Displacement*.png' Displacement.mp4"
-    )
+    export_displacement_figures(factor, extension)
 
 
 if __name__ == "__main__":
