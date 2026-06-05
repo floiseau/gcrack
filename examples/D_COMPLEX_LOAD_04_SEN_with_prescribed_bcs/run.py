@@ -153,7 +153,7 @@ class GCrackData(GCrackBase):
             [0, 0, 0],
         ]
 
-    def Gc(self, phi):
+    def Gc(self, phi, xc):
         return self.pars["Gc"] + 0 * phi
         # In plotter: 1 + (2 - 1) * sqrt(1 / 2 * (1 - cos(2 * (phi - pi/6))))
 

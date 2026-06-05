@@ -213,7 +213,7 @@ class GCrackData(GCrackBase):
         """
         return [0, self.pars["R"]]
 
-    def Gc(self, phi):
+    def Gc(self, phi, xc):
         return self.pars["Gc"] + 0 * phi
 
 

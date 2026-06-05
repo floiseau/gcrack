@@ -67,7 +67,22 @@ class ICrackBase(ABC):
         pass
 
     @abstractmethod
-    def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
+    def Gc(self, phi: float | np.ndarray, xc: np.ndarray) -> float | np.ndarray:
+        """Define the critical energy release rate.
+
+        To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\\varphi$
+        Note that this function is only used to determine the crack path.
+
+        Args:
+            phi (np.ndarray): Crack angle.
+            xc (np.ndarray): Position of the crack tip.
+
+        Returns:
+            np.ndarray: Value of the critical energy release rate.
+
+        Note:
+            The intput and output should be arrays for practical details in the minimization of the load factor.
+        """
         pass
 
     def define_locked_points(self) -> List[List[float]]:

@@ -155,13 +155,14 @@ class GCrackBase(ABC):
         pass
 
     @abstractmethod
-    def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
+    def Gc(self, phi: float | np.ndarray, xc: np.ndarray) -> float | np.ndarray:
         """Define the critical energy release rate.
 
         To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\\varphi$
 
         Args:
             phi (np.ndarray): Crack angle.
+            xc (np.ndarray): Position of the crack tip.
 
         Returns:
             np.ndarray: Value of the critical energy release rate.
@@ -330,7 +331,7 @@ class GCrackBase(ABC):
         # Initialize the load step
         t = 0
         # Iterate through the load step
-        while t <= self.Nt and not self.end_simulation(crack_points):
+        while t < self.Nt and not self.end_simulation(crack_points):
             # Increment the load step
             t += 1
             print(f"\nLOAD STEP {t}")
@@ -485,7 +486,9 @@ class GCrackBase(ABC):
                     lambda_ * SIFs_controlled[sif_name] + SIFs_prescribed[sif_name]
                 )
             res["elastic_energy"] = elastic_energy
-            res["fracture_dissipation"] += self.da * self.Gc(np.array([phi_]))[0]
+            res["fracture_dissipation"] += (
+                self.da * self.Gc(np.array([phi_]), crack_points[-1])[0]
+            )
             res["external_work"] = external_work
             # At first load step, also export the initial state
             if t == 1:
@@ -499,16 +502,17 @@ class GCrackBase(ABC):
             # Export data for Wulff diagram
             if self.export_wulff_diagram:
                 export_G_star_vs_phi(
+                    model,
                     phi_,
                     lambda_,
                     phi0,
+                    crack_points[-1],
                     SIFs_controlled,
                     SIFs_prescribed,
                     self.s,
                     t,
                     dir_name,
                     self.Gc,
-                    self.E,
                 )
         print("\nFinalize exports")
         # Group clean the results directory

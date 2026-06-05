@@ -1,13 +1,10 @@
-from pathlib import Path
 from typing import List
 
 import gmsh
 import numpy as np
-import jax.numpy as jnp
 
-import gmsh
 from gcrack import GCrackBase
-from gcrack.boundary_conditions import DisplacementBC, ForceBC, BodyForce
+from gcrack.boundary_conditions import DisplacementBC, BodyForce
 
 
 class GCrackData(GCrackBase):
@@ -18,7 +15,6 @@ class GCrackData(GCrackBase):
         Lx = self.pars["Lx"]
         Ly = self.pars["Ly"]
         h = Lx / 128
-        h_min = self.R_int / 16
         # Points
         p1: int = gmsh.model.geo.addPoint(0, 0, 0, h)
         p2: int = gmsh.model.geo.addPoint(Lx, 0, 0, h)
@@ -107,7 +103,7 @@ class GCrackData(GCrackBase):
             [0, 0, 0],
         ]
 
-    def Gc(self, phi):
+    def Gc(self, phi, xc):
         return self.pars["Gc"] + 0.0 * phi
 
 

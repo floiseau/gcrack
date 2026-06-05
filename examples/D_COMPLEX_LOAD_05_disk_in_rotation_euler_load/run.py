@@ -1,5 +1,3 @@
-import sys
-
 from typing import List
 
 import jax.numpy as jnp
@@ -121,14 +119,14 @@ class GCrack(GCrackBase):
         r = "sqrt((x[0])**2 + x[1]**2)"
         th = "atan2(x[1], x[0])"
         # Calculate the amplitude of each forces
-        fw_amp = f"({rho} * {w}**2 * {r})"
+        fw_amp = f"({rho} * {w**2} * {r})"
         fe_amp = f"(- {rho} * {wd} * {r})"
         # Project onto the x and y axis
         fx = f"{fw_amp} * (+cos({th})) + {fe_amp} * (-sin({th}))"
         fy = f"{fw_amp} * (+sin({th})) + {fe_amp} * (+cos({th}))"
         return [BodyForce(f_imp=[fx, fy])]
 
-    def Gc(self, phi):
+    def Gc(self, phi, xc):
         return self.pars["Gc"] * jnp.ones(phi.shape)
 
 

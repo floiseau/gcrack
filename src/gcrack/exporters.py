@@ -9,12 +9,14 @@ Functions:
     clean_vtk_files: Cleans a directory by removing existing .pvd files and creating a new .pvd file that lists all .pvtu files with their corresponding timesteps.
 """
 
+from typing import List
 from pathlib import Path
 import csv
 
 from dolfinx import io, fem
 import jax.numpy as jnp
 
+from gcrack.models import ElasticModel
 from gcrack.lefm import G_star, G_star_coupled
 
 
@@ -132,18 +134,23 @@ def clean_vtk_files(
 
 
 def export_G_star_vs_phi(
+    model: ElasticModel,
     phi: float,
     load_factor: float,
     phi0: float,
+    xc: List[float],
     SIFs_controlled: dict,
     SIFs_prescribed: dict,
     s: float,
     t: int,
     dir_name: Path,
     Gc: callable,
-    Ep: float,
 ):
 
+    # Compute the elastic properties at crack tip
+    Ep = model.Ep_func(xc)
+
+    # Compute the SIFs
     KIc, KIIc, Tc = (
         SIFs_controlled["KI"],
         SIFs_controlled["KII"],
@@ -155,37 +162,32 @@ def export_G_star_vs_phi(
         SIFs_prescribed["T"],
     )
 
-    phi_vals = jnp.linspace(phi0 - jnp.pi, phi0 + jnp.pi, 361)
-    lam = load_factor
+    # Create a dictionnary to store the results
+    res = []
 
-    G_total_vals, Gs_cc_vals, Gs_cp_vals, Gs_pp_vals, gc_vals = [], [], [], [], []
+    # Define the values of the crack angle
+    for phi in jnp.linspace(phi0 - jnp.pi, phi0 + jnp.pi, 361):
+        row = {}
+        row["phi"] = phi
+        row["G_star_cc"] = float(G_star(phi, phi0, KIc, KIIc, Tc, Ep, s))
+        row["G_star_cp"] = float(
+            G_star_coupled(phi, phi0, KIc, KIIc, Tc, KIp, KIIp, Tp, Ep, s)
+        )
+        row["G_star_pp"] = float(G_star(phi, phi0, KIp, KIIp, Tp, Ep, s))
+        row["G_star"] = (
+            row["G_star_pp"]
+            + 2 * load_factor * row["G_star_cp"]
+            + load_factor**2 * row["G_star_cc"]
+        )
+        row["Gc"] = Gc(jnp.array([phi]), xc)[0]
 
-    for phi in phi_vals:
-        Gs_cc = float(G_star(phi, phi0, KIc, KIIc, Tc, Ep, s))
-        Gs_cp = float(G_star_coupled(phi, phi0, KIc, KIIc, Tc, KIp, KIIp, Tp, Ep, s))
-        Gs_pp = float(G_star(phi, phi0, KIp, KIIp, Tp, Ep, s))
-        gc = float(Gc(jnp.array([phi]))[0])
+        res.append(row)
 
-        G_total_vals.append(Gs_pp + 2 * lam * Gs_cp + lam**2 * Gs_cc)
-        Gs_cc_vals.append(Gs_cc)
-        Gs_cp_vals.append(Gs_cp)
-        Gs_pp_vals.append(Gs_pp)
-        gc_vals.append(gc)
+    # Export the results
+    filename = dir_name / f"wulff_diagram_{t:08d}.csv"
 
-    out_path = dir_name / f"wulff_diagram_{t:08d}.csv"
-    fieldnames = ["phi", "G_star", "G_c", "G_star_cc", "G_star_cp", "G_star_pp"]
-
-    with open(out_path, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+    with open(filename, mode="a", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=list(res[0].keys()))
         writer.writeheader()
-        for i, phi in enumerate(phi_vals):
-            writer.writerow(
-                {
-                    "phi": phi,
-                    "G_star": G_total_vals[i],
-                    "G_c": gc_vals[i],
-                    "G_star_cc": Gs_cc_vals[i],
-                    "G_star_cp": Gs_cp_vals[i],
-                    "G_star_pp": Gs_pp_vals[i],
-                }
-            )
+        for row in res:
+            writer.writerow(row)

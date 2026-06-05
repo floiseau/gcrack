@@ -233,7 +233,7 @@ class GCrackData(GCrackBase):
             ForceBC(self.boundaries["top"], [0.0, 1.0]),
         ]
 
-    def Gc(self, phi):
+    def Gc(self, phi, xc):
         # Get the parameters
         Gc_min = self.pars["Gc_min"]
         Gc_max = self.pars["Gc_max"]

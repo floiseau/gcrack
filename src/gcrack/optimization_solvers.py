@@ -57,7 +57,7 @@ class LoadFactorSolver:
         # Store the crack tip position
         self.xc = xc
         # Set the critical energy release rate function
-        self.Gc = jit(Gc_func)
+        self.Gc = jit(lambda phi: Gc_func(phi, xc))
         # Automatic differentiation of the objective function
         self.grad = jit(grad(self.objective))
         self.hess = jit(hessian(self.objective))

@@ -149,15 +149,14 @@ class FCrackBase(ABC):
         """
         ...
 
-    def Gc(self, phi: float | np.ndarray) -> float | np.ndarray:
+    def Gc(self, phi: float | np.ndarray, xc: np.ndarray) -> float | np.ndarray:
         """Define the critical energy release rate.
 
-        To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\\varphi$.
-        Note that this function is only used to estimated the crack path.
-
+        To account for material anisotropy, the critical energy release rate can depend on the crack orientation $\\varphi$
 
         Args:
             phi (np.ndarray): Crack angle.
+            xc (np.ndarray): Position of the crack tip.
 
         Returns:
             np.ndarray: Value of the critical energy release rate.
@@ -165,7 +164,7 @@ class FCrackBase(ABC):
         Note:
             The intput and output should be arrays for practical details in the minimization of the load factor.
         """
-        return 1.0 + 0.0 * phi
+        pass
 
     def run(self):
         # Initialize GMSH
@@ -270,7 +269,7 @@ class FCrackBase(ABC):
             phi_ = opti_res[0]
             # NOTE: lambda_^2 G^*= Gc --> G^* = Gc/lambda_^2
             lambda_ = opti_res[1]
-            G_star_bar = self.Gc(phi_) / lambda_**2
+            G_star_bar = self.Gc(phi_, crack_points[-1]) / lambda_**2
 
             # Compute the crack growth rate
             Ep = model.Ep_func(crack_points[-1])

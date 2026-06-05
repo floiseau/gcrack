@@ -176,7 +176,7 @@ class GCrackData(GCrackBase):
     def locate_measured_forces(self):
         return []
 
-    def Gc(self, phi):
+    def Gc(self, phi, xc):
         return 0.0
 
 

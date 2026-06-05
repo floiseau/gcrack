@@ -169,7 +169,7 @@ class GCrackData(GCrackBase):
     #         ForceBC(self.boundaries["top"], [0.0, 1.0]),
     #     ]
 
-    def Gc(self, phi):
+    def Gc(self, phi, xc):
         return self.pars["Gc"] + 0.0 * phi
 
 

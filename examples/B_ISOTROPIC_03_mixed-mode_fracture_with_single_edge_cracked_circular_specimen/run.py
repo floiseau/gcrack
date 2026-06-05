@@ -224,7 +224,7 @@ class GCrackData(GCrackBase):
         y = (Ro + r) * np.sin(np.pi - angle)
         return [x, y]
 
-    def Gc(self, phi):
+    def Gc(self, phi, xc):
         return self.pars["Gc"] + 0.0 * phi
 
 
