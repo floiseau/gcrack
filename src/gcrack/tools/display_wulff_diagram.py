@@ -26,7 +26,7 @@ The generated images can be used to create a video animation of the simulation.
 Here’s an example using `magick`:
 
 ```sh
-magickt -delay 5 -loop 0 wulff_diagram_00000???.svg wulff_diagram.gif
+magick -delay 5 -loop 0 wulff_diagram_00000???.svg wulff_diagram.gif
 ```
 
 #### Raster Images (PNG, JPG)
@@ -60,8 +60,8 @@ def export_wulff_diagram(csv_file: Path, extension: str):
 
     # Extract the data
     phi = data[:, 0]
-    Gs = data[:, 1]
-    Gc = data[:, 2]
+    Gs = data[:, 4]
+    Gc = data[:, 5]
 
     # Find the intersection point
     idx = np.argmin(abs(Gs - Gc))
