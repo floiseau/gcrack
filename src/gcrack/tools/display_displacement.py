@@ -10,7 +10,7 @@ The script reads displacement data, applies potential transformations (warping),
 To visualize the displacement fields, run the following command in the `results_<name>` directory:
 
 ```sh
-gcrack_displacement_plotter
+gcrack-displacement-plotter
 ```
 
 This command generates one image file per load step.
@@ -20,7 +20,7 @@ This command generates one image file per load step.
 You can pass different arguments to the script. For detailed information on available options, use:
 
 ```sh
-gcrack_displacement_plotter --help
+gcrack-displacement-plotter --help
 ```
 
 ### Creating a Video Animation
@@ -75,10 +75,10 @@ def export_displacement_figures(factor: float, extension: str):
 
 
 def main():
-    """Entry point of `gcrack_displacement_plotter`."""
+    """Entry point of `gcrack-displacement-plotter`."""
     # Create the parser
     parser = argparse.ArgumentParser(
-        prog="gcrack_displacement_plotter",
+        prog="gcrack-displacement-plotter",
         description="Generate the displacement field images from a gcrack simulation",
     )
     parser.add_argument(

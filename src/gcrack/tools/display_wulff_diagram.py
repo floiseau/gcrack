@@ -6,7 +6,7 @@ This script visualizes the Wulff diagram from a `gcrack` simulation and saves th
 To generate the Wulff diagram from a `gcrack` simulation (with `export_wulff_diagram=True`), run the following command in the `results_<name>` directory:
 
 ```sh
-gcrack_wulff_plotter
+gcrack-wulff-plotter
 ```
 
 This command generates one image file per load step.
@@ -16,7 +16,7 @@ This command generates one image file per load step.
 You can pass different arguments to the script. For detailed information on available options, use:
 
 ```sh
-gcrack_wulff_plotter --help
+gcrack-wulff-plotter --help
 ```
 
 ### Creating a Video Animation
@@ -114,10 +114,10 @@ def export_wulff_diagram(csv_file: Path, extension: str):
 
 
 def main():
-    """Entry point of `gcrack_wulff_plotter`."""
+    """Entry point of `gcrack-wulff-plotter`."""
     # Create the parser
     parser = argparse.ArgumentParser(
-        prog="gcrack_wulff_plotter",
+        prog="gcrack-wulff-plotter",
         description="Generate the Wulff plot from a gcrack simulation",
     )
     parser.add_argument(
