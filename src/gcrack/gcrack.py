@@ -487,8 +487,8 @@ class GCrackBase(ABC):
                 )
             res["elastic_energy"] = elastic_energy
             res["fracture_dissipation"] += (
-                self.da * self.Gc(np.array([phi_]), crack_points[-1])[0]
-            )
+                self.da * self.Gc(np.array([phi_]), crack_points[-2])[0]
+            )  # NOTE: Use Gc at the "starting point" (crack_points[-2]) of the crack increment
             res["external_work"] = external_work
             # At first load step, also export the initial state
             if t == 1:
@@ -506,14 +506,14 @@ class GCrackBase(ABC):
                     phi_,
                     lambda_,
                     phi0,
-                    crack_points[-1],
+                    crack_points[-2],
                     SIFs_controlled,
                     SIFs_prescribed,
                     self.s,
                     t,
                     dir_name,
                     self.Gc,
-                )
+                )  # NOTE: Use Gc at the "starting point" (crack_points[-2]) of the crack increment
         print("\nFinalize exports")
         # Group clean the results directory
         if not self.no_vtk_export:

@@ -58,7 +58,7 @@ def export_wulff_diagram(csv_file: Path, extension: str):
     # Read the csv file using numpy
     data = np.genfromtxt(csv_file, delimiter=",", skip_header=1)
 
-    # Extract the data
+    # Extract data
     phi = data[:, 0]
     Gs = data[:, 4]
     Gc = data[:, 5]
