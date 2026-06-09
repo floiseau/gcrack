@@ -437,6 +437,7 @@ class GCrackBase(ABC):
                 # Set arbitrary results
                 phi_ = 0
                 lambda_ = 1
+                xc_new = xc0
 
             print("│  Results of the step")
             print(
