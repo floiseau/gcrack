@@ -315,9 +315,9 @@ class GCrackBase(ABC):
             "a": 0,
             "phi": self.phi0,
             "lambda": self.l0,
-            "xc_1": crack_points[-1][0],
-            "xc_2": crack_points[-1][1],
-            "xc_3": crack_points[-1][2],
+            "xc_1": self.xc0,
+            "xc_2": self.xc0,
+            "xc_3": self.xc0,
             "fimp_1": 0.0,
             "fimp_2": 0.0,
             "fimp_3": 0.0,
@@ -335,6 +335,8 @@ class GCrackBase(ABC):
             # Increment the load step
             t += 1
             print(f"\nLOAD STEP {t}")
+            # Initialize the current crack tip
+            xc0 = crack_points[-1]
             # Get current crack properties
             phi0 = res["phi"]
 
@@ -385,7 +387,7 @@ class GCrackBase(ABC):
                 self.domain,
                 model,
                 u_controlled,
-                crack_points[-1],
+                xc0,
                 phi0,
                 self.R_int,
                 self.R_ext,
@@ -402,7 +404,7 @@ class GCrackBase(ABC):
                     self.domain,
                     model,
                     u_prescribed,
-                    crack_points[-1],
+                    xc0,
                     phi0,
                     self.R_int,
                     self.R_ext,
@@ -419,7 +421,7 @@ class GCrackBase(ABC):
             # Compute the load factor and crack angle.
             print("│  Determination of propagation angle and load factor")
             if not self.no_propagation:
-                load_factor_solver = LoadFactorSolver(model, self.Gc, crack_points[-1])
+                load_factor_solver = LoadFactorSolver(model, self.Gc, xc0)
                 opti_res = load_factor_solver.solve(
                     phi0, SIFs_controlled, SIFs_prescribed, self.s
                 )
@@ -428,7 +430,7 @@ class GCrackBase(ABC):
                 lambda_ = opti_res[1]
                 # Add a new crack point
                 da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
-                crack_points.append(crack_points[-1] + da_vec)
+                xc_new = xc0 + da_vec
             else:
                 # Display a warning message
                 print("│  Running in no propagation mode (set arbitrary results).")
@@ -441,7 +443,7 @@ class GCrackBase(ABC):
                 f"│  │  Crack propagation angle : {phi_:.3f} rad / {phi_ * 180 / np.pi:.3f}°"
             )
             print(f"│  │  Load factor             : {lambda_:.3g}")
-            print(f"│  │  New crack tip position  : {crack_points[-1]}")
+            print(f"│  │  New crack tip position  : {xc_new}")
 
             print("│  Postprocess")
             # Scale the displacement field
@@ -469,13 +471,14 @@ class GCrackBase(ABC):
                     export_function(strain, t, dir_name)
 
             # Store the results
+            crack_points.append(xc_new)
             res["t"] = t
             res["a"] += self.da
             res["phi"] = phi_
             res["lambda"] = lambda_
-            res["xc_1"] = crack_points[-1][0]
-            res["xc_2"] = crack_points[-1][1]
-            res["xc_3"] = crack_points[-1][2]
+            res["xc_1"] = xc_new[0]
+            res["xc_2"] = xc_new[1]
+            res["xc_3"] = xc_new[2]
             for point, uimp in enumerate(uimps):
                 for comp, uimp_comp in enumerate(uimp):
                     res[f"uimp_p{point + 1}_{comp + 1}"] = uimp[comp]
@@ -486,9 +489,7 @@ class GCrackBase(ABC):
                     lambda_ * SIFs_controlled[sif_name] + SIFs_prescribed[sif_name]
                 )
             res["elastic_energy"] = elastic_energy
-            res["fracture_dissipation"] += (
-                self.da * self.Gc(np.array([phi_]), crack_points[-2])[0]
-            )  # NOTE: Use Gc at the "starting point" (crack_points[-2]) of the crack increment
+            res["fracture_dissipation"] += self.da * self.Gc(np.array([phi_]), xc0)[0]
             res["external_work"] = external_work
             # At first load step, also export the initial state
             if t == 1:
@@ -506,14 +507,14 @@ class GCrackBase(ABC):
                     phi_,
                     lambda_,
                     phi0,
-                    crack_points[-2],
+                    xc0,
                     SIFs_controlled,
                     SIFs_prescribed,
                     self.s,
                     t,
                     dir_name,
                     self.Gc,
-                )  # NOTE: Use Gc at the "starting point" (crack_points[-2]) of the crack increment
+                )
         print("\nFinalize exports")
         # Group clean the results directory
         if not self.no_vtk_export:
