@@ -194,7 +194,7 @@ class ElasticModel:
             ufl.classes.Expr: Elastic energy.
         """
         # Get the integration measure
-        dx = ufl.Measure("dx", domain=domain.mesh, metadata={"quadrature_degree": 6})
+        dx = ufl.Measure("dx", domain=domain.mesh)
         # Compute the stress
         sig = self.sig(u)
         # Compute the strain
