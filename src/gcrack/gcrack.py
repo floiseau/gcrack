@@ -68,6 +68,7 @@ from gcrack.optimization_solvers import LoadFactorSolver
 from gcrack.postprocess import (
     compute_measured_forces,
     compute_measured_displacement,
+    compute_mean_displacements,
     compute_elastic_energy,
     compute_external_work,
     compute_stress,
@@ -233,6 +234,14 @@ class GCrackBase(ABC):
 
         Returns:
             List[BodyForce]: List of BodyForce (f_imp) where f_imp is the force vector.
+        """
+        return []
+
+    def locate_mean_displacement_measures(self) -> List[int]:
+        """Define the boundary where the mean displacements are measured.
+
+        Returns:
+            List[int]: Identifiers (id) of the boundary in GMSH.
         """
         return []
 
@@ -454,6 +463,8 @@ class GCrackBase(ABC):
             # Compute the reaction force
             fimp = compute_measured_forces(self.domain, model, u_scaled, self)
             uimps = compute_measured_displacement(self.domain, u_scaled, self)
+            # Compute mean displacements
+            us_mean = compute_mean_displacements(self.domain, u_scaled, self)
             # COmpute energies
             elastic_energy = compute_elastic_energy(self.domain, model, u_scaled)
             external_work = compute_external_work(self.domain, model, u_scaled)
@@ -485,6 +496,9 @@ class GCrackBase(ABC):
                     res[f"uimp_p{point + 1}_{comp + 1}"] = uimp[comp]
             for comp, fimp_comp in enumerate(fimp):
                 res[f"fimp_{comp + 1}"] = fimp[comp]
+            for boundary, u_mean in enumerate(us_mean):
+                for comp, u_comp in enumerate(u_mean):
+                    res[f"u_mean_b{boundary + 1}_{comp + 1}"] = u_comp
             for sif_name in SIFs_controlled:
                 res[sif_name] = (
                     lambda_ * SIFs_controlled[sif_name] + SIFs_prescribed[sif_name]

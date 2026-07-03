@@ -112,6 +112,43 @@ def compute_measured_displacement(
     return u_probes
 
 
+def compute_mean_displacements(domain: Domain, uh: fem.Function, gcrack_data):
+    """Compute the mean displacements along specified boundaries.
+
+    Args:
+        domain (Domain): The domain of the problem.
+        uh (Function): The displacement solution of the elastic problem.
+
+    Returns:
+        np.array: The array of mean displacements.
+    """
+    # Get the number of components
+    N_comp = uh.function_space.value_shape[0]
+    # Get the boundary id
+    boundary_ids = gcrack_data.locate_mean_displacement_measures()
+    # Iterate through the boundaries
+    us = np.empty((len(boundary_ids), N_comp))
+    for k, boundary_id in enumerate(boundary_ids):
+        # Get the integrand over the boundary
+        ds = ufl.Measure(
+            "ds",
+            domain=domain.mesh,
+            subdomain_data=domain.facet_markers,
+            subdomain_id=boundary_id,
+        )
+        for comp in range(N_comp):
+            # Elementary vector for the current component
+            elem_vec_np = np.zeros((N_comp,))
+            elem_vec_np[comp] = 1
+            elem_vec = fem.Constant(domain.mesh, elem_vec_np)
+            # Calculation of the Expression for the average displacement for the current component
+            u_form = fem.form(ufl.dot(uh, elem_vec) * ds)
+            l_form = fem.form(1.0 * ds)
+            # Assemble the form to get the reaction force component
+            us[k, comp] = fem.assemble_scalar(u_form) / fem.assemble_scalar(l_form)
+    return us
+
+
 def compute_elastic_energy(
     domain: Domain, model: ElasticModel, uh: fem.Function
 ) -> float:
