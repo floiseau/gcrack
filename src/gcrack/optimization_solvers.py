@@ -13,13 +13,10 @@ References:
     https://doi.org/10.1016/0020-7683(92)90210-K
 """
 
-from pathlib import Path
 from collections.abc import Callable
 from typing import List
 
-from math import pi
 
-import matplotlib.pyplot as plt
 import jax.numpy as jnp
 from jax import jit, grad, hessian, random
 
@@ -208,7 +205,7 @@ def gradient_descent_with_line_search(
     phi0: float,
     gra: Callable,
     tol: float = 1e-6,
-    max_iter: int = 10_000,
+    max_iter: int = 50,
     kwargs: dict = {},
 ) -> float:
     """Performs gradient descent with line search to minimize an objective function.
@@ -245,13 +242,22 @@ def gradient_descent_with_line_search(
             idx = 0
         else:
             # Apply line-search
-            cs = [0.0] + [(jnp.pi / 2) ** k for k in range(-29, 2)]
+            cs = [0.0] + [(jnp.pi / 2) ** k for k in range(-30, 1)]
             phis_test = jnp.array([phi + c * jnp.sign(direction) for c in cs])
             # Get the index associated with the first increase of the objective
             diff = jnp.array([gra([phi_test], **kwargs)[0] for phi_test in phis_test])
             # Create an array with the slope "in the direction of minimization"
             slope = jnp.sign(direction) * diff
-            if jnp.all(slope < 0):
+            # Create a mask to exclude nan
+            contains_nan = jnp.any(jnp.isnan(slope))
+            if contains_nan:
+                # If the slope is full of nan
+                error_msg = (
+                    "WARNING : The gradient of the objective function (load factor) contains NaN.\n"
+                    + "It is probably due to an error in the definition of Gc (e.g., negative values)."
+                )
+                raise ValueError(error_msg)
+            elif jnp.all(slope < 0):
                 # If the slope is always negative, take the largest step
                 idx = -1
             elif jnp.all(slope > 0):
