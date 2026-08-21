@@ -485,12 +485,12 @@ class GCrackBase(ABC):
             # Store the results
             crack_points.append(xc_new)
             res["t"] = t
-            res["a"] += self.da
+            res["a"] += self.da if t != 1 else 0
             res["phi"] = phi_
             res["lambda"] = lambda_
-            res["xc_1"] = xc_new[0]
-            res["xc_2"] = xc_new[1]
-            res["xc_3"] = xc_new[2]
+            res["xc_1"] = xc0[0]
+            res["xc_2"] = xc0[1]
+            res["xc_3"] = xc0[2]
             for point, uimp in enumerate(uimps):
                 for comp, uimp_comp in enumerate(uimp):
                     res[f"uimp_p{point + 1}_{comp + 1}"] = uimp[comp]
