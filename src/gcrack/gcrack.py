@@ -321,7 +321,7 @@ class GCrackBase(ABC):
         # Initialize results storage
         res = {
             "t": 0,
-            "a": 0,
+            "a": 0.0,
             "phi": self.phi0,
             "lambda": self.l0,
             "xc_1": self.xc0,
