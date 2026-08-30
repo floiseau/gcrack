@@ -264,7 +264,11 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig("comparison_num_ana_orthoradial_stress.svg")
 
-    plt.show()
+    # Export the results
+    with open("validation_centrifugal.csv", "w") as csv_file:
+        csv_file.write("r,sig_rt")
+        for r, sig_rr, sig_tt in zip(rs, sig_rr_num, sig_tt_num):
+            csv_file.write(f"{r},{sig_rr},{sig_tt}")
 
     # Clean up
     gmsh.finalize()

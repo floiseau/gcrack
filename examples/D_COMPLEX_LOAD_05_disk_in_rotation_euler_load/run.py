@@ -1,11 +1,23 @@
 from typing import List
+from pathlib import Path
 
 import jax.numpy as jnp
+import numpy as np
+import matplotlib.pyplot as plt
 
 import gmsh
+import dolfinx
+from dolfinx import fem
 
 from gcrack.gcrack import GCrackBase
-from gcrack.boundary_conditions import DisplacementBC, BodyForce
+from gcrack.boundary_conditions import (
+    BodyForce,
+    DisplacementBC,
+    BoundaryConditions,
+)
+from gcrack.domain import Domain
+from gcrack.models import ElasticModel
+from gcrack.solvers import solve_elastic_problem
 
 
 class GCrack(GCrackBase):
@@ -133,8 +145,8 @@ class GCrack(GCrackBase):
 if __name__ == "__main__":
     pars = {
         # Geometry
-        "a": 0.1,
-        "b": 1.0,
+        "a": 1.0,
+        "b": 2.0,
         # Load
         "w": 0.0,
         "wd": 1.0,
@@ -160,4 +172,96 @@ if __name__ == "__main__":
         name="numeric_euler",
         no_propagation=True,
     )
-    gcrack.run()
+
+    # Initialize GMSH
+    gmsh.initialize()
+    gmsh.option.setNumber("General.Terminal", 0)  # Disable terminal output
+    gmsh.option.setNumber("Mesh.Algorithm", 5)
+    # Initialize export directory
+    dir_name = Path("results_" + gcrack.name)
+    dir_name.mkdir(parents=True, exist_ok=True)
+    # Get the elastic parameters
+    ela_pars = {
+        "E": gcrack.E,
+        "nu": gcrack.nu,
+        "2D_assumption": gcrack.assumption_2D,
+    }
+    # Initialize the crack points
+    crack_points = [gcrack.xc0]
+    print("│  Meshing the cracked domain")
+    gmsh_model = gcrack.generate_mesh(crack_points)
+
+    # Get the controlled boundary conditions
+    bcs = BoundaryConditions(
+        displacement_bcs=gcrack.define_controlled_displacements(),
+        force_bcs=gcrack.define_controlled_forces(),
+        body_forces=gcrack.define_controlled_body_forces(),
+        locked_points=gcrack.define_locked_points(),
+        nodal_displacements=gcrack.define_nodal_displacements(),
+    )
+
+    # Define the domain
+    domain = Domain(gmsh_model)
+
+    # Define an elastic model
+    model = ElasticModel(ela_pars, domain)
+
+    print("│  Solve the controlled elastic problem with FEM")
+    # Solve the controlled elastic problem
+    u = solve_elastic_problem(domain, model, bcs)
+
+    print("│  Extract the stress field along a radial line")
+    # Compute the stress field along a line
+    sig_ufl = model.sig(u)
+    # Generate FEM space for stress
+    shape = sig_ufl.ufl_shape
+    V_sig = fem.functionspace(domain.mesh, ("DG", 0, shape))
+    # Convert the stress into an expression
+    sig_expr = fem.Expression(sig_ufl, V_sig.element.interpolation_points)
+    # Set the stress function
+    sig = fem.Function(V_sig, name="Stress")
+    sig.interpolate(sig_expr)
+    # Evaluate along a line
+    bb_tree = dolfinx.geometry.bb_tree(domain.mesh, domain.mesh.topology.dim)
+    rs = np.linspace(pars["a"], pars["b"], num=64)
+    points = np.array([[r, 0.0, 0.0] for r in rs])
+    potential_colliding_cells = dolfinx.geometry.compute_collisions_points(
+        bb_tree, points
+    )
+    colliding_cells = dolfinx.geometry.compute_colliding_cells(
+        domain.mesh, potential_colliding_cells, points
+    )
+    cells = [colliding_cells.links(i)[0] for i, _ in enumerate(points)]
+    cells = np.array(cells, dtype=np.int32)
+    sig_line = sig.eval(points, cells)
+    # Exctract the components
+    sig_rt_num = sig_line[:, 1]
+
+    # TODO Compute the analytical solution
+    G = gcrack.E / (2 * (1 + gcrack.nu))
+    sig_rt_ana = (
+        -pars["rho"]
+        * pars["wd"]
+        * pars["b"] ** 2
+        / 4
+        * (pars["b"] ** 2 / rs**2 - rs**2 / pars["b"] ** 2)
+    )
+
+    # Display the comparison
+    plt.figure()
+    plt.xlabel(r"Radial coordinate $r$")
+    plt.ylabel(r"Stress component $\sigma_{r\theta}$")
+    plt.scatter(rs, sig_rt_ana, marker="x", label="Analytic")
+    plt.scatter(rs, sig_rt_num, marker="+", label="Numeric")
+    plt.grid()
+    plt.legend()
+    plt.savefig("comparison_num_ana_sig_rt.svg")
+
+    # Export the results
+    with open("validation_euler.csv", "w") as csv_file:
+        csv_file.write("r,sig_rt\n")
+        for r, sig_rt in zip(rs, sig_rt_num):
+            csv_file.write(f"{r},{sig_rt}\n")
+
+    # Clean up
+    gmsh.finalize()
