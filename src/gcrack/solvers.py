@@ -6,8 +6,8 @@ This module provides functions for solving elastic problems using the finite ele
 Functions:
     solve_elastic_problem:
         Solves an elastic problem using the finite element method.
-    compute_external_work:
-        Computes the external work due to imposed forces and body forces.
+    compute_external_work_potential:
+        Computes the external work potential due to imposed forces and body forces.
 """
 
 from gcrack.utils.expression_parsers import parse_expression
@@ -58,9 +58,9 @@ def solve_elastic_problem(
     dirichlet_bcs = get_dirichlet_boundary_conditions(domain, V_u, bcs)
     # Define the total energy
     energy = model.elastic_energy(u, domain)
-    external_work = compute_external_work(domain, u, bcs)
-    if external_work:
-        energy -= external_work
+    external_work_potential = compute_external_work_potential(domain, u, bcs)
+    if external_work_potential:
+        energy -= external_work_potential
     # Derive the energy to obtain the variational formulation
     E_u = ufl.derivative(energy, u, ufl.TestFunction(V_u))
     E_du = ufl.replace(E_u, {u: ufl.TrialFunction(V_u)})
@@ -92,7 +92,7 @@ def solve_elastic_problem(
     return problem.solve()
 
 
-def compute_external_work(
+def compute_external_work_potential(
     domain: Domain, v: dolfinx.fem.Function, bcs: BoundaryConditions
 ) -> ufl.classes.Form:
     """Computes the external work due to imposed forces and body forces.
@@ -126,7 +126,7 @@ def compute_external_work(
         bcs: Object containing the boundary conditions.
 
     Returns:
-        external_work(ufl.classes.Form):
+        external_work_potential(ufl.classes.Form):
             An UFL form representing the external work, which can be integrated over the domain or used in variational formulations.
 
     """
@@ -134,7 +134,7 @@ def compute_external_work(
     N_comp = v.function_space.value_shape[0]
     # Initialize the external work
     f = fem.Constant(domain.mesh, [0.0] * N_comp)
-    external_work = ufl.dot(f, v) * ufl.dx
+    external_work_potential = ufl.dot(f, v) * ufl.dx
     # Create a function space for body forces
     bf_space = fem.functionspace(domain.mesh, ("Lagrange", 1))
     # Iterate through the body forces
@@ -148,7 +148,7 @@ def compute_external_work(
             f_list.append(f_comp_parsed)
         f = ufl.as_vector(f_list)
         # Add constant body force to the external work
-        external_work += ufl.dot(f, v) * dx
+        external_work_potential += ufl.dot(f, v) * dx
 
     # Iterate through the force boundary conditions
     for f_bc in bcs.force_bcs:
@@ -161,5 +161,5 @@ def compute_external_work(
         )
         T = ufl.as_vector(f_bc.f_imp)
         # Add the contribution to the external work
-        external_work += ufl.dot(T, v) * ds
-    return external_work
+        external_work_potential += ufl.dot(T, v) * ds
+    return external_work_potential

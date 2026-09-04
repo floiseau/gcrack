@@ -10,8 +10,8 @@ Functions:
         Computes the displacement at a specified point.
     compute_elastic_energy:
         Computes the elastic energy in the domain.
-    compute_external_work:
-        Computes the external work done on the domain.
+    compute_external_work_potential:
+        Computes the external work potential.
 """
 
 import numpy as np
@@ -166,10 +166,10 @@ def compute_elastic_energy(
     return fem.assemble_scalar(fem.form(model.elastic_energy(uh, domain)))
 
 
-def compute_external_work(
+def compute_external_work_potential(
     domain: Domain, model: ElasticModel, uh: fem.Function
 ) -> float:
-    """Compute the external work.
+    """Compute the external work potential.
 
     Args:
         domain (Domain): The domain of the problem.
@@ -177,7 +177,7 @@ def compute_external_work(
         uh (Function): The displacement solution of the elastic problem.
 
     Returns:
-        float: External work.
+        float: External work potential.
     """
     # Get surface measure
     ds = ufl.Measure("ds", domain=domain.mesh)

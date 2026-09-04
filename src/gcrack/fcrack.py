@@ -23,7 +23,7 @@ from gcrack.postprocess import (
     compute_measured_forces,
     compute_measured_displacement,
     compute_elastic_energy,
-    compute_external_work,
+    compute_external_work_potential,
 )
 from gcrack.exporters import export_function, export_res_to_csv, clean_vtk_files
 
@@ -205,7 +205,7 @@ class FCrackBase(ABC):
             "T": 0.0,
             "elastic_energy": 0.0,
             "fracture_dissipation": 0.0,
-            "external_work": 0.0,
+            "external_work_potential": 0.0,
         }
 
         # Select the type of control
@@ -310,7 +310,9 @@ class FCrackBase(ABC):
             fimp_max = compute_measured_forces(self.domain, model, u_max, self)
             uimp_max = compute_measured_displacement(self.domain, u_max, self)
             elastic_energy_max = compute_elastic_energy(self.domain, model, u_max)
-            external_work_max = compute_external_work(self.domain, model, u_max)
+            external_work_pot_max = compute_external_work_potential(
+                self.domain, model, u_max
+            )
             # Compute the min displacement field (when lmin is not zero)
             u_min = u.copy()
             u_min.x.array[:] = self.lmin * u.x.array
@@ -318,7 +320,9 @@ class FCrackBase(ABC):
             fimp_min = compute_measured_forces(self.domain, model, u_min, self)
             uimp_min = compute_measured_displacement(self.domain, u_min, self)
             elastic_energy_min = compute_elastic_energy(self.domain, model, u_min)
-            external_work_min = compute_external_work(self.domain, model, u_min)
+            external_work_pot_min = compute_external_work_potential(
+                self.domain, model, u_min
+            )
 
             print("│  Export the results")
             # Export the elastic solution
@@ -350,8 +354,8 @@ class FCrackBase(ABC):
             res["elastic_energy_min"] = elastic_energy_min
             res["elastic_energy_max"] = elastic_energy_max
             res["fracture_dissipation"] = "TODO"
-            res["external_work_min"] = external_work_min
-            res["external_work_max"] = external_work_max
+            res["external_work_potential_min"] = external_work_pot_min
+            res["external_work_potential_max"] = external_work_pot_max
             # At first load step, also export the initial state
             if t == 1:
                 res_init = res.copy()

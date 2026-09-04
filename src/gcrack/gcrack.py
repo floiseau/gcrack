@@ -70,7 +70,7 @@ from gcrack.postprocess import (
     compute_measured_displacement,
     compute_mean_displacements,
     compute_elastic_energy,
-    compute_external_work,
+    compute_external_work_potential,
     compute_stress,
     compute_strain,
 )
@@ -335,7 +335,7 @@ class GCrackBase(ABC):
             "T": 0.0,
             "elastic_energy": 0.0,
             "fracture_dissipation": 0.0,
-            "external_work": 0.0,
+            "external_work_potential": 0.0,
         }
         # Initialize the load step
         t = 0
@@ -467,7 +467,9 @@ class GCrackBase(ABC):
             us_mean = compute_mean_displacements(self.domain, u_scaled, self)
             # COmpute energies
             elastic_energy = compute_elastic_energy(self.domain, model, u_scaled)
-            external_work = compute_external_work(self.domain, model, u_scaled)
+            external_work_potential = compute_external_work_potential(
+                self.domain, model, u_scaled
+            )
 
             print("│  Export the results")
             # Export the elastic solution
@@ -505,7 +507,7 @@ class GCrackBase(ABC):
                 )
             res["elastic_energy"] = elastic_energy
             res["fracture_dissipation"] += self.da * self.Gc(np.array([phi_]), xc0)[0]
-            res["external_work"] = external_work
+            res["external_work_potential"] = external_work_potential
             # At first load step, also export the initial state
             if t == 1:
                 res_init = res.copy()
