@@ -201,7 +201,7 @@ if __name__ == "__main__":
         E=1,  # Young modulus
         nu=0.3,  # Poisson ratio
         da=pars["da"],  # Crack increment
-        Nt=100,  # Number of load step
+        Nt=1_000,  # Number of load step
         # WARNING: gcrack "crashes" if the crack goes outside before Nt load steps, but the results are still preserved.
         xc0=[pars["a0"], 0, 0],  # Initial crack tip location
         assumption_2D="plane_strain",  # 2D assumption ("plane_strain"/"plane_stress")
