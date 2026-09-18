@@ -106,13 +106,13 @@ class GCrackData(GCrackBase):
         gmsh.model.mesh.field.setAsBackgroundMesh(field2)
         gmsh.model.mesh.generate(2)
 
-        # NOTE: Uncomment and move this block to display the mesh in GMSH
-        # Display and exit for debug purposes
-        # Synchronize the model
-        gmsh.model.geo.synchronize()
-        # Display the GMSH window
-        gmsh.fltk.run()
-        exit()
+        # # NOTE: Uncomment and move this block to display the mesh in GMSH
+        # # Display and exit for debug purposes
+        # # Synchronize the model
+        # gmsh.model.geo.synchronize()
+        # # Display the GMSH window
+        # gmsh.fltk.run()
+        # exit()
 
         # Return the model
         return gmsh.model()
@@ -123,7 +123,7 @@ class GCrackData(GCrackBase):
         Returns:
             List: Coordinate of the point where the displacement is measured
         """
-        return [0, self.pars["L"]]
+        return [0, self.pars["H"] / 2]
 
     def locate_measured_forces(self) -> int:
         """Define the boundary where the reaction force are measured.
@@ -142,23 +142,31 @@ class GCrackData(GCrackBase):
         return [
             DisplacementBC(
                 boundary_id=self.boundaries["bot"],
-                u_imp=[float("nan"), -1],
+                u_imp=[0, -1],
             ),
             DisplacementBC(
                 boundary_id=self.boundaries["top"],
-                u_imp=[float("nan"), 1],
+                u_imp=[0, 1],
             ),
         ]
 
-    def define_locked_points(self) -> List[List[float]]:
-        """Define the list of locked points.
+    def end_simulation(self, crack_points: List[List[float]]) -> bool:
+        """User-defined function to end the simulation when a condition is met.
+
+        Args:
+            crack_points (List[List[float]]): List of the crack points.
 
         Returns:
-            List[List[float]]: A list of points (list) coordinates.
+            bool: True if the simulation must be ended, else False.
         """
-        return [
-            [0, 0, 0],
-        ]
+        # Get the crack tip
+        xt = crack_points[-1][0]
+        yt = crack_points[-1][1]
+        # Get geometric parameters parameters
+        L = self.pars["L"]
+        H = self.pars["H"]
+        # Set the condition
+        return L < xt or yt < -H / 2 or H / 2 < yt
 
     def Gc(self, phi, xc):
         # Get the parameters
@@ -198,7 +206,7 @@ if __name__ == "__main__":
         xc0=[pars["a0"], 0, 0],  # Initial crack tip location
         assumption_2D="plane_strain",  # 2D assumption ("plane_strain"/"plane_stress")
         pars=pars,  # User-defined parameters
-        sif_method="i-integral",  # Method to calculate SIFs ("i-integral"/"willliams")
+        sif_method="williams",  # Method to calculate SIFs ("i-integral"/"willliams")
         s=pars["da"],  # Length associated with T-stress (Amestoy-Leblond, 1992)
     )
     gcrack_data.run()
