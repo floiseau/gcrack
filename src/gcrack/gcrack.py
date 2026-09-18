@@ -308,6 +308,9 @@ class GCrackBase(ABC):
 
         # Initialize export directory
         dir_name = Path("results_" + self.name)
+        if dir_name.is_dir():
+            now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            dir_name.rename(Path(dir_name.name + f"_backup_{now}"))
         dir_name.mkdir(parents=True, exist_ok=True)
 
         # Get the elastic parameters
