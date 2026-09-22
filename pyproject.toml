@@ -23,7 +23,7 @@ requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-gcrack-wulf-plotter="gcrack.tools.display_wulff_diagram:main"
+gcrack-wulff-plotter="gcrack.tools.display_wulff_diagram:main"
 gcrack-displacement-plotter="gcrack.tools.display_displacement:main"
 
 [tool.setuptools.packages.find]
