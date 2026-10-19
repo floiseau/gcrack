@@ -3,9 +3,6 @@ Module for solving the optimization problem to determine the load factor in crac
 
 This module provides the `LoadFactorSolver` class, which implements the GMERR (Generalized Maximum Energy Release Rate) criterion for crack propagation.
 The solver is based on the work of Amestoy and Leblond (1992) and is designed to work with the `gcrack.lefm` module.
-It uses gradient descent with line search to find the optimal crack propagation angle and load factor.
-
-The module also includes a custom gradient descent optimizer with line search for robust convergence, even in the presence of discontinuities or "cups" in critical energy release rate Gc.
 
 References:
     Amestoy, M., & Leblond, J. B. (1992). A new numerical method for crack growth prediction.
@@ -19,6 +16,7 @@ from typing import List
 
 import jax.numpy as jnp
 from jax import jit, grad, hessian, random
+from scipy.optimize import root_scalar
 
 from gcrack.models import ElasticModel
 from gcrack.lefm import G_star, G_star_coupled
@@ -184,7 +182,7 @@ class LoadFactorSolver:
             "phi0": phi0,
         }
 
-        phi = gradient_descent_with_line_search(phi0, self.grad, kwargs=kwargs)
+        phi = find_local_min(phi0, self.grad, kwargs=kwargs)
 
         # Check the stability of the solution (i.e., check if solution is a max)
         hess = self.hess([phi], **kwargs)[0][0]
@@ -193,7 +191,7 @@ class LoadFactorSolver:
             print("Found a maximum instead of minimum -> perturbating the objective")
             print("Note: this test might also be triggered by cups!")
             # Perform another gradient descent on the perturbed objective
-            phi = gradient_descent_with_line_search(phi0, self.grad_pert, kwargs=kwargs)
+            phi = find_local_min(phi0, self.grad_pert, kwargs=kwargs)
 
         # Compute the load factor
         load_factor = self.objective([phi], **kwargs)
@@ -201,95 +199,43 @@ class LoadFactorSolver:
         return float(phi), float(load_factor)
 
 
-def gradient_descent_with_line_search(
+def find_local_min(
     phi0: float,
-    gra: Callable,
-    tol: float = 1e-6,
-    max_iter: int = 50,
-    kwargs: dict = {},
+    grad_func: Callable,
+    kwargs: dict,
+    tol: float = 1e-10,
+    max_expand: int = 60,
 ) -> float:
-    """Performs gradient descent with line search to minimize an objective function.
+    """Finds the local minimum reached by descending -grad(phi0).
 
-    This function implements gradient descent with a custom line search to find the minimum
-    of an objective function. It is designed to handle discontinuities and "cups" in the
-    objective function.
-
-    Args:
-        phi0 (float): Initial guess for the crack propagation angle.
-        gra (Callable): The gradient of the objective function.
-        tol (float): Tolerance for convergence.
-        max_iter (int): Maximum number of iterations.
-        kwargs (dict): Additional arguments to pass to the gradient function.
-
-    Returns:
-        float: The optimal crack propagation angle.
-
-    Raises:
-        RuntimeError: If the gradient descent fails to converge.
+    1. Walk downhill with geometrically growing steps until grad changes sign.
+    2. Refine the sign-change bracket with brentq (robust to discontinuous grad:
+       a jump from - to + across a kink is bracketed just like a smooth zero).
     """
-    print("│  │  Running the gradient descent with custom line search")
-    # Initialization
+    # Initialize the phi and the gradient
     phi = float(phi0)
-    converged = False
-    for i in range(max_iter):
-        # Determine the direction
-        direction = -gra([phi], **kwargs)[0]
-        # Check if the direction is close to 0
-        if jnp.isclose(direction, 0):
-            # Set a null increment
-            dphi = 0
-            # Set a null idx
-            idx = 0
-        else:
-            # Apply line-search
-            cs = [0.0] + [(jnp.pi / 2) ** k for k in range(-30, 1)]
-            phis_test = jnp.array([phi + c * jnp.sign(direction) for c in cs])
-            # Get the index associated with the first increase of the objective
-            diff = jnp.array([gra([phi_test], **kwargs)[0] for phi_test in phis_test])
-            # Create an array with the slope "in the direction of minimization"
-            slope = jnp.sign(direction) * diff
-            # Create a mask to exclude nan
-            contains_nan = jnp.any(jnp.isnan(slope))
-            if contains_nan:
-                # If the slope is full of nan
-                error_msg = (
-                    "WARNING : The gradient of the objective function (load factor) contains NaN.\n"
-                    + "It is probably due to an error in the definition of Gc (e.g., negative values)."
-                )
-                raise ValueError(error_msg)
-            elif jnp.all(slope < 0):
-                # If the slope is always negative, take the largest step
-                idx = -1
-            elif jnp.all(slope > 0):
-                # If the slope is always positive, take no step
-                idx = 0
-            else:
-                # If the slope increases after a decrease, then local minimum
-                idx = jnp.where(slope > 0)[0][0] - 1
-                # If the first grad is positive, we are at the solution
-                # This case only occurs when the grad is discontinuous (cups)
-                if idx == -1:
-                    idx = 0
-            # Calculate the increment
-            dphi = phis_test[idx] - phi
-        # Update the solution
-        phi += dphi
-        # Generate an info message
-        msg = "│  │  │  "
-        msg += f"Step: {i + 1:06d} | "
-        msg += f"phi: {jnp.rad2deg(phi):+7.2f}° | "
-        msg += f"dphi: {abs(dphi):8.3g}"
-        print(msg)
-        # Check the convergence
-        converged = idx == 0 or abs(dphi) <= tol
-        if converged:
-            print("│  │  │  Converged")
-            break
-        else:
-            # Clip the angle phi
-            phi = min(max(phi0 - 2 * jnp.pi / 3, phi), phi0 + 2 * jnp.pi / 3)
+    g = float(grad_func([jnp.asarray(phi)], **kwargs)[0])
 
-    # Check the convergence
-    if not converged:
-        raise RuntimeError(" └─ Gradient descent failed to converge!")
-    return phi
+    # Check if the point is already stationary
+    if abs(g) < 1e-14:
+        return phi
+
+    # Downhill walk: expand steps until grad flips sign
+    d = -jnp.sign(g)
+    step = 1e-3
+    for _ in range(max_expand):
+        phi_new = phi + d * step
+        g_new = float(grad_func([jnp.asarray(phi_new)], **kwargs)[0])
+        if g_new == 0.0 or g_new * g < 0:  # sign change -> bracketed
+            break
+        phi, g, step = phi_new, g_new, 2.0 * step
+
+    # Brent on the bracket: cheap, superlinear, kink-safe
+    res = root_scalar(
+        lambda p: float(grad_func([jnp.asarray(p)], **kwargs)[0]),
+        bracket=(phi, phi_new),
+        method="brentq",
+        xtol=tol,
+        rtol=tol,
+    )
+    return float(res.root)
