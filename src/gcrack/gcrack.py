@@ -10,7 +10,7 @@ The workflow includes:
 - Generating the mesh for the cracked domain.
 - Applying boundary conditions (displacements, forces, body forces, locked points, etc.).
 - Solving the elastic problem for both controlled and prescribed boundary conditions.
-- Computing SIFs using the specified method (e.g., I-integral).
+- Computing Stress Intensity Factors (SIFs) using the specified method (e.g., I-integral).
 - Determining the crack propagation angle and load factor.
 - Post-processing results, including computing energies, reaction forces, and displacements.
 - Exporting results to VTK and CSV formats.
@@ -113,6 +113,8 @@ class GCrackBase(ABC):
     """sif_method (Optional[str]): Method for computing Stress Intensity Factors (SIFs), defaults to "I-integral"."""
     criterion: Optional[str] = "gmerr"
     """criterion (Optional[str]): Criterion for crack propagation, defaults to "gmerr"."""
+    da_sub: Optional[float] = 0.0
+    """da_sub (Optional[str]): Crack increment length at peak in the load factor-crack length curve."""
     name: Optional[str] = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     """name (Optional[str]): Name of the simulation used to name the results directory."""
     no_propagation: Optional[bool] = False
@@ -299,6 +301,9 @@ class GCrackBase(ABC):
         Note:
             - The `no_meshing` flag can be set to skip mesh generation if a mesh already exists.
             - The `no_propagation` flag can be set to skip crack propagation and use arbitrary load factor/crack propagation angle.
+            - All the quantities stored in `res` (crack length, dissipation, load factor,
+              energies, crack tip position...) are associated with the geometric configuration
+              meshed and solved in the step, i.e. the crack points up to `crack_points[-1]`.
         """
         # Initialize GMSH
         gmsh.initialize()
@@ -342,6 +347,7 @@ class GCrackBase(ABC):
         }
         # Initialize the load step
         t = 0
+        da_step = 0.0
         # Iterate through the load step
         while t < self.Nt and not self.end_simulation(crack_points):
             # Increment the load step
@@ -354,6 +360,13 @@ class GCrackBase(ABC):
 
             # Run the user defined load step initialization
             self.user_load_step_initialization(res)
+
+            # Store the geometric informations of the step
+            if t > 1:
+                res["a"] += da_step
+                res["fracture_dissipation"] += (
+                    da_step * self.Gc(np.array([res["phi"]]), crack_points[-2])[0]
+                )
 
             # Generate the mesh
             if not self.no_meshing:
@@ -440,23 +453,75 @@ class GCrackBase(ABC):
                 # Get the results
                 phi_ = opti_res[0]
                 lambda_ = opti_res[1]
-                # Add a new crack point
-                da_vec = self.da * np.array([np.cos(phi_), np.sin(phi_), 0])
-                xc_new = xc0 + da_vec
             else:
                 # Display a warning message
                 print("│  Running in no propagation mode (set arbitrary results).")
                 # Set arbitrary results
-                phi_ = 0
-                lambda_ = 1
-                xc_new = xc0
+                phi_ = 0.0
+                lambda_ = 1.0
+                da_step = 0.0
+
+            # Initialize peak refinement
+            if t == 1:
+                # Peak detection history (load factors of the accepted steps) and substepping state
+                lambda_history = []
+                last_append_da = 0.0
+                fine_steps_remaining = 0
+            # Detect a peak of the lambda-a curve (i.e. of the F-u curve)
+            # NOTE: the load factors of two successive accepted steps are computed at two
+            # successive crack tips, so a sign change of the successive load factor
+            # increments means that a peak is bracketed between the last two crack tips.
+            # The detection is disabled while substepping (single refinement level).
+            if (
+                self.da_sub > 0.0
+                and not self.no_propagation
+                and len(lambda_history) >= 2
+                and fine_steps_remaining == 0
+            ):
+                dl_prev = lambda_history[-1] - lambda_history[-2]
+                dl_curr = lambda_ - lambda_history[-1]
+                if dl_prev * dl_curr < 0:
+                    # Forget the current step
+                    fine_steps_remaining = (
+                        int(np.ceil(last_append_da / self.da_sub)) - 1
+                    )
+                    crack_points.pop()
+                    # Undo the geometric accounting of the discarded advance
+                    res["a"] -= da_step
+                    res["fracture_dissipation"] -= (
+                        da_step * self.Gc(np.array([res["phi"]]), crack_points[-1])[0]
+                    )
+                    # The configuration of the restarted step is one substep ahead
+                    # of the previous crack tip
+                    da_step = self.da_sub
+                    t -= 1
+                    # Advance by the first substep (with the propagation angle of the
+                    # previous accepted step, i.e. computed at the same crack tip)
+                    da_vec = self.da_sub * np.array(
+                        [np.cos(res["phi"]), np.sin(res["phi"]), 0]
+                    )
+                    crack_points.append(crack_points[-1] + da_vec)
+                    print(
+                        f"│  Peak detected: restart the step with substepping (da = {self.da_sub:.6g}, {fine_steps_remaining} substeps)"
+                    )
+                    continue
+
+            # Update the crack tip position
+            if fine_steps_remaining > 0:
+                da_step = self.da_sub
+                fine_steps_remaining -= 1
+            else:
+                da_step = self.da
+            da_vec = da_step * np.array([np.cos(phi_), np.sin(phi_), 0])
+            xc_new = xc0 + da_vec
+            last_append_da = da_step
 
             print("│  Results of the step")
             print(
                 f"│  │  Crack propagation angle : {phi_:.3f} rad / {phi_ * 180 / np.pi:.3f}°"
             )
             print(f"│  │  Load factor             : {lambda_:.3g}")
-            print(f"│  │  New crack tip position  : {xc_new}")
+            print(f"│  │  Crack tip (current)     : {xc0:.3g}")
 
             print("│  Postprocess")
             # Scale the displacement field
@@ -468,7 +533,7 @@ class GCrackBase(ABC):
             uimps = compute_measured_displacement(self.domain, u_scaled, self)
             # Compute mean displacements
             us_mean = compute_mean_displacements(self.domain, u_scaled, self)
-            # COmpute energies
+            # Compute energies
             elastic_energy = compute_elastic_energy(self.domain, model, u_scaled)
             external_work_potential = compute_external_work_potential(
                 self.domain, model, u_scaled
@@ -490,9 +555,9 @@ class GCrackBase(ABC):
             # Store the results
             crack_points.append(xc_new)
             res["t"] = t
-            res["a"] += self.da if t != 1 else 0
             res["phi"] = phi_
             res["lambda"] = lambda_
+            lambda_history.append(lambda_)
             res["xc_1"] = xc0[0]
             res["xc_2"] = xc0[1]
             res["xc_3"] = xc0[2]
@@ -509,7 +574,6 @@ class GCrackBase(ABC):
                     lambda_ * SIFs_controlled[sif_name] + SIFs_prescribed[sif_name]
                 )
             res["elastic_energy"] = elastic_energy
-            res["fracture_dissipation"] += self.da * self.Gc(np.array([phi_]), xc0)[0]
             res["external_work_potential"] = external_work_potential
             # At first load step, also export the initial state
             if t == 1:
