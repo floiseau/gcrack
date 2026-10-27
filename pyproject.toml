@@ -1,8 +1,8 @@
 [project]
 name = "gcrack"
-version = "2026.06.09"
+version = "2026.10.27"
 authors = [
-  { name="Flavien Loiseau", email="flavien.loiseau@ensta.fr" },
+  { name="Flavien Loiseau", email="flavien.loiseau@insa-lyon.fr" },
 ]
 description = "Solver for Linear Elastic Fracture Mechanics problems "
 readme = "README.md"
