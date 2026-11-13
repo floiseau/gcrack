@@ -114,7 +114,7 @@ class GCrackBase(ABC):
     criterion: Optional[str] = "gmerr"
     """criterion (Optional[str]): Criterion for crack propagation, defaults to "gmerr"."""
     da_sub: Optional[float] = 0.0
-    """da_sub (Optional[str]): Crack increment length at peak in the load factor-crack length curve."""
+    """da_sub (Optional[float]): Crack increment length at peak in the load factor-crack length curve."""
     name: Optional[str] = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     """name (Optional[str]): Name of the simulation used to name the results directory."""
     no_propagation: Optional[bool] = False
@@ -247,14 +247,15 @@ class GCrackBase(ABC):
         """
         return []
 
-    def user_load_step_initialization(self, res: dict) -> None:
-        """User-defined load step initialization.
-
-        Customize load step initialization using results from the previous step.
-        This can include creating custom variables for boundary conditions.
-        This function is called at the very beginning of the load step.
-        """
-        ...
+    def activate_substepping(
+        self,
+        t: float,
+        already_substepping: bool,
+        crack_points: List,
+        lambda_: float,
+        phi: float,
+    ) -> bool:
+        return False
 
     def end_simulation(self, crack_points: List[List[float]]) -> bool:
         """User-defined function to end the simulation when a condition is met.
@@ -266,6 +267,15 @@ class GCrackBase(ABC):
             bool: True if the simulation must be ended, else False.
         """
         return False
+
+    def user_load_step_initialization(self, res: dict) -> None:
+        """User-defined load step initialization.
+
+        Customize load step initialization using results from the previous step.
+        This can include creating custom variables for boundary conditions.
+        This function is called at the very beginning of the load step.
+        """
+        ...
 
     def run(self):
         """Executes the crack propagation simulation workflow.
@@ -347,7 +357,8 @@ class GCrackBase(ABC):
         }
         # Initialize the load step
         t = 0
-        da_step = 0.0
+        da_step = self.da
+        substeps_remaining = 0
         # Iterate through the load step
         while t < self.Nt and not self.end_simulation(crack_points):
             # Increment the load step
@@ -461,67 +472,51 @@ class GCrackBase(ABC):
                 lambda_ = 1.0
                 da_step = 0.0
 
-            # Initialize peak refinement
-            if t == 1:
-                # Peak detection history (load factors of the accepted steps) and substepping state
-                lambda_history = []
-                last_append_da = 0.0
-                fine_steps_remaining = 0
-            # Detect a peak of the lambda-a curve (i.e. of the F-u curve)
-            # NOTE: the load factors of two successive accepted steps are computed at two
-            # successive crack tips, so a sign change of the successive load factor
-            # increments means that a peak is bracketed between the last two crack tips.
-            # The detection is disabled while substepping (single refinement level).
-            if (
-                self.da_sub > 0.0
-                and not self.no_propagation
-                and len(lambda_history) >= 2
-                and fine_steps_remaining == 0
-            ):
-                dl_prev = lambda_history[-1] - lambda_history[-2]
-                dl_curr = lambda_ - lambda_history[-1]
-                if dl_prev * dl_curr < 0:
-                    # Forget the current step
-                    fine_steps_remaining = (
-                        int(np.ceil(last_append_da / self.da_sub)) - 1
-                    )
-                    crack_points.pop()
-                    # Undo the geometric accounting of the discarded advance
-                    res["a"] -= da_step
-                    res["fracture_dissipation"] -= (
-                        da_step * self.Gc(np.array([res["phi"]]), crack_points[-1])[0]
-                    )
-                    # The configuration of the restarted step is one substep ahead
-                    # of the previous crack tip
-                    da_step = self.da_sub
-                    t -= 1
-                    # Advance by the first substep (with the propagation angle of the
-                    # previous accepted step, i.e. computed at the same crack tip)
-                    da_vec = self.da_sub * np.array(
-                        [np.cos(res["phi"]), np.sin(res["phi"]), 0]
-                    )
-                    crack_points.append(crack_points[-1] + da_vec)
-                    print(
-                        f"│  Peak detected: restart the step with substepping (da = {self.da_sub:.6g}, {fine_steps_remaining} substeps)"
-                    )
-                    continue
+            # Substepping
+            already_substepping = substeps_remaining != 0
+            activate_substepping = self.activate_substepping(
+                t, already_substepping, crack_points, lambda_, phi_
+            )
+            if not already_substepping and activate_substepping:
+                # Forget the current step
+                crack_points.pop()
+                # Undo the geometric accounting of the discarded advance
+                res["a"] -= da_step
+                res["fracture_dissipation"] -= (
+                    da_step * self.Gc(np.array([res["phi"]]), crack_points[-1])[0]
+                )
+                # Set the number of fine step to perform
+                substeps_remaining = int(np.ceil(self.da / self.da_sub)) - 1
+                # The configuration of the restarted step is one substep ahead
+                # of the previous crack tip
+                da_step = self.da_sub
+                t -= 1
+                # Advance by the first substep (with the propagation angle of the
+                # previous accepted step, i.e. computed at the same crack tip)
+                da_vec = self.da_sub * np.array(
+                    [np.cos(res["phi"]), np.sin(res["phi"]), 0]
+                )
+                crack_points.append(crack_points[-1] + da_vec)
+                print(
+                    f"│  Start substepping: restart the step with substepping (da = {self.da_sub:.6g}, {substeps_remaining} substeps)"
+                )
+                continue
 
             # Update the crack tip position
-            if fine_steps_remaining > 0:
+            if substeps_remaining > 0:
                 da_step = self.da_sub
-                fine_steps_remaining -= 1
+                substeps_remaining -= 1
             else:
                 da_step = self.da
             da_vec = da_step * np.array([np.cos(phi_), np.sin(phi_), 0])
             xc_new = xc0 + da_vec
-            last_append_da = da_step
 
             print("│  Results of the step")
             print(
                 f"│  │  Crack propagation angle : {phi_:.3f} rad / {phi_ * 180 / np.pi:.3f}°"
             )
             print(f"│  │  Load factor             : {lambda_:.3g}")
-            print(f"│  │  Crack tip (current)     : {xc0:.3g}")
+            print(f"│  │  Crack tip (current)     : {xc0}")
 
             print("│  Postprocess")
             # Scale the displacement field
@@ -557,7 +552,6 @@ class GCrackBase(ABC):
             res["t"] = t
             res["phi"] = phi_
             res["lambda"] = lambda_
-            lambda_history.append(lambda_)
             res["xc_1"] = xc0[0]
             res["xc_2"] = xc0[1]
             res["xc_3"] = xc0[2]

@@ -149,7 +149,7 @@ class GCrackData(GCrackBase):
             bool: True if the simulation must be ended, else False.
         """
         # Check if the crack goes outside of the domain
-        end_condition = crack_points[-1][0] > pars["L"]
+        end_condition = crack_points[-1][0] > self.pars["L"]
         # Display a message (optional)
         if end_condition:
             print("Stopping the simulation as the crack is outside the domain.")
